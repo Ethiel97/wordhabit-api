@@ -1,4 +1,5 @@
 import { Command } from '@nestjs/cqrs';
+import { WaitlistStatus } from '../../domain/entities/wailist-entry';
 
 export class JoinWaitlistCommand extends Command<JoinWaitlistResult> {
   constructor(
@@ -13,6 +14,6 @@ export interface JoinWaitlistResult {
   id: string;
   email: string;
   source: string | null;
-  status: 'PENDING' | 'INVITED' | 'REJECTED' | 'CONVERTED';
+  status: WaitlistStatus;
   createdAt: Date;
 }

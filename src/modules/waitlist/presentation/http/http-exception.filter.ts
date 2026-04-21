@@ -63,6 +63,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return;
     }
 
+
+    console.error(exception);
+
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
       ApiErrorResponse.of({
         code: 'INTERNAL_SERVER_ERROR',

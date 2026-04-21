@@ -1,17 +1,17 @@
-import {
-  WaitlistEntryRecord,
-  WaitlistRepository,
-} from '../../domain/repositories/waitlist.repository';
+import { WaitlistRepository } from '../../domain/repositories/waitlist.repository';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
+import { WaitlistEntry } from '../../domain/entities/wailist-entry';
 
 @Injectable()
 export class PrismaWaitlistRepository implements WaitlistRepository {
   constructor(private readonly prisma: PrismaService) {}
-  create(params: {
-    email: string;
-    source?: string;
-  }): Promise<WaitlistEntryRecord> {
+
+  findAll(): Promise<WaitlistEntry[]> {
+    return this.prisma.waitlistEntry.findMany();
+  }
+
+  create(params: { email: string; source?: string }): Promise<WaitlistEntry> {
     return this.prisma.waitlistEntry.create({
       data: {
         email: params.email.toLowerCase().trim(),
@@ -20,7 +20,7 @@ export class PrismaWaitlistRepository implements WaitlistRepository {
     });
   }
 
-  findByEmail(email: string): Promise<WaitlistEntryRecord | null> {
+  findByEmail(email: string): Promise<WaitlistEntry | null> {
     return this.prisma.waitlistEntry.findUnique({
       where: {
         email: email.toLowerCase().trim(),
