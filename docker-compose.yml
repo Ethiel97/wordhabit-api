@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: wordhabit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: wordhabit
+    ports:
+      - '5432:5432'
+    volumes:
+      - wordhabit_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  wordhabit_postgres_data:
