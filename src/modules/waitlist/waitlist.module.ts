@@ -7,13 +7,16 @@ import { WAITLIST_REPOSITORY } from './domain/repositories/waitlist.repository';
 import { GetWaitlistEntryHandler } from './application/handlers/get-waitlist-entry.handler';
 import { GetWaitlistEntriesHandler } from './application/handlers/get-waitlist-entries.handler';
 
+const commandHandlers = [JoinWaitlistHandler];
+
+const queryHandlers = [GetWaitlistEntriesHandler, GetWaitlistEntryHandler];
+
 @Module({
   imports: [CqrsModule],
   controllers: [WaitlistController],
   providers: [
-    JoinWaitlistHandler,
-    GetWaitlistEntriesHandler,
-    GetWaitlistEntryHandler,
+    ...commandHandlers,
+    ...queryHandlers,
     PrismaWaitlistRepository,
     {
       provide: WAITLIST_REPOSITORY,

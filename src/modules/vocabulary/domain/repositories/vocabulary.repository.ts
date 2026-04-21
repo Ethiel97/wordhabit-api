@@ -1,0 +1,79 @@
+import { LanguageCode } from '../entities/language-code';
+import { WordDifficulty } from '../entities/word-difficulty';
+import { PartOfSpeech } from '../entities/part-of-speech';
+import { VocabularyWord } from '../entities/vocabulary-word';
+import { WordDefinition } from '../entities/word-definition';
+import { WordExample } from '../entities/word-example';
+import { WordPronunciation } from '../entities/word-pronounciation';
+import { WordSynonym } from '../entities/word-synonym';
+
+export const VOCABULARY_REPOSITORY = Symbol('VOCABULARY_REPOSITORY');
+
+export interface CreateVocabularyWordParams {
+  term: string;
+  normalizedTerm: string;
+  targetLanguage: LanguageCode;
+  difficulty: WordDifficulty;
+  partOfSpeech: PartOfSpeech;
+  definitions: Array<{
+    explanationLanguage: LanguageCode;
+    text: string;
+    register?: string;
+  }>;
+  examples: Array<{
+    sentence: string;
+    translation?: string;
+    translationLanguage?: LanguageCode;
+  }>;
+  pronunciations: Array<{
+    phonetic?: string;
+    audioUrl?: string;
+    provider?: string;
+  }>;
+  synonyms: Array<{
+    value: string;
+  }>;
+}
+
+export interface FindVocabularyWordParams {
+  normalizedTerm: string;
+  targetLanguage: LanguageCode;
+}
+
+export interface VocabularyWordAggregate {
+  word: VocabularyWord;
+  definitions: WordDefinition[];
+  examples: WordExample[];
+  pronunciations: WordPronunciation[];
+  synonyms: WordSynonym[];
+}
+
+export interface VocabularyRepository {
+  findByNormalizedTerm(
+    params: FindVocabularyWordParams,
+  ): Promise<VocabularyWord | null>;
+
+  createWord(params: {
+    term: string;
+    normalizedTerm: string;
+    targetLanguage: LanguageCode;
+    difficulty: WordDifficulty;
+    partOfSpeech: PartOfSpeech;
+    definitions: {
+      explanationLanguage: LanguageCode;
+      text: string;
+      register: string | null;
+    }[];
+    examples: {
+      sentence: string;
+      translation: string | null;
+      translationLanguage: string | null;
+    }[];
+    pronunciations: {
+      phonetic: string | null;
+      audioUrl: string | null;
+      provider: string | null;
+    }[];
+    synonyms: { value: string }[];
+  }): Promise<VocabularyWordAggregate>;
+}
