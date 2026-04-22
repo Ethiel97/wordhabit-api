@@ -1,4 +1,4 @@
-import {
+import type {
   LanguageCode as PrismaLanguageCode,
   PartOfSpeech as PrismaPartOfSpeech,
   VocabularyWordStatus as PrismaVocabularyWordStatus,
@@ -42,11 +42,11 @@ export class PrismaVocabularyMapper {
   static toPrismaLanguageCode(value: LanguageCode): PrismaLanguageCode {
     switch (value) {
       case LanguageCode.EN:
-        return PrismaLanguageCode.EN;
+        return 'EN';
       case LanguageCode.ES:
-        return PrismaLanguageCode.ES;
+        return 'ES';
       case LanguageCode.FR:
-        return PrismaLanguageCode.FR;
+        return 'FR';
       default: {
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         throw new Error(`Unhandled language code: ${value}`);
@@ -56,11 +56,11 @@ export class PrismaVocabularyMapper {
 
   static toDomainLanguageCode(value: PrismaLanguageCode): LanguageCode {
     switch (value) {
-      case PrismaLanguageCode.EN:
+      case 'EN':
         return LanguageCode.EN;
-      case PrismaLanguageCode.ES:
+      case 'ES':
         return LanguageCode.ES;
-      case PrismaLanguageCode.FR:
+      case 'FR':
         return LanguageCode.FR;
       default: {
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions

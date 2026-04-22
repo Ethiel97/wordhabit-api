@@ -5,7 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { DatabaseModule } from './shared/infrastructure/database/database.module';
 import { VocabularyModule } from './modules/vocabulary/vocabulary.module';
-import { VocabularyIngestionModule } from './modules/vocabulary-ingestion.module';
+import { VocabularyIngestionModule } from './modules/vocabulary-ingestion/vocabulary-ingestion.module';
+import { QueueModule } from './shared/infrastructure/queue/queue.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { VocabularyIngestionModule } from './modules/vocabulary-ingestion.module
       isGlobal: true,
     }),
     DatabaseModule,
+    QueueModule,
     VocabularyModule,
     VocabularyIngestionModule,
     WaitlistModule,

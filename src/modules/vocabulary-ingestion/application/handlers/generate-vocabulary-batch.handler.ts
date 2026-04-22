@@ -28,7 +28,7 @@ export class GenerateVocabularyBatchHandler implements ICommandHandler<
   async execute(
     command: GenerateVocabularyBatchCommand,
   ): Promise<GenerateVocabularyBatchResult> {
-    const generated = await this.generationProvider.generateBatch({
+    const generated = await this.generationProvider.generateVocabularyBatch({
       targetLanguage: command.targetLanguage,
       explanationLanguage: command.explanationLanguage,
       count: command.count,

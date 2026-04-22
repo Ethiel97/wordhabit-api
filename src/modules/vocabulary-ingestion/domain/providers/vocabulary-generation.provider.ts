@@ -51,7 +51,7 @@ export const VOCABULARY_GENERATION_PROVIDER = Symbol(
 );
 
 export interface VocabularyGenerationProvider {
-  generateBatch(
+  generateVocabularyBatch(
     input: GenerateVocabularyBatchInput,
   ): Promise<GeneratedVocabularyBatch>;
 }

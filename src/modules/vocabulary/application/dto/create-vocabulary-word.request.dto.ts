@@ -19,7 +19,7 @@ class CreateWordDefinitionDto {
   text!: string;
 
   @IsIn(Object.values(LanguageCode))
-  explanationLanguage!: LanguageCode;
+  explanationLanguage: LanguageCode = LanguageCode.EN;
 
   @IsString()
   @IsOptional()
@@ -67,7 +67,7 @@ export class CreateVocabularyWordRequestDto {
   term!: string;
 
   @IsIn(Object.values(LanguageCode))
-  targetLanguage!: LanguageCode;
+  targetLanguage: LanguageCode = LanguageCode.EN;
 
   @IsIn(Object.values(WordDifficulty))
   difficulty!: WordDifficulty;

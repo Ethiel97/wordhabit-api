@@ -1,25 +1,40 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
+import { Queue } from 'bullmq';
+import { InjectQueue } from '@nestjs/bullmq';
 import { GenerateVocabularyBatchRequestDto } from '../../application/dto/generate-vocabulary-batch.request.dto';
-import type { GenerateVocabularyBatchResult } from '../../application/commands/generate-vocabulary-batch.command';
-import { GenerateVocabularyBatchCommand } from '../../application/commands/generate-vocabulary-batch.command';
 import { ApiSuccessResponse } from '../../../waitlist/presentation/http/api-success-response';
+import {
+  GENERATE_VOCABULARY_BATCH_JOB,
+  VOCABULARY_QUEUE,
+} from '../../infrastructure/queue/vocabulary-queue.constants';
+
+type JobBatchResponse = {
+  success: boolean;
+  jobId: string | number | undefined;
+};
 
 @Controller('vocabulary/ingestion')
 export class VocabularyIngestionController {
-  constructor(private readonly commandBus: CommandBus) {}
+  constructor(
+    @InjectQueue(VOCABULARY_QUEUE)
+    private readonly queue: Queue,
+  ) {}
 
-  @Post('generate-batch')
+  @Post('/generate-batch')
   async generateBatch(@Body() body: GenerateVocabularyBatchRequestDto) {
-    const result: GenerateVocabularyBatchResult = await this.commandBus.execute(
-      new GenerateVocabularyBatchCommand(
-        body.targetLanguage,
-        body.explanationLanguage,
-        body.count,
-        body.theme,
-      ),
-    );
+    const job = await this.queue.add(GENERATE_VOCABULARY_BATCH_JOB, body, {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
+      removeOnComplete: 100,
+      removeOnFail: 50,
+    });
 
-    return ApiSuccessResponse.of(result);
+    return ApiSuccessResponse.of<JobBatchResponse>({
+      success: true,
+      jobId: job.id,
+    });
   }
 }

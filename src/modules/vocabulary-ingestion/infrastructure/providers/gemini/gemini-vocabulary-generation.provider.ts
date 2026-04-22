@@ -13,7 +13,7 @@ export class GeminiVocabularyGenerationProvider implements VocabularyGenerationP
     apiKey: process.env.GEMINI_API_KEY,
   });
 
-  async generateBatch(
+  async generateVocabularyBatch(
     input: GenerateVocabularyBatchInput,
   ): Promise<GeneratedVocabularyBatch> {
     const explanationLanguage = input.explanationLanguage ?? LanguageCode.EN;

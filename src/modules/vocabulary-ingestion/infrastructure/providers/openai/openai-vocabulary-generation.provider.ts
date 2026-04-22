@@ -12,7 +12,7 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  async generateBatch(
+  async generateVocabularyBatch(
     input: GenerateVocabularyBatchInput,
   ): Promise<GeneratedVocabularyBatch> {
     const explanationLanguage = input.explanationLanguage ?? 'EN';
