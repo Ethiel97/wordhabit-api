@@ -1,19 +1,249 @@
 import {
   FindVocabularyWordParams,
+  ListVocabularyWordsParams,
   VocabularyRepository,
   VocabularyWordAggregate,
+  VocabularyWordListItemProjection,
 } from '../../domain/repositories/vocabulary.repository';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
 import { VocabularyWord } from '../../domain/entities/vocabulary-word';
 import { PrismaVocabularyMapper } from './prisma-vocabulary.mapper';
 import { Injectable } from '@nestjs/common';
 import { LanguageCode } from '../../domain/entities/language-code';
-import { PartOfSpeech } from '../../domain/entities/part-of-speech';
+import { PaginatedResult } from 'src/shared/application/pagination/paginated-result';
+import { Prisma } from '../../../../../generated/prisma/client';
 import { WordDifficulty } from '../../domain/entities/word-difficulty';
+import { PartOfSpeech } from '../../domain/entities/part-of-speech';
 
 @Injectable()
 export class PrismaVocabularyRepository implements VocabularyRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listWords(
+    params: ListVocabularyWordsParams,
+  ): Promise<PaginatedResult<VocabularyWordListItemProjection>> {
+    const page = params.page;
+    const pageSize = params.pageSize;
+    const skip = (page - 1) * pageSize;
+
+    const where: Prisma.VocabularyWordWhereInput = {
+      ...(params.targetLanguage
+        ? { targetLanguage: params.targetLanguage }
+        : {}),
+      ...(params.difficulty ? { difficulty: params.difficulty } : {}),
+      ...(params.partOfSpeech ? { partOfSpeech: params.partOfSpeech } : {}),
+      ...(params.status ? { status: params.status } : {}),
+      ...(params.search
+        ? {
+            OR: [
+              {
+                term: {
+                  contains: params.search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                normalizedTerm: {
+                  contains: params.search.toLowerCase(),
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.vocabularyWord.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.vocabularyWord.count({
+        where,
+      }),
+    ]);
+
+    return {
+      items: items.map((item) => ({
+        id: item.id,
+        term: item.term,
+        normalizedTerm: item.normalizedTerm,
+        targetLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
+          item.targetLanguage,
+        ),
+        difficulty: PrismaVocabularyMapper.toDomainDifficulty(item.difficulty),
+        partOfSpeech: PrismaVocabularyMapper.toDomainPartOfSpeech(
+          item.partOfSpeech,
+        ),
+        status: PrismaVocabularyMapper.toDomainStatus(item.status),
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      })),
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+  async findWordByNormalizedTerm(
+    params: FindVocabularyWordParams,
+  ): Promise<VocabularyWordAggregate | null> {
+    const aggregate = await this.prisma.vocabularyWord.findUnique({
+      where: {
+        normalizedTerm_targetLanguage: {
+          normalizedTerm: params.normalizedTerm,
+          targetLanguage: PrismaVocabularyMapper.toPrismaLanguageCode(
+            params.targetLanguage ?? this.getDefaultLanguage(),
+          ),
+        },
+      },
+      include: {
+        definitions: true,
+        examples: true,
+        pronunciations: true,
+        synonyms: true,
+      },
+    });
+
+    if (!aggregate) {
+      return null;
+    }
+
+    return {
+      word: {
+        id: aggregate.id,
+        term: aggregate.term,
+        normalizedTerm: aggregate.normalizedTerm,
+        targetLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
+          aggregate.targetLanguage,
+        ),
+        difficulty: PrismaVocabularyMapper.toDomainDifficulty(
+          aggregate.difficulty,
+        ),
+        partOfSpeech: PrismaVocabularyMapper.toDomainPartOfSpeech(
+          aggregate.partOfSpeech,
+        ),
+        status: PrismaVocabularyMapper.toDomainStatus(aggregate.status),
+        createdAt: aggregate.createdAt,
+        updatedAt: aggregate.updatedAt,
+      },
+      definitions: aggregate.definitions.map((def) => ({
+        id: def.id,
+        wordId: def.wordId,
+        explanationLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
+          def.explanationLanguage,
+        ),
+        text: def.text,
+        register: def.register,
+        createdAt: def.createdAt,
+      })),
+      examples: aggregate.examples.map((ex) => ({
+        id: ex.id,
+        createdAt: ex.createdAt,
+        wordId: ex.wordId,
+        sentence: ex.sentence,
+        translation: ex.translation,
+        translationLanguage:
+          ex.translationLanguage !== null
+            ? PrismaVocabularyMapper.toDomainLanguageCode(
+                ex.translationLanguage,
+              )
+            : null,
+      })),
+      pronunciations: aggregate.pronunciations.map((pr) => ({
+        id: pr.id,
+        phonetic: pr.phonetic,
+        audioUrl: pr.audioUrl,
+        provider: pr.provider,
+        createdAt: pr.createdAt,
+        wordId: pr.wordId,
+      })),
+      synonyms: aggregate.synonyms.map((syn) => ({
+        id: syn.id,
+        wordId: syn.wordId,
+        value: syn.value,
+        createdAt: syn.createdAt,
+      })),
+    };
+  }
+  async findWordById(wordId: string): Promise<VocabularyWordAggregate | null> {
+    const aggregate = await this.prisma.vocabularyWord.findUnique({
+      where: {
+        id: wordId,
+      },
+      include: {
+        definitions: true,
+        examples: true,
+        pronunciations: true,
+        synonyms: true,
+      },
+    });
+
+    if (!aggregate) {
+      return null;
+    }
+
+    return {
+      word: {
+        id: aggregate.id,
+        term: aggregate.term,
+        normalizedTerm: aggregate.normalizedTerm,
+        targetLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
+          aggregate.targetLanguage,
+        ),
+        difficulty: PrismaVocabularyMapper.toDomainDifficulty(
+          aggregate.difficulty,
+        ),
+        partOfSpeech: PrismaVocabularyMapper.toDomainPartOfSpeech(
+          aggregate.partOfSpeech,
+        ),
+        status: PrismaVocabularyMapper.toDomainStatus(aggregate.status),
+        createdAt: aggregate.createdAt,
+        updatedAt: aggregate.updatedAt,
+      },
+      definitions: aggregate.definitions.map((def) => ({
+        id: def.id,
+        wordId: def.wordId,
+        explanationLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
+          def.explanationLanguage,
+        ),
+        text: def.text,
+        register: def.register,
+        createdAt: def.createdAt,
+      })),
+      examples: aggregate.examples.map((ex) => ({
+        id: ex.id,
+        createdAt: ex.createdAt,
+        wordId: ex.wordId,
+        sentence: ex.sentence,
+        translation: ex.translation,
+        translationLanguage:
+          ex.translationLanguage !== null
+            ? PrismaVocabularyMapper.toDomainLanguageCode(
+                ex.translationLanguage,
+              )
+            : null,
+      })),
+      pronunciations: aggregate.pronunciations.map((pr) => ({
+        id: pr.id,
+        phonetic: pr.phonetic,
+        audioUrl: pr.audioUrl,
+        provider: pr.provider,
+        createdAt: pr.createdAt,
+        wordId: pr.wordId,
+      })),
+      synonyms: aggregate.synonyms.map((syn) => ({
+        id: syn.id,
+        wordId: syn.wordId,
+        value: syn.value,
+        createdAt: syn.createdAt,
+      })),
+    };
+  }
 
   async createWord(params: {
     term: string;
@@ -106,7 +336,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         normalizedTerm_targetLanguage: {
           normalizedTerm: params.normalizedTerm,
           targetLanguage: PrismaVocabularyMapper.toPrismaLanguageCode(
-            params.targetLanguage,
+            params.targetLanguage ?? this.getDefaultLanguage(),
           ),
         },
       },
@@ -137,5 +367,10 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
       term: found.term,
       updatedAt: found.updatedAt,
     };
+  }
+
+  // TODO: Make this configurable
+  private getDefaultLanguage(): LanguageCode {
+    return LanguageCode.EN;
   }
 }

@@ -4,10 +4,17 @@ import { VocabularyController } from './presentation/http/vocabulary-controller/
 import { PrismaVocabularyRepository } from './infrastructure/persistence/prisma-vocabulary.repository';
 import { VOCABULARY_REPOSITORY } from './domain/repositories/vocabulary.repository';
 import { CreateVocabularyWordHandler } from './application/handlers/create-vocabulary-word.handler';
+import { GetVocabularyWordByIdHandler } from './application/handlers/get-vocabulary-word-by-id.handler';
+import { GetVocabularyWordByTermHandler } from './application/handlers/get-vocabulary-word-by-term.handler';
+import { ListVocabularyWordsHandler } from './application/handlers/list-vocabulary-words.handler';
 
 const commandHandlers = [CreateVocabularyWordHandler];
 
-const queryHandlers = [];
+const queryHandlers = [
+  GetVocabularyWordByIdHandler,
+  GetVocabularyWordByTermHandler,
+  ListVocabularyWordsHandler,
+];
 
 @Module({
   imports: [CqrsModule],
