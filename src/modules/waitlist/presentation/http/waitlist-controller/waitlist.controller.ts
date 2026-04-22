@@ -6,6 +6,7 @@ import { ApiSuccessResponse } from '../api-success-response';
 import { GetWaitlistEntryQuery } from '../../../application/queries/get-waitlist-entry.query';
 import { GetWaitlistEntriesQuery } from '../../../application/queries/get-waitlist-entries.query';
 import { GetWaitlistEntryQueryDto } from '../../../application/dto/get-waitlist-entry.query.dto';
+import { minutes, Throttle } from '@nestjs/throttler';
 
 @Controller('waitlist')
 export class WaitlistController {
@@ -14,6 +15,13 @@ export class WaitlistController {
     private readonly queryBus: QueryBus,
   ) {}
 
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: minutes(60),
+      blockDuration: minutes(60),
+    },
+  })
   @Post()
   async joinWaitlist(@Body() body: JoinWaitlistRequestDto) {
     const result = await this.commandBus.execute(
@@ -23,6 +31,13 @@ export class WaitlistController {
     return ApiSuccessResponse.of(result);
   }
 
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: minutes(60),
+      blockDuration: minutes(60),
+    },
+  })
   @Get()
   async getWaitlistEntries() {
     const result = await this.queryBus.execute(new GetWaitlistEntriesQuery());
@@ -30,6 +45,13 @@ export class WaitlistController {
     return ApiSuccessResponse.of(result);
   }
 
+  @Throttle({
+    default: {
+      limit: 3,
+      ttl: minutes(20),
+      blockDuration: minutes(60),
+    },
+  })
   @Get('by-email')
   async getWaitlistEntry(@Query() { email }: GetWaitlistEntryQueryDto) {
     const result = await this.queryBus.execute(
