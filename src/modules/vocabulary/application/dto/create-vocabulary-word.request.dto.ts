@@ -98,4 +98,10 @@ export class CreateVocabularyWordRequestDto {
   @ValidateNested({ each: true })
   @Type(() => CreateWordSynonymDto)
   synonyms?: CreateWordSynonymDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsNotEmpty({ each: true })
+  @IsString({ each: true })
+  themeSlugs?: string[];
 }

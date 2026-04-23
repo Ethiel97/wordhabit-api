@@ -106,6 +106,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         examples: true,
         pronunciations: true,
         synonyms: true,
+        themes: true,
       },
     });
 
@@ -168,6 +169,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         value: syn.value,
         createdAt: syn.createdAt,
       })),
+      // themes: aggregate.themes.map((t) => t.theme.slug),
     };
   }
   async findWordById(wordId: string): Promise<VocabularyWordAggregate | null> {
@@ -180,6 +182,11 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         examples: true,
         pronunciations: true,
         synonyms: true,
+        themes: {
+          include: {
+            theme: true,
+          },
+        },
       },
     });
 
@@ -242,6 +249,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         value: syn.value,
         createdAt: syn.createdAt,
       })),
+      themes: aggregate.themes.map((t) => t.theme.slug),
     };
   }
 
@@ -267,6 +275,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
       provider: string | null;
     }[];
     synonyms: { value: string }[];
+    themeSlugs: string[];
   }): Promise<VocabularyWordAggregate> {
     const created = await this.prisma.vocabularyWord.create({
       data: {
@@ -310,12 +319,24 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
             })),
           },
         },
+        themes: {
+          create: params.themeSlugs.map((slug) => ({
+            theme: {
+              connect: { slug },
+            },
+          })),
+        },
       },
       include: {
         definitions: true,
         examples: true,
         pronunciations: true,
         synonyms: true,
+        themes: {
+          include: {
+            theme: true,
+          },
+        },
       },
     });
 
@@ -325,6 +346,8 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
       pronunciations: created.pronunciations,
       synonyms: created.synonyms,
       word: created,
+      //TODO: map to PrismaTheme
+      // themes: created.themes,
     });
   }
 

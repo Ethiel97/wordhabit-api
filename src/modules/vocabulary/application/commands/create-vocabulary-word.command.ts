@@ -13,6 +13,7 @@ export class CreateVocabularyWordCommand extends Command<CreateVocabularyWordRes
     public readonly examples: CreateVocabularyWordExampleInput[] = [],
     public readonly pronunciations: CreateVocabularyWordPronunciationInput[],
     public readonly synonyms: CreateVocabularyWordSynonymInput[] = [],
+    public readonly themeSlugs: string[] = [],
   ) {
     super();
   }

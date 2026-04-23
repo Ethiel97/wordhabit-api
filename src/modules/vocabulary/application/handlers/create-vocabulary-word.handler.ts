@@ -60,6 +60,7 @@ export class CreateVocabularyWordHandler implements ICommandHandler<
       synonyms: command.synonyms.map((syn) => ({
         value: syn.value.trim(),
       })),
+      themeSlugs: command.themeSlugs,
     });
 
     return {

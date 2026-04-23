@@ -6,6 +6,7 @@ import type {
 } from 'generated/prisma/enums';
 
 import type {
+  ThemeModel as PrismaWordTheme,
   VocabularyWordModel as PrismaVocabularyWord,
   WordDefinitionModel as PrismaWordDefinition,
   WordExampleModel as PrismaWordExample,
@@ -208,6 +209,7 @@ export class PrismaVocabularyMapper {
     examples: PrismaWordExample[];
     pronunciations: PrismaWordPronunciation[];
     synonyms: PrismaWordSynonym[];
+    themes?: PrismaWordTheme[];
   }): VocabularyWordAggregate {
     return {
       word: this.toDomainWord(data.word),
@@ -217,6 +219,7 @@ export class PrismaVocabularyMapper {
         this.toDomainPronunciation(p),
       ),
       synonyms: data.synonyms.map((s) => this.toDomainSynonym(s)),
+      themes: data.themes?.map((t) => t.name),
     };
   }
 }

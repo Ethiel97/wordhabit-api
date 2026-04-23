@@ -28,6 +28,7 @@ export class VocabularyController {
         body.examples ?? [],
         body.pronunciations ?? [],
         body.synonyms ?? [],
+        body.themeSlugs ?? [],
       ),
     );
 

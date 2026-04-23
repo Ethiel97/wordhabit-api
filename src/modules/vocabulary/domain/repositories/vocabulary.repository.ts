@@ -35,6 +35,7 @@ export interface CreateVocabularyWordParams {
   synonyms: Array<{
     value: string;
   }>;
+  themeSlugs: string[];
 }
 
 export interface FindVocabularyWordParams {
@@ -48,6 +49,7 @@ export interface VocabularyWordAggregate {
   examples: WordExample[];
   pronunciations: WordPronunciation[];
   synonyms: WordSynonym[];
+  themes?: string[];
 }
 
 export interface ListVocabularyWordsParams {
@@ -109,5 +111,6 @@ export interface VocabularyRepository {
       provider: string | null;
     }[];
     synonyms: { value: string }[];
+    themeSlugs: string[];
   }): Promise<VocabularyWordAggregate>;
 }
