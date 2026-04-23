@@ -77,6 +77,7 @@ model VocabularyWord {
   examples       WordExample[]
   pronunciations WordPronunciation[]
   synonyms       WordSynonym[]
+  themes         VocabularyWordTheme[]
 
   @@index([targetLanguage])
   @@unique([normalizedTerm, targetLanguage])
@@ -136,4 +137,28 @@ model WordSynonym {
 
   @@index([wordId])
   @@map("word_synonyms")
+}
+
+model Theme {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vocabularyWords VocabularyWordTheme[]
+  @@map("themes")
+}
+
+model VocabularyWordTheme {
+  wordId    String
+  themeId   String
+
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  theme Theme          @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([wordId, themeId])
+  @@index([themeId])
+  @@map("vocabulary_word_themes")
 }
