@@ -14,7 +14,7 @@ CREATE TABLE "user_learning_profiles" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "nativeLanguage" "LanguageCode" NOT NULL,
+    "interfaceLanguage" "LanguageCode" NOT NULL,
     "targetLanguage" "LanguageCode" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

@@ -185,7 +185,7 @@ model UserLearningProfile {
   id             String       @id @default(cuid())
   userId         String       @unique
   isActive       Boolean      @default(true)
-  nativeLanguage LanguageCode
+  interfaceLanguage LanguageCode
   targetLanguage LanguageCode
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

@@ -7,6 +7,7 @@ import { DatabaseModule } from './shared/infrastructure/database/database.module
 import { VocabularyModule } from './modules/vocabulary/vocabulary.module';
 import { VocabularyIngestionModule } from './modules/vocabulary-ingestion/vocabulary-ingestion.module';
 import { QueueModule } from './shared/infrastructure/queue/queue.module';
+import { UserLearningModule } from './modules/user-learning/user-learning.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { QueueModule } from './shared/infrastructure/queue/queue.module';
     }),
     DatabaseModule,
     QueueModule,
+    UserLearningModule,
     VocabularyModule,
     VocabularyIngestionModule,
     WaitlistModule,
