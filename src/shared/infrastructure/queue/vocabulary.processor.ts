@@ -54,6 +54,7 @@ export class GenerateVocabularyBatchProcessor extends WorkerHost {
           ),
         );
       } catch (error: any) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
         if (error.message && error.message?.includes('already exists')) {
           this.logger.warn(`Duplicate: ${item.term}`);
           continue;
