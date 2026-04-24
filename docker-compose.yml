@@ -12,5 +12,15 @@ services:
     volumes:
       - wordhabit_postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7
+    container_name: wordhabit-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - wordhabit_redis_data:/data
+
 volumes:
   wordhabit_postgres_data:
+  wordhabit_redis_data:

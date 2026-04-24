@@ -4,9 +4,11 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
   moduleFormat = "cjs"
+  generatedFileExtension = "ts"
+  importFileExtension = "js"
 }
 
 datasource db {
@@ -31,4 +33,132 @@ enum WaitlistEntryStatus {
   INVITED
   CONVERTED
   REJECTED
+}
+
+enum LanguageCode {
+  EN
+  ES
+  FR
+}
+
+enum VocabularyWordStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum WordDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum PartOfSpeech {
+  NOUN
+  VERB
+  ADJECTIVE
+  ADVERB
+  EXPRESSION
+  OTHER
+}
+
+model VocabularyWord {
+  id             String               @id @default(cuid())
+  term           String
+  normalizedTerm String
+  targetLanguage LanguageCode
+  difficulty     WordDifficulty
+  partOfSpeech   PartOfSpeech
+  status         VocabularyWordStatus @default(DRAFT)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  definitions    WordDefinition[]
+  examples       WordExample[]
+  pronunciations WordPronunciation[]
+  synonyms       WordSynonym[]
+  themes         VocabularyWordTheme[]
+
+  @@index([targetLanguage])
+  @@unique([normalizedTerm, targetLanguage])
+  @@map("vocabulary_words")
+}
+
+model WordDefinition {
+  id                  String       @id @default(cuid())
+  wordId              String
+  explanationLanguage LanguageCode
+  text                String
+  register            String?
+  createdAt           DateTime     @default(now())
+
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@index([wordId])
+  @@index([explanationLanguage])
+  @@map("word_definitions")
+}
+
+model WordExample {
+  id                  String        @id @default(cuid())
+  wordId              String
+  sentence            String
+  translation         String?
+  translationLanguage LanguageCode?
+  createdAt           DateTime      @default(now())
+
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@index([wordId])
+  @@map("word_examples")
+}
+
+model WordPronunciation {
+  id        String   @id @default(cuid())
+  wordId    String
+  phonetic  String?
+  audioUrl  String?
+  provider  String?
+  createdAt DateTime @default(now())
+
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@index([wordId])
+  @@map("word_pronunciations")
+}
+
+model WordSynonym {
+  id        String   @id @default(cuid())
+  wordId    String
+  value     String
+  createdAt DateTime @default(now())
+
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@index([wordId])
+  @@map("word_synonyms")
+}
+
+model Theme {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vocabularyWords VocabularyWordTheme[]
+  @@map("themes")
+}
+
+model VocabularyWordTheme {
+  wordId    String
+  themeId   String
+
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  theme Theme          @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([wordId, themeId])
+  @@index([themeId])
+  @@map("vocabulary_word_themes")
 }
