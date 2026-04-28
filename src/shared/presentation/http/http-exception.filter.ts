@@ -16,6 +16,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiErrorResponse } from './api-error-response';
+import { AppError } from '../../application/errors/app-error';
 
 import type { Request, Response } from 'express';
 
@@ -25,6 +26,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
+
+    if (exception instanceof AppError) {
+      response.status(exception.statusCode).json(
+        ApiErrorResponse.of({
+          code: exception.code,
+          message: exception.message,
+          details: {
+            path: request.url,
+            ...(exception.details ?? {}),
+          },
+        }),
+      );
+
+      return;
+    }
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();

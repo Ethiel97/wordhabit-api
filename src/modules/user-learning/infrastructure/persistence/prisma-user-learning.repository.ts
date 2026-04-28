@@ -1,7 +1,10 @@
 import {
+  ActivateUserLearningProfileParams,
   CreateUserLearningProfileParams,
   CreateUserParams,
   FindUserLearningProfileParams,
+  FindUserLearningProfilesParams,
+  SetUserLearningProfileThemesParams,
   UserLearningRepository,
 } from '../../domain/repositories/user-learning.repository';
 import { User } from '../../domain/entities/user';
@@ -13,6 +16,152 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class PrismaUserLearningRepository implements UserLearningRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findUserLearningProfileById(
+    profileId: string,
+  ): Promise<UserLearningProfile | null> {
+    const found = await this.prisma.userLearningProfile.findUnique({
+      where: {
+        id: profileId,
+      },
+      include: {
+        themes: {
+          include: {
+            theme: true,
+          },
+        },
+      },
+    });
+
+    if (!found) {
+      return null;
+    }
+    return {
+      id: found.id,
+      userId: found.userId,
+      isActive: found.isActive,
+      interfaceLanguage: found.interfaceLanguage as LanguageCode,
+      targetLanguage: found.targetLanguage as LanguageCode,
+      themeSlugs: found.themes.map((t) => t.theme.slug),
+      createdAt: found.createdAt,
+      updatedAt: found.updatedAt,
+    };
+  }
+
+  async setUserLearningProfileThemes(
+    params: SetUserLearningProfileThemesParams,
+  ): Promise<UserLearningProfile> {
+    const { profileId, themeSlugs } = params;
+
+    const updated = await this.prisma.userLearningProfile.update({
+      where: {
+        id: profileId,
+      },
+      data: {
+        themes: {
+          deleteMany: {},
+          create: themeSlugs.map((themeSlug) => ({
+            theme: {
+              connect: {
+                slug: themeSlug,
+              },
+            },
+          })),
+        },
+      },
+      include: {
+        themes: {
+          include: {
+            theme: true,
+          },
+        },
+      },
+    });
+
+    return {
+      id: updated.id,
+      userId: updated.userId,
+      isActive: updated.isActive,
+      interfaceLanguage: updated.interfaceLanguage as LanguageCode,
+      targetLanguage: updated.targetLanguage as LanguageCode,
+      themeSlugs: updated.themes.map((t) => t.theme.slug),
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
+  }
+  activateUserLearningProfile(
+    params: ActivateUserLearningProfileParams,
+  ): Promise<UserLearningProfile> {
+    const { userId, profileId } = params;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.userLearningProfile.updateMany({
+        where: {
+          userId,
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+        },
+      });
+
+      const activated = await tx.userLearningProfile.update({
+        where: {
+          id: profileId,
+        },
+        data: {
+          isActive: true,
+        },
+        include: {
+          themes: {
+            include: {
+              theme: true,
+            },
+          },
+        },
+      });
+
+      return {
+        id: activated.id,
+        userId: activated.userId,
+        isActive: activated.isActive,
+        interfaceLanguage: activated.interfaceLanguage as LanguageCode,
+        targetLanguage: activated.targetLanguage as LanguageCode,
+        themeSlugs: activated.themes.map((t) => t.theme.slug),
+        createdAt: activated.createdAt,
+        updatedAt: activated.updatedAt,
+      };
+    });
+  }
+
+  async findUserLearningProfiles(
+    params: FindUserLearningProfilesParams,
+  ): Promise<UserLearningProfile[]> {
+    const { userId } = params;
+    const profiles = await this.prisma.userLearningProfile.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        themes: {
+          include: {
+            theme: true,
+          },
+        },
+      },
+    });
+
+    return profiles.map((profile) => ({
+      id: profile.id,
+      userId: profile.userId,
+      isActive: profile.isActive,
+      interfaceLanguage: profile.interfaceLanguage as LanguageCode,
+      targetLanguage: profile.targetLanguage as LanguageCode,
+      themeSlugs: profile.themes.map((t) => t.theme.slug),
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+    }));
+  }
 
   async createUser(params: CreateUserParams): Promise<User> {
     return this.prisma.user.create({
@@ -64,7 +213,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
   async findActiveUserLearningProfile(
     userId: string,
   ): Promise<UserLearningProfile | null> {
-    const found = await this.prisma.userLearningProfile.findUnique({
+    const found = await this.prisma.userLearningProfile.findFirst({
       where: {
         userId,
         isActive: true,

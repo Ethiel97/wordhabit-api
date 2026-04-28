@@ -5,16 +5,30 @@ import { PrismaUserLearningRepository } from './infrastructure/persistence/prism
 import { USER_LEARNING_REPOSITORY } from './domain/repositories/user-learning.repository';
 import { OnboardingController } from './presentation/http/onboarding.controller';
 import { CreateUserLearningProfileHandler } from './application/handlers/create-user-learning-profile.handler';
+import { SetUserLearningProfileThemesHandler } from './application/handlers/set-user-learning-profile-themes.handler';
+import { GetActiveUserLearningProfileHandler } from './application/handlers/get-active-user-learning-profile.handler';
+import { GetUserLearningProfilesHandler } from './application/handlers/get-user-learning-profiles.handler';
+import { ActivateUserLearningProfileHandler } from './application/handlers/activate-user-learning-profile.handler';
+import { VocabularyModule } from '../vocabulary/vocabulary.module';
+import { EnsureThemesExistService } from './application/services/ensure-themes-exist.service';
 
-const commandHandlers = [CreateUserLearningProfileHandler];
-const queryHandlers = [];
+const commandHandlers = [
+  ActivateUserLearningProfileHandler,
+  CreateUserLearningProfileHandler,
+  SetUserLearningProfileThemesHandler,
+];
+const queryHandlers = [
+  GetActiveUserLearningProfileHandler,
+  GetUserLearningProfilesHandler,
+];
 
 @Module({
-  imports: [CqrsModule],
+  imports: [CqrsModule, VocabularyModule],
   controllers: [OnboardingController, UserLearningController],
   providers: [
     ...commandHandlers,
     ...queryHandlers,
+    EnsureThemesExistService,
 
     PrismaUserLearningRepository,
     {

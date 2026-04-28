@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { JoinWaitlistCommand } from '../../../application/commands/join-waitlist.command';
 import { JoinWaitlistRequestDto } from '../../../application/dto/join-waitlist.request.dto';
-import { ApiSuccessResponse } from '../api-success-response';
+import { ApiSuccessResponse } from '../../../../../shared/presentation/http/api-success-response';
 import { GetWaitlistEntryQuery } from '../../../application/queries/get-waitlist-entry.query';
 import { GetWaitlistEntriesQuery } from '../../../application/queries/get-waitlist-entries.query';
 import { GetWaitlistEntryQueryDto } from '../../../application/dto/get-waitlist-entry.query.dto';

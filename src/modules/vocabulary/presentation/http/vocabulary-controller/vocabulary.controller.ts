@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateVocabularyWordCommand } from '../../../application/commands/create-vocabulary-word.command';
 import { CreateVocabularyWordRequestDto } from '../../../application/dto/create-vocabulary-word.request.dto';
-import { ApiSuccessResponse } from '../../../../waitlist/presentation/http/api-success-response';
+import { ApiSuccessResponse } from '../../../../../shared/presentation/http/api-success-response';
 import { GetVocabularyWordByIdQuery } from '../../../application/queries/get-vocabulary-word-by-id.query';
 import { GetVocabularyWordByTermQuery } from '../../../application/queries/get-vocabulary-word-by-term.query';
 import { LanguageCode } from '../../../domain/entities/language-code';
