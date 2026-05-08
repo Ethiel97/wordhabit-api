@@ -19,17 +19,17 @@ export class VocabularyController {
   @Post()
   async createWord(@Body() body: CreateVocabularyWordRequestDto) {
     const result = await this.commandBus.execute(
-      new CreateVocabularyWordCommand(
-        body.term,
-        body.targetLanguage,
-        body.difficulty,
-        body.partOfSpeech,
-        body.definitions,
-        body.examples ?? [],
-        body.pronunciations ?? [],
-        body.synonyms ?? [],
-        body.themeSlugs ?? [],
-      ),
+      new CreateVocabularyWordCommand({
+        term: body.term,
+        targetLanguage: body.targetLanguage,
+        difficulty: body.difficulty,
+        partOfSpeech: body.partOfSpeech,
+        definitions: body.definitions,
+        examples: body.examples ?? [],
+        pronunciations: body.pronunciations ?? [],
+        synonyms: body.synonyms ?? [],
+        themeSlugs: body.themeSlugs ?? [],
+      }),
     );
 
     return ApiSuccessResponse.of(result);

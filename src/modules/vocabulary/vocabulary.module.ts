@@ -53,6 +53,6 @@ const queryHandlers = [
       useExisting: PrismaThemeRepository,
     },
   ],
-  exports: [THEME_LOOKUP_PORT],
+  exports: [THEME_LOOKUP_PORT, THEME_REPOSITORY],
 })
 export class VocabularyModule {}

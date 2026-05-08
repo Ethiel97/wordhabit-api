@@ -31,6 +31,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       response.status(exception.statusCode).json(
         ApiErrorResponse.of({
           code: exception.code,
+          status: exception.statusCode,
           message: exception.message,
           details: {
             path: request.url,
@@ -68,6 +69,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       response.status(status).json(
         ApiErrorResponse.of({
           code: this.mapHttpStatusToCode(status),
+          status: status,
           message,
           details: {
             path: request.url,
@@ -84,6 +86,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
       ApiErrorResponse.of({
         code: 'INTERNAL_SERVER_ERROR',
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'An unexpected internal server error occurred.',
         details: {
           path: request.url,

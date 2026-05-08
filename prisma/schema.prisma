@@ -73,15 +73,17 @@ model VocabularyWord {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
-  definitions    WordDefinition[]
-  examples       WordExample[]
-  pronunciations WordPronunciation[]
-  synonyms       WordSynonym[]
-  themes         VocabularyWordTheme[]
+  definitions          WordDefinition[]
+  examples             WordExample[]
+  pronunciations       WordPronunciation[]
+  synonyms             WordSynonym[]
+  themes               VocabularyWordTheme[]
+  dailyWordAssignments DailyWordAssignment[]
+  userWordProgresses   UserWordProgress[]
 
+  @@unique([normalizedTerm, targetLanguage])
   @@index([targetLanguage])
   @@index([normalizedTerm])
-  @@unique([normalizedTerm, targetLanguage])
   @@map("vocabulary_words")
 }
 
@@ -175,6 +177,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   userLearningProfiles UserLearningProfile[]
+  dailyWordAssignments DailyWordAssignment[]
+  userWordProgresses   UserWordProgress[]
 
   @@index([email])
   @@index([username])
@@ -192,7 +196,8 @@ model UserLearningProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  themes UserLearningProfileTheme[]
+  themes               UserLearningProfileTheme[]
+  dailyWordAssignments DailyWordAssignment[]
 
   @@unique([userId, targetLanguage])
   @@index([userId])
@@ -211,4 +216,41 @@ model UserLearningProfileTheme {
   @@id([userLearningProfileId, themeId])
   @@index([themeId])
   @@map("user_learning_profile_themes")
+}
+
+model DailyWordAssignment {
+  id                    String   @id @default(cuid())
+  userId                String
+  userLearningProfileId String
+  wordId                String
+  assignedFor           DateTime
+  createdAt             DateTime @default(now())
+
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userLearningProfile UserLearningProfile @relation(fields: [userLearningProfileId], references: [id], onDelete: Cascade)
+  word                VocabularyWord      @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, assignedFor])
+  @@index([userLearningProfileId])
+  @@index([wordId])
+  @@map("daily_word_assignments")
+}
+
+model UserWordProgress {
+  id             String    @id @default(cuid())
+  userId         String
+  wordId         String
+  masteryLevel   Int       @default(0)
+  reviewCount    Int       @default(0)
+  lastReviewedAt DateTime?
+  nextReviewAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, wordId])
+  @@index([nextReviewAt])
+  @@map("user_word_progress")
 }

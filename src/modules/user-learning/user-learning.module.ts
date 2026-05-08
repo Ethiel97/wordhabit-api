@@ -36,5 +36,6 @@ const queryHandlers = [
       useClass: PrismaUserLearningRepository,
     },
   ],
+  exports: [USER_LEARNING_REPOSITORY],
 })
 export class UserLearningModule {}

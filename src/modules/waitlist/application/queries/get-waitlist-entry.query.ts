@@ -12,6 +12,6 @@ export type GetWaitlistEntryResult = {
   email: string;
   source: string | null;
   status: WaitlistStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 } | null;
