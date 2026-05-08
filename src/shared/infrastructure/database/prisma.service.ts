@@ -1,14 +1,17 @@
 import { INestApplication, Injectable, OnModuleInit } from '@nestjs/common';
-
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../../../generated/prisma/client';
+import { Pool } from 'pg';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
-    const adapter = new PrismaPg({
+    const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
+      options: '-c search_path=wordhabit',
     });
+
+    const adapter = new PrismaPg(pool, { schema: 'wordhabit' });
 
     super({ adapter });
   }
