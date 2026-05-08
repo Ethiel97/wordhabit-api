@@ -115,60 +115,13 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
     }
 
     return {
-      word: {
-        id: aggregate.id,
-        term: aggregate.term,
-        normalizedTerm: aggregate.normalizedTerm,
-        targetLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
-          aggregate.targetLanguage,
-        ),
-        difficulty: PrismaVocabularyMapper.toDomainDifficulty(
-          aggregate.difficulty,
-        ),
-        partOfSpeech: PrismaVocabularyMapper.toDomainPartOfSpeech(
-          aggregate.partOfSpeech,
-        ),
-        status: PrismaVocabularyMapper.toDomainStatus(aggregate.status),
-        createdAt: aggregate.createdAt,
-        updatedAt: aggregate.updatedAt,
-      },
-      definitions: aggregate.definitions.map((def) => ({
-        id: def.id,
-        wordId: def.wordId,
-        explanationLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
-          def.explanationLanguage,
-        ),
-        text: def.text,
-        register: def.register,
-        createdAt: def.createdAt,
-      })),
-      examples: aggregate.examples.map((ex) => ({
-        id: ex.id,
-        createdAt: ex.createdAt,
-        wordId: ex.wordId,
-        sentence: ex.sentence,
-        translation: ex.translation,
-        translationLanguage:
-          ex.translationLanguage !== null
-            ? PrismaVocabularyMapper.toDomainLanguageCode(
-                ex.translationLanguage,
-              )
-            : null,
-      })),
-      pronunciations: aggregate.pronunciations.map((pr) => ({
-        id: pr.id,
-        phonetic: pr.phonetic,
-        audioUrl: pr.audioUrl,
-        provider: pr.provider,
-        createdAt: pr.createdAt,
-        wordId: pr.wordId,
-      })),
-      synonyms: aggregate.synonyms.map((syn) => ({
-        id: syn.id,
-        wordId: syn.wordId,
-        value: syn.value,
-        createdAt: syn.createdAt,
-      })),
+      ...PrismaVocabularyMapper.toDomainAggregate({
+        word: aggregate,
+        definitions: aggregate.definitions,
+        examples: aggregate.examples,
+        pronunciations: aggregate.pronunciations,
+        synonyms: aggregate.synonyms,
+      }),
       // themes: aggregate.themes.map((t) => t.theme.slug),
     };
   }
@@ -195,60 +148,13 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
     }
 
     return {
-      word: {
-        id: aggregate.id,
-        term: aggregate.term,
-        normalizedTerm: aggregate.normalizedTerm,
-        targetLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
-          aggregate.targetLanguage,
-        ),
-        difficulty: PrismaVocabularyMapper.toDomainDifficulty(
-          aggregate.difficulty,
-        ),
-        partOfSpeech: PrismaVocabularyMapper.toDomainPartOfSpeech(
-          aggregate.partOfSpeech,
-        ),
-        status: PrismaVocabularyMapper.toDomainStatus(aggregate.status),
-        createdAt: aggregate.createdAt,
-        updatedAt: aggregate.updatedAt,
-      },
-      definitions: aggregate.definitions.map((def) => ({
-        id: def.id,
-        wordId: def.wordId,
-        explanationLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
-          def.explanationLanguage,
-        ),
-        text: def.text,
-        register: def.register,
-        createdAt: def.createdAt,
-      })),
-      examples: aggregate.examples.map((ex) => ({
-        id: ex.id,
-        createdAt: ex.createdAt,
-        wordId: ex.wordId,
-        sentence: ex.sentence,
-        translation: ex.translation,
-        translationLanguage:
-          ex.translationLanguage !== null
-            ? PrismaVocabularyMapper.toDomainLanguageCode(
-                ex.translationLanguage,
-              )
-            : null,
-      })),
-      pronunciations: aggregate.pronunciations.map((pr) => ({
-        id: pr.id,
-        phonetic: pr.phonetic,
-        audioUrl: pr.audioUrl,
-        provider: pr.provider,
-        createdAt: pr.createdAt,
-        wordId: pr.wordId,
-      })),
-      synonyms: aggregate.synonyms.map((syn) => ({
-        id: syn.id,
-        wordId: syn.wordId,
-        value: syn.value,
-        createdAt: syn.createdAt,
-      })),
+      ...PrismaVocabularyMapper.toDomainAggregate({
+        word: aggregate,
+        definitions: aggregate.definitions,
+        examples: aggregate.examples,
+        pronunciations: aggregate.pronunciations,
+        synonyms: aggregate.synonyms,
+      }),
       themes: aggregate.themes.map((t) => t.theme.slug),
     };
   }

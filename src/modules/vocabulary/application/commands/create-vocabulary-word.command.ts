@@ -4,19 +4,21 @@ import { LanguageCode } from '../../domain/entities/language-code';
 import { PartOfSpeech } from '../../domain/entities/part-of-speech';
 
 export class CreateVocabularyWordCommand extends Command<CreateVocabularyWordResult> {
-  constructor(
-    public readonly term: string,
-    public readonly targetLanguage: LanguageCode,
-    public readonly difficulty: WordDifficulty,
-    public readonly partOfSpeech: PartOfSpeech,
-    public readonly definitions: CreateVocabularyWordDefinitionInput[] = [],
-    public readonly examples: CreateVocabularyWordExampleInput[] = [],
-    public readonly pronunciations: CreateVocabularyWordPronunciationInput[],
-    public readonly synonyms: CreateVocabularyWordSynonymInput[] = [],
-    public readonly themeSlugs: string[] = [],
-  ) {
+  constructor(public readonly word: CreateVocabularyWordInput) {
     super();
   }
+}
+
+export interface CreateVocabularyWordInput {
+  term: string;
+  targetLanguage: LanguageCode;
+  difficulty: WordDifficulty;
+  partOfSpeech: PartOfSpeech;
+  definitions: CreateVocabularyWordDefinitionInput[];
+  examples: CreateVocabularyWordExampleInput[];
+  pronunciations: CreateVocabularyWordPronunciationInput[];
+  synonyms: CreateVocabularyWordSynonymInput[];
+  themeSlugs: string[];
 }
 
 export interface CreateVocabularyWordDefinitionInput {

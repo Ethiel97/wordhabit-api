@@ -33,13 +33,14 @@ export interface GeneratedVocabularyWord {
   examples: GeneratedVocabularyExample[];
   pronunciations: GeneratedVocabularyPronunciation[];
   synonyms: GeneratedVocabularySynonym[];
+  themeSlugs: string[];
 }
 
 export interface GenerateVocabularyBatchInput {
   targetLanguage: LanguageCode;
   explanationLanguage?: LanguageCode;
   count: number;
-  theme?: string;
+  allowedThemeSlugs?: string[];
 }
 
 export interface GeneratedVocabularyBatch {

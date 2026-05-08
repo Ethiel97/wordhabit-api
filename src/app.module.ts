@@ -8,6 +8,8 @@ import { VocabularyModule } from './modules/vocabulary/vocabulary.module';
 import { VocabularyIngestionModule } from './modules/vocabulary-ingestion/vocabulary-ingestion.module';
 import { QueueModule } from './shared/infrastructure/queue/queue.module';
 import { HealthModule } from './modules/health/health.module';
+import { UserLearningModule } from './modules/user-learning/user-learning.module';
+import { LearningModule } from './modules/learning/learning.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { HealthModule } from './modules/health/health.module';
     HealthModule,
     DatabaseModule,
     QueueModule,
+    LearningModule,
+    UserLearningModule,
     VocabularyModule,
     VocabularyIngestionModule,
     WaitlistModule,

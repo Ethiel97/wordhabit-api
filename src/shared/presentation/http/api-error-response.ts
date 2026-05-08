@@ -2,6 +2,7 @@ export interface ApiErrorPayload {
   code: string;
   message: string;
   details: unknown;
+  status: number;
 }
 
 export class ApiErrorResponse {

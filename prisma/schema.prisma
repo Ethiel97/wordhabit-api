@@ -4,11 +4,11 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../generated/prisma"
-  moduleFormat = "cjs"
+  provider               = "prisma-client"
+  output                 = "../generated/prisma"
+  moduleFormat           = "cjs"
   generatedFileExtension = "ts"
-  importFileExtension = "js"
+  importFileExtension    = "js"
 }
 
 datasource db {
@@ -73,14 +73,17 @@ model VocabularyWord {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
-  definitions    WordDefinition[]
-  examples       WordExample[]
-  pronunciations WordPronunciation[]
-  synonyms       WordSynonym[]
-  themes         VocabularyWordTheme[]
+  definitions          WordDefinition[]
+  examples             WordExample[]
+  pronunciations       WordPronunciation[]
+  synonyms             WordSynonym[]
+  themes               VocabularyWordTheme[]
+  dailyWordAssignments DailyWordAssignment[]
+  userWordProgresses   UserWordProgress[]
 
-  @@index([targetLanguage])
   @@unique([normalizedTerm, targetLanguage])
+  @@index([targetLanguage])
+  @@index([normalizedTerm])
   @@map("vocabulary_words")
 }
 
@@ -140,25 +143,114 @@ model WordSynonym {
 }
 
 model Theme {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
   description String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  vocabularyWords VocabularyWordTheme[]
+  vocabularyWords           VocabularyWordTheme[]
+  userLearningProfileThemes UserLearningProfileTheme[]
+
+  @@index([slug])
   @@map("themes")
 }
 
 model VocabularyWordTheme {
-  wordId    String
-  themeId   String
+  wordId  String
+  themeId String
 
-  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  word  VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
   theme Theme          @relation(fields: [themeId], references: [id], onDelete: Cascade)
 
   @@id([wordId, themeId])
   @@index([themeId])
   @@map("vocabulary_word_themes")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userLearningProfiles UserLearningProfile[]
+  dailyWordAssignments DailyWordAssignment[]
+  userWordProgresses   UserWordProgress[]
+
+  @@index([email])
+  @@index([username])
+  @@map("users")
+}
+
+model UserLearningProfile {
+  id                String       @id @default(cuid())
+  userId            String       @unique
+  isActive          Boolean      @default(true)
+  interfaceLanguage LanguageCode
+  targetLanguage    LanguageCode
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  themes               UserLearningProfileTheme[]
+  dailyWordAssignments DailyWordAssignment[]
+
+  @@unique([userId, targetLanguage])
+  @@index([userId])
+  @@index(id)
+  @@index([targetLanguage])
+  @@map("user_learning_profiles")
+}
+
+model UserLearningProfileTheme {
+  userLearningProfileId String
+  themeId               String
+
+  userLearningProfile UserLearningProfile @relation(fields: [userLearningProfileId], references: [id], onDelete: Cascade)
+  theme               Theme               @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([userLearningProfileId, themeId])
+  @@index([themeId])
+  @@map("user_learning_profile_themes")
+}
+
+model DailyWordAssignment {
+  id                    String   @id @default(cuid())
+  userId                String
+  userLearningProfileId String
+  wordId                String
+  assignedFor           DateTime
+  createdAt             DateTime @default(now())
+
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userLearningProfile UserLearningProfile @relation(fields: [userLearningProfileId], references: [id], onDelete: Cascade)
+  word                VocabularyWord      @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, assignedFor])
+  @@index([userLearningProfileId])
+  @@index([wordId])
+  @@map("daily_word_assignments")
+}
+
+model UserWordProgress {
+  id             String    @id @default(cuid())
+  userId         String
+  wordId         String
+  masteryLevel   Int       @default(0)
+  reviewCount    Int       @default(0)
+  lastReviewedAt DateTime?
+  nextReviewAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, wordId])
+  @@index([nextReviewAt])
+  @@map("user_word_progress")
 }

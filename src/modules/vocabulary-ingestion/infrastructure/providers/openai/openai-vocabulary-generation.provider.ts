@@ -17,33 +17,67 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
   ): Promise<GeneratedVocabularyBatch> {
     const explanationLanguage = input.explanationLanguage ?? 'EN';
 
+    console.log('allowedThemeSlugs:', input?.allowedThemeSlugs);
+
     const response = await this.client.responses.create({
       model: 'gpt-4.1-mini',
+      temperature: 1.1,
       input: [
         {
           role: 'system',
           content:
-            'You generate high-quality structured vocabulary learning data. Return only valid JSON matching the provided schema.',
+            'You generate high-quality, top-notch structured vocabulary learning data. Return only valid JSON matching the provided schema.',
         },
         {
           role: 'user',
+
           content: [
             {
               type: 'input_text',
               text: [
-                `Generate ${input.count} distinct, useful vocabulary entries.`,
+                `Generate ${input.count} distinct, high-quality vocabulary entries.`,
                 `Target language: ${input.targetLanguage}.`,
+                `Allowed themes: ${input?.allowedThemeSlugs?.join(', ')}`,
+
+                'Generate vocabulary that feels intellectually valuable, expressive, modern, and culturally relevant.',
+                'Avoid generic textbook vocabulary and oversimplified beginner words.',
+                'Even BEGINNER words should feel useful, refined, nuanced, and memorable.',
+                'Prioritize words commonly used by educated native speakers in real conversations, media, work, culture, psychology, technology, society, and modern life.',
+
+                'Do not generate trivial words such as "good", "bad", "happy", "big", "small", "nice", "book", "house", unless absolutely necessary.',
+                'Prefer vocabulary with conceptual richness, emotional nuance, practical relevance, or expressive power.',
+
+                'Include a balanced mix of:',
+                '- emotionally expressive vocabulary',
+                '- professional vocabulary',
+                '- social and conversational vocabulary',
+                '- abstract and conceptual vocabulary',
+                '- culturally relevant modern vocabulary',
+                '- intellectually useful everyday vocabulary',
+
+                'Avoid obscure archaic words, slang with short lifespan, and highly domain-specific jargon.',
+
+                'Each item must include themeSlugs.',
+                'themeSlugs must only contain values from the allowed theme slugs list.',
+                'Each item should include one to three themeSlugs.',
+                'If a term could fit multiple themes, choose the most relevant ones.',
+
                 `Explanation language: ${explanationLanguage}.`,
-                input.theme
-                  ? `Theme: ${input.theme}.`
-                  : 'Theme: general useful vocabulary.',
-                'Avoid duplicates, trivial variants, proper nouns, and obscure archaic words.',
+
+                'Definitions must be precise, natural, concise, and written like a high-quality dictionary for language learners.',
+                'Definitions should explain nuance and usage naturally, not mechanically.',
+
+                'Example sentences must sound authentic and natural.',
+                'Avoid robotic educational examples.',
+                'Examples should resemble real native usage from conversations, work, media, books, or daily life.',
+
                 'Each item must include at least one definition in the target language.',
                 'Each item must include at least one natural example sentence in the target language.',
-                'If explanationLanguage is different from targetLanguage, include at least one additional definition in the explanation language.',
-                'Example sentences must always be written in the target language.',
-                'If explanationLanguage is different from targetLanguage, example translations should be written in the explanation language.',
-                'If explanationLanguage is the same as targetLanguage, translation may be null.',
+                'Each item must include at least one synonym in the target language.',
+
+                'If explanationLanguage differs from targetLanguage, include at least one additional translated definition.',
+                'Example translations should be fluent and natural.',
+
                 'Pronunciations may omit audioUrl if unavailable.',
               ].join(' '),
             },
@@ -74,6 +108,7 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
                     'examples',
                     'pronunciations',
                     'synonyms',
+                    'themeSlugs',
                   ],
                   properties: {
                     term: { type: 'string' },
@@ -154,6 +189,13 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
                         properties: {
                           value: { type: 'string' },
                         },
+                      },
+                    },
+                    themeSlugs: {
+                      type: 'array',
+                      items: {
+                        type: 'string',
+                        enum: input.allowedThemeSlugs,
                       },
                     },
                   },

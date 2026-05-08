@@ -7,6 +7,10 @@ import { WaitlistEntry } from '../../domain/entities/wailist-entry';
 export class PrismaWaitlistRepository implements WaitlistRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  count(): Promise<number> {
+    return this.prisma.waitlistEntry.count();
+  }
+
   findAll(): Promise<WaitlistEntry[]> {
     return this.prisma.waitlistEntry.findMany();
   }
