@@ -34,7 +34,7 @@ export class GenerateVocabularyBatchProcessor extends WorkerHost {
   }
 
   async process(job: Job<any>) {
-    console.log(job.name);
+    this.logger.log(`Processing job ${job.id} name: ${job.name}`);
     if (job.name !== GENERATE_VOCABULARY_BATCH_JOB) return;
 
     this.logger.log(`Processing job ${job.id}`);

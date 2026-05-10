@@ -32,6 +32,16 @@ export class VocabularyDailyScheduler {
         explanationLanguage: LanguageCode.EN,
         count: 30,
       },
+      {
+        targetLanguage: LanguageCode.ES,
+        explanationLanguage: LanguageCode.EN,
+        count: 30,
+      },
+      /*{
+        targetLanguage: LanguageCode.DE,
+        explanationLanguage: LanguageCode.EN,
+        count: 30,
+      },*/
     ];
 
     for (const payload of payloads) {

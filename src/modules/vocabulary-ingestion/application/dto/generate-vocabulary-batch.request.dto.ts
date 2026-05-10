@@ -13,6 +13,6 @@ export class GenerateVocabularyBatchRequestDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(50)
+  @Max(30)
   count: number = 20;
 }
