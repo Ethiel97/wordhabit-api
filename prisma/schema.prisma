@@ -39,6 +39,8 @@ enum LanguageCode {
   EN
   ES
   FR
+  DE
+  IT
 }
 
 enum VocabularyWordStatus {
@@ -60,6 +62,14 @@ enum PartOfSpeech {
   ADVERB
   EXPRESSION
   OTHER
+}
+
+enum UserWordProgressStatus {
+  NEW
+  SEEN
+  LEARNING
+  MASTERED
+  SKIPPED
 }
 
 model VocabularyWord {
@@ -237,11 +247,14 @@ model DailyWordAssignment {
 }
 
 model UserWordProgress {
-  id             String    @id @default(cuid())
-  userId         String
-  wordId         String
-  masteryLevel   Int       @default(0)
-  reviewCount    Int       @default(0)
+  id           String                 @id @default(cuid())
+  userId       String
+  wordId       String
+  status       UserWordProgressStatus @default(NEW)
+  masteryLevel Int                    @default(0)
+  reviewCount  Int                    @default(0)
+
+  seenAt         DateTime?
   lastReviewedAt DateTime?
   nextReviewAt   DateTime?
   createdAt      DateTime  @default(now())
@@ -251,6 +264,7 @@ model UserWordProgress {
   word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
 
   @@unique([userId, wordId])
+  @@index([userId, status])
   @@index([nextReviewAt])
   @@map("user_word_progress")
 }
