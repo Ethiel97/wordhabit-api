@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateVocabularyWordCommand } from '../../../application/commands/create-vocabulary-word.command';
 import { CreateVocabularyWordRequestDto } from '../../../application/dto/create-vocabulary-word.request.dto';
-import { ApiSuccessResponse } from '../../../../waitlist/presentation/http/api-success-response';
+import { ApiSuccessResponse } from '../../../../../shared/presentation/http/api-success-response';
 import { GetVocabularyWordByIdQuery } from '../../../application/queries/get-vocabulary-word-by-id.query';
 import { GetVocabularyWordByTermQuery } from '../../../application/queries/get-vocabulary-word-by-term.query';
 import { LanguageCode } from '../../../domain/entities/language-code';
@@ -19,17 +19,17 @@ export class VocabularyController {
   @Post()
   async createWord(@Body() body: CreateVocabularyWordRequestDto) {
     const result = await this.commandBus.execute(
-      new CreateVocabularyWordCommand(
-        body.term,
-        body.targetLanguage,
-        body.difficulty,
-        body.partOfSpeech,
-        body.definitions,
-        body.examples ?? [],
-        body.pronunciations ?? [],
-        body.synonyms ?? [],
-        body.themeSlugs ?? [],
-      ),
+      new CreateVocabularyWordCommand({
+        term: body.term,
+        targetLanguage: body.targetLanguage,
+        difficulty: body.difficulty,
+        partOfSpeech: body.partOfSpeech,
+        definitions: body.definitions,
+        examples: body.examples ?? [],
+        pronunciations: body.pronunciations ?? [],
+        synonyms: body.synonyms ?? [],
+        themeSlugs: body.themeSlugs ?? [],
+      }),
     );
 
     return ApiSuccessResponse.of(result);

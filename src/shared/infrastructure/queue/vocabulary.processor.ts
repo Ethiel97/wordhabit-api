@@ -10,6 +10,8 @@ import {
   GENERATE_VOCABULARY_BATCH_JOB,
   VOCABULARY_QUEUE,
 } from '../../../modules/vocabulary-ingestion/infrastructure/queue/vocabulary-queue.constants';
+import type { ThemeRepository } from '../../../modules/vocabulary/domain/repositories/theme.repository';
+import { THEME_REPOSITORY } from '../../../modules/vocabulary/domain/repositories/theme.repository';
 
 @Processor(VOCABULARY_QUEUE)
 export class GenerateVocabularyBatchProcessor extends WorkerHost {
@@ -19,39 +21,52 @@ export class GenerateVocabularyBatchProcessor extends WorkerHost {
     @Inject(VOCABULARY_GENERATION_PROVIDER)
     private readonly provider: VocabularyGenerationProvider,
     private readonly commandBus: CommandBus,
+    @Inject(THEME_REPOSITORY)
+    private readonly themeRepository: ThemeRepository,
   ) {
     super();
   }
 
+  async findThemeSlugs(): Promise<string[]> {
+    return await this.themeRepository
+      .list()
+      .then((themes) => themes.map((theme) => theme.slug));
+  }
+
   async process(job: Job<any>) {
-    console.log(job.name);
+    this.logger.log(`Processing job ${job.id} name: ${job.name}`);
     if (job.name !== GENERATE_VOCABULARY_BATCH_JOB) return;
 
     this.logger.log(`Processing job ${job.id}`);
 
-    const { targetLanguage, explanationLanguage, count, theme } =
+    const { targetLanguage, explanationLanguage, count } =
       job.data as GenerateVocabularyBatchRequestDto;
+
+    const allowedThemeSlugs = await this.findThemeSlugs();
 
     const result = await this.provider.generateVocabularyBatch({
       targetLanguage,
       explanationLanguage,
       count,
-      theme,
+      allowedThemeSlugs,
     });
+
+    console.log('Vocabulary processor result: ', result.items);
 
     for (const item of result.items) {
       try {
         await this.commandBus.execute(
-          new CreateVocabularyWordCommand(
-            item.term,
-            item.targetLanguage,
-            item.difficulty,
-            item.partOfSpeech,
-            item.definitions,
-            item.examples,
-            item.pronunciations,
-            item.synonyms,
-          ),
+          new CreateVocabularyWordCommand({
+            term: item.term,
+            targetLanguage: item.targetLanguage,
+            difficulty: item.difficulty,
+            partOfSpeech: item.partOfSpeech,
+            definitions: item.definitions,
+            examples: item.examples,
+            pronunciations: item.pronunciations,
+            synonyms: item.synonyms,
+            themeSlugs: item.themeSlugs,
+          }),
         );
       } catch (error: any) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call

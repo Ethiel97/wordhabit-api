@@ -4,12 +4,17 @@ import { WaitlistController } from './presentation/http/waitlist-controller/wait
 import { JoinWaitlistHandler } from './application/handlers/join-waitlist.handler';
 import { PrismaWaitlistRepository } from './infrastructure/persistence/prisma-waitlist.repository';
 import { WAITLIST_REPOSITORY } from './domain/repositories/waitlist.repository';
+import { GetWaitlistCountHandler } from './application/handlers/get-waitlist-count.handler';
 import { GetWaitlistEntryHandler } from './application/handlers/get-waitlist-entry.handler';
 import { GetWaitlistEntriesHandler } from './application/handlers/get-waitlist-entries.handler';
 
 const commandHandlers = [JoinWaitlistHandler];
 
-const queryHandlers = [GetWaitlistEntriesHandler, GetWaitlistEntryHandler];
+const queryHandlers = [
+  GetWaitlistCountHandler,
+  GetWaitlistEntriesHandler,
+  GetWaitlistEntryHandler,
+];
 
 @Module({
   imports: [CqrsModule],

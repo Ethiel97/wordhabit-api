@@ -23,11 +23,11 @@ export class CreateVocabularyWordHandler implements ICommandHandler<
   async execute(
     command: CreateVocabularyWordCommand,
   ): Promise<CreateVocabularyWordResult> {
-    const normalizedTerm = command.term.toLowerCase().trim();
+    const normalizedTerm = command.word.term.toLowerCase().trim();
 
     const existing = await this.vocabularyRepository.findByNormalizedTerm({
       normalizedTerm,
-      targetLanguage: command.targetLanguage,
+      targetLanguage: command.word.targetLanguage,
     });
 
     if (existing) {
@@ -37,30 +37,30 @@ export class CreateVocabularyWordHandler implements ICommandHandler<
     }
 
     const aggregate = await this.vocabularyRepository.createWord({
-      term: command.term.trim(),
+      term: command.word.term.trim(),
       normalizedTerm,
-      targetLanguage: command.targetLanguage,
-      difficulty: command.difficulty,
-      partOfSpeech: command.partOfSpeech,
-      definitions: command.definitions.map((def) => ({
+      targetLanguage: command.word.targetLanguage,
+      difficulty: command.word.difficulty,
+      partOfSpeech: command.word.partOfSpeech,
+      definitions: command.word.definitions.map((def) => ({
         explanationLanguage: def.explanationLanguage as LanguageCode,
         text: def.text.trim(),
         register: def.register?.trim() ?? null,
       })),
-      examples: command.examples.map((ex) => ({
+      examples: command.word.examples.map((ex) => ({
         sentence: ex.sentence.trim(),
         translation: ex.translation?.trim() ?? null,
         translationLanguage: ex.translationLanguage ?? null,
       })),
-      pronunciations: command.pronunciations.map((pr) => ({
+      pronunciations: command.word.pronunciations.map((pr) => ({
         phonetic: pr.phonetic?.trim() ?? null,
         audioUrl: pr.audioUrl?.trim() ?? null,
         provider: pr.provider?.trim() ?? null,
       })),
-      synonyms: command.synonyms.map((syn) => ({
+      synonyms: command.word.synonyms.map((syn) => ({
         value: syn.value.trim(),
       })),
-      themeSlugs: command.themeSlugs,
+      themeSlugs: command.word.themeSlugs,
     });
 
     return {

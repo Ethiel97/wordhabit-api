@@ -32,8 +32,6 @@ export class GetWaitlistEntryHandler implements IQueryHandler<
       email: entry.email,
       source: entry.source,
       status: entry.status,
-      createdAt: entry.createdAt,
-      updatedAt: entry.updatedAt,
     };
   }
 }

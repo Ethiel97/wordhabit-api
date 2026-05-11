@@ -14,6 +14,9 @@ import {
   CreateVocabularyWordResult,
 } from '../../../vocabulary/application/commands/create-vocabulary-word.command';
 
+import type { ThemeRepository } from '../../../vocabulary/domain/repositories/theme.repository';
+import { THEME_REPOSITORY } from '../../../vocabulary/domain/repositories/theme.repository';
+
 @CommandHandler(GenerateVocabularyBatchCommand)
 export class GenerateVocabularyBatchHandler implements ICommandHandler<
   GenerateVocabularyBatchCommand,
@@ -23,16 +26,26 @@ export class GenerateVocabularyBatchHandler implements ICommandHandler<
     @Inject(VOCABULARY_GENERATION_PROVIDER)
     private readonly generationProvider: VocabularyGenerationProvider,
     private readonly commandBus: CommandBus,
+    @Inject(THEME_REPOSITORY)
+    private readonly themeRepository: ThemeRepository,
   ) {}
+
+  async findThemeSlugs(): Promise<string[]> {
+    return await this.themeRepository
+      .list()
+      .then((themes) => themes.map((theme) => theme.slug));
+  }
 
   async execute(
     command: GenerateVocabularyBatchCommand,
   ): Promise<GenerateVocabularyBatchResult> {
+    const allowedThemeSlugs = await this.findThemeSlugs();
+
     const generated = await this.generationProvider.generateVocabularyBatch({
       targetLanguage: command.targetLanguage,
       explanationLanguage: command.explanationLanguage,
       count: command.count,
-      theme: command.theme,
+      allowedThemeSlugs,
     });
 
     const results: GenerateVocabularyBatchItemResult[] = [];
@@ -59,16 +72,17 @@ export class GenerateVocabularyBatchHandler implements ICommandHandler<
 
         const created: CreateVocabularyWordResult =
           await this.commandBus.execute(
-            new CreateVocabularyWordCommand(
-              item.term,
-              item.targetLanguage,
-              item.difficulty,
-              item.partOfSpeech,
-              item.definitions,
-              item.examples ?? [],
-              item.pronunciations ?? [],
-              item.synonyms ?? [],
-            ),
+            new CreateVocabularyWordCommand({
+              term: item.term,
+              targetLanguage: item.targetLanguage,
+              difficulty: item.difficulty,
+              partOfSpeech: item.partOfSpeech,
+              definitions: item.definitions,
+              examples: item.examples ?? [],
+              pronunciations: item.pronunciations ?? [],
+              synonyms: item.synonyms ?? [],
+              themeSlugs: item.themeSlugs ?? [],
+            }),
           );
 
         results.push({

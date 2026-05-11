@@ -6,6 +6,7 @@ import { PrismaVocabularyRepository } from './infrastructure/persistence/prisma-
 import { PrismaThemeRepository } from './infrastructure/persistence/prisma-theme.repository';
 import { VOCABULARY_REPOSITORY } from './domain/repositories/vocabulary.repository';
 import { THEME_REPOSITORY } from './domain/repositories/theme.repository';
+import { THEME_LOOKUP_PORT } from '../../shared/application/ports/theme-lookup.port';
 import { CreateVocabularyWordHandler } from './application/handlers/create-vocabulary-word.handler';
 import { GetVocabularyWordByIdHandler } from './application/handlers/get-vocabulary-word-by-id.handler';
 import { GetVocabularyWordByTermHandler } from './application/handlers/get-vocabulary-word-by-term.handler';
@@ -47,6 +48,11 @@ const queryHandlers = [
       provide: THEME_REPOSITORY,
       useExisting: PrismaThemeRepository,
     },
+    {
+      provide: THEME_LOOKUP_PORT,
+      useExisting: PrismaThemeRepository,
+    },
   ],
+  exports: [THEME_LOOKUP_PORT, THEME_REPOSITORY],
 })
 export class VocabularyModule {}

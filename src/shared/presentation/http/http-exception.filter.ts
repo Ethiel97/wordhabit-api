@@ -16,6 +16,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiErrorResponse } from './api-error-response';
+import { AppError } from '../../application/errors/app-error';
 
 import type { Request, Response } from 'express';
 
@@ -25,6 +26,22 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
+
+    if (exception instanceof AppError) {
+      response.status(exception.statusCode).json(
+        ApiErrorResponse.of({
+          code: exception.code,
+          status: exception.statusCode,
+          message: exception.message,
+          details: {
+            path: request.url,
+            ...(exception.details ?? {}),
+          },
+        }),
+      );
+
+      return;
+    }
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
@@ -52,6 +69,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       response.status(status).json(
         ApiErrorResponse.of({
           code: this.mapHttpStatusToCode(status),
+          status: status,
           message,
           details: {
             path: request.url,
@@ -68,6 +86,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
       ApiErrorResponse.of({
         code: 'INTERNAL_SERVER_ERROR',
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'An unexpected internal server error occurred.',
         details: {
           path: request.url,

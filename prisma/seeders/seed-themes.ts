@@ -1,82 +1,146 @@
 import { PrismaClient } from '../../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import 'dotenv/config';
 
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({
-    connectionString: process.env.DATABASE_URL,
-  }),
+const options =
+  process.env.NODE_ENV === 'production'
+    ? '-c search_path=wordhabit'
+    : undefined;
+
+const schema = process.env.NODE_ENV === 'production' ? 'wordhabit' : 'public';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  options,
 });
+
+const adapter = new PrismaPg(pool, { schema });
+
+const prisma = new PrismaClient({
+  adapter,
+});
+
 const themesData = [
   {
-    name: 'General',
-    slug: 'general',
-    description: 'General vocabulary words across various topics.',
+    name: 'Business & Entrepreneurship',
+    slug: 'business-entrepreneurship',
+    description:
+      'Vocabulary related to startups, leadership, finance, strategy, and entrepreneurship.',
   },
   {
-    name: 'Technology',
-    slug: 'technology',
-    description: 'Words related to technology and computing.',
+    name: 'Technology & AI',
+    slug: 'technology-ai',
+    description:
+      'Advanced vocabulary around software engineering, artificial intelligence, and innovation.',
   },
   {
-    name: 'Science',
-    slug: 'science',
-    description: 'Words related to science and mathematics.',
+    name: 'Psychology & Human Behavior',
+    slug: 'psychology-human-behavior',
+    description:
+      'Words related to cognition, emotions, persuasion, and human behavior.',
   },
   {
-    name: 'Health',
-    slug: 'health',
-    description: 'Words related to health and well-being.',
+    name: 'Philosophy & Critical Thinking',
+    slug: 'philosophy-critical-thinking',
+    description:
+      'Concepts and vocabulary from philosophy, logic, reasoning, and intellectual discourse.',
   },
   {
-    name: 'Sports',
-    slug: 'sports',
-    description: 'Words related to sports and fitness.',
+    name: 'Self-Improvement & Productivity',
+    slug: 'self-improvement-productivity',
+    description:
+      'Vocabulary focused on habits, discipline, focus, growth, and personal development.',
   },
   {
-    name: 'Geography',
-    slug: 'geography',
-    description: 'Words related to geography and the world.',
+    name: 'Science & Space',
+    slug: 'science-space',
+    description:
+      'Words related to physics, biology, chemistry, astronomy, and scientific exploration.',
   },
   {
-    name: 'History',
-    slug: 'history',
-    description: 'Words related to history and culture.',
+    name: 'Health & Wellness',
+    slug: 'health-wellness',
+    description:
+      'Vocabulary around fitness, nutrition, mental health, and well-being.',
   },
   {
-    name: 'Art',
-    slug: 'art',
-    description: 'Words related to art and creativity.',
+    name: 'Travel & Cultures',
+    slug: 'travel-cultures',
+    description:
+      'Words inspired by travel, global cultures, geography, and exploration.',
   },
   {
-    name: 'Music',
-    slug: 'music',
-    description: 'Words related to music and the art of music.',
+    name: 'Cinema & Storytelling',
+    slug: 'cinema-storytelling',
+    description:
+      'Vocabulary from films, storytelling, narratives, and creative writing.',
   },
   {
-    name: 'Literature',
-    slug: 'literature',
-    description: 'Words related to literature and writing.',
+    name: 'Luxury & Lifestyle',
+    slug: 'luxury-lifestyle',
+    description:
+      'Elegant and refined vocabulary related to luxury, aesthetics, and modern lifestyle.',
   },
   {
-    name: 'Philosophy',
-    slug: 'philosophy',
-    description: 'Words related to philosophy and theories.',
+    name: 'Politics & Geopolitics',
+    slug: 'politics-geopolitics',
+    description:
+      'Vocabulary related to politics, diplomacy, power structures, and world affairs.',
   },
   {
-    name: 'Travel',
-    slug: 'travel',
-    description: 'Words related to travel and the outdoors.',
+    name: 'Art & Creativity',
+    slug: 'art-creativity',
+    description:
+      'Words connected to artistic expression, design, imagination, and creativity.',
   },
   {
-    name: 'Politics',
-    slug: 'politics',
-    description: 'Words related to politics and government.',
+    name: 'Music & Performance',
+    slug: 'music-performance',
+    description:
+      'Vocabulary related to music, instruments, performance, and artistic production.',
   },
   {
-    name: 'Other',
-    slug: 'other',
-    description: 'Various words not fitting into any other category.',
+    name: 'Sports & Competition',
+    slug: 'sports-competition',
+    description:
+      'Words related to sports, discipline, performance, and competitive mindset.',
+  },
+  {
+    name: 'Nature & Environment',
+    slug: 'nature-environment',
+    description:
+      'Vocabulary inspired by nature, climate, wildlife, and environmental topics.',
+  },
+  {
+    name: 'History & Civilizations',
+    slug: 'history-civilizations',
+    description:
+      'Words rooted in history, empires, civilizations, and historical movements.',
+  },
+  {
+    name: 'Social Media & Internet Culture',
+    slug: 'social-media-internet-culture',
+    description:
+      'Modern vocabulary shaped by online culture, trends, and digital communication.',
+  },
+  {
+    name: 'Relationships & Communication',
+    slug: 'relationships-communication',
+    description:
+      'Vocabulary around interpersonal relationships, communication, and social dynamics.',
+  },
+  {
+    name: 'Finance & Investing',
+    slug: 'finance-investing',
+    description:
+      'Words related to investing, wealth, economics, and financial literacy.',
+  },
+  {
+    name: 'Advanced & Rare Vocabulary',
+    slug: 'advanced-rare-vocabulary',
+    description:
+      'Sophisticated, elegant, and uncommon words for ambitious learners.',
   },
 ];
 

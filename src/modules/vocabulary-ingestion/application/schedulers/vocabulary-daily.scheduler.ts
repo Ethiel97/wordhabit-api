@@ -17,21 +17,31 @@ export class VocabularyDailyScheduler {
     name: 'dailyVocabularyGeneration',
     timeZone: 'Europe/Paris',
     waitForCompletion: true,
-    disabled: true,
+    //enable on Production, keep disabled on staging to avoid unnecessary costs
+    disabled: process.env.NODE_ENV !== 'production',
   })
   enqueueGeneration() {
     const payloads = [
       {
         targetLanguage: LanguageCode.EN,
         explanationLanguage: LanguageCode.FR,
-        count: 20,
-        theme: 'useful vocabulary',
+        count: 30,
       },
       {
         targetLanguage: LanguageCode.FR,
         explanationLanguage: LanguageCode.EN,
-        count: 20,
+        count: 30,
       },
+      {
+        targetLanguage: LanguageCode.ES,
+        explanationLanguage: LanguageCode.EN,
+        count: 30,
+      },
+      /*{
+        targetLanguage: LanguageCode.DE,
+        explanationLanguage: LanguageCode.EN,
+        count: 30,
+      },*/
     ];
 
     for (const payload of payloads) {

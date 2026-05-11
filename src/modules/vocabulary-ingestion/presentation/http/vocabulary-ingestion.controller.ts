@@ -2,7 +2,7 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { GenerateVocabularyBatchRequestDto } from '../../application/dto/generate-vocabulary-batch.request.dto';
-import { ApiSuccessResponse } from '../../../waitlist/presentation/http/api-success-response';
+import { ApiSuccessResponse } from '../../../../shared/presentation/http/api-success-response';
 import {
   GENERATE_VOCABULARY_BATCH_JOB,
   VOCABULARY_QUEUE,

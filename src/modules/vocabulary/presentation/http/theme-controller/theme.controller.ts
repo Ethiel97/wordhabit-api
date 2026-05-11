@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateThemeRequestDto } from '../../../application/dto/create-theme.request.dto';
-import { ApiSuccessResponse } from '../../../../waitlist/presentation/http/api-success-response';
+import { ApiSuccessResponse } from '../../../../../shared/presentation/http/api-success-response';
 import { CreateThemeCommand } from '../../../application/commands/create-theme.command';
 import { ListThemesQuery } from '../../../application/queries/list-themes.query';
 import { GetThemeBySlugQuery } from '../../../application/queries/get-theme-by-slug.query';

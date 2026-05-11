@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 
 export class GenerateVocabularyBatchRequestDto {
@@ -13,10 +13,6 @@ export class GenerateVocabularyBatchRequestDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(50)
+  @Max(30)
   count: number = 20;
-
-  @IsOptional()
-  @IsString()
-  theme?: string;
 }
