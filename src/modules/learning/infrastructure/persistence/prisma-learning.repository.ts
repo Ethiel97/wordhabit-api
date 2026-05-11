@@ -1,6 +1,7 @@
 import {
   CreateDailyAssignmentParams,
   FindTodayAssignmentParams,
+  FindUserWordProgressParams,
   LearningRepository,
   TodayWordAssignment,
 } from '../../domain/repositories/learning.repository';
@@ -9,12 +10,62 @@ import { VocabularyWord } from '../../../vocabulary/domain/entities/vocabulary-w
 import { UserLearningProfile } from '../../../user-learning/domain/entities/user-learning-profile';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaVocabularyMapper } from '../../../vocabulary/infrastructure/persistence/prisma-vocabulary.mapper';
+import {
+  UserWordProgress,
+  UserWordProgressMasteryLevel,
+  UserWordProgressStatus,
+} from '../../domain/entities/user-word-progress';
+import { PrismaLearningMapper } from './prisma-learning.mapper';
 
 @Injectable()
 export class PrismaLearningRepository implements LearningRepository {
   private readonly logger = new Logger(PrismaLearningRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async findUserWordProgress(
+    params: FindUserWordProgressParams,
+  ): Promise<UserWordProgress | null> {
+    const { userId, wordId } = params;
+    const found = await this.prisma.userWordProgress.findFirst({
+      where: { userId, wordId },
+    });
+
+    if (!found) {
+      return null;
+    }
+
+    return {
+      ...found,
+      status: PrismaLearningMapper.toDomainUserWordProgressStatus(found.status),
+    };
+  }
+  async setUserWordProgressStatus(params: {
+    userId: string;
+    wordId: string;
+    status: UserWordProgressStatus;
+    masteryLevel: UserWordProgressMasteryLevel;
+    seenAt?: Date | null;
+    nextReviewAt?: Date | null;
+  }): Promise<UserWordProgress> {
+    const { userId, wordId, status } = params;
+    const found = await this.prisma.userWordProgress.upsert({
+      where: { userId_wordId: { userId, wordId } },
+      update: {
+        status: PrismaLearningMapper.toPrismaUserWordProgressStatus(status),
+      },
+      create: {
+        userId,
+        wordId,
+        status: PrismaLearningMapper.toPrismaUserWordProgressStatus(status),
+      },
+    });
+
+    return {
+      ...found,
+      status: PrismaLearningMapper.toDomainUserWordProgressStatus(found.status),
+    };
+  }
 
   async createDailyAssignment(
     params: CreateDailyAssignmentParams,
@@ -61,7 +112,7 @@ export class PrismaLearningRepository implements LearningRepository {
 
     const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
 
-    console.log('Finding candidate words for profile', {
+    this.logger.log('Finding candidate words for profile', {
       themeSlugs,
       targetLanguage,
       twoWeeksAgo,

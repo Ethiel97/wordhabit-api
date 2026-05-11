@@ -24,9 +24,9 @@ export class WaitlistController {
 
   @Throttle({
     default: {
-      limit: 5,
+      limit: 10,
       ttl: minutes(60),
-      blockDuration: minutes(60),
+      blockDuration: minutes(60 * 5),
     },
   })
   @Post()
@@ -40,9 +40,9 @@ export class WaitlistController {
 
   @Throttle({
     default: {
-      limit: 5,
+      limit: 10,
       ttl: minutes(60),
-      blockDuration: minutes(60),
+      blockDuration: minutes(60 * 5),
     },
   })
   @Get('count')
@@ -56,9 +56,9 @@ export class WaitlistController {
 
   @Throttle({
     default: {
-      limit: 5,
+      limit: 10,
       ttl: minutes(60),
-      blockDuration: minutes(60),
+      blockDuration: minutes(60 * 5),
     },
   })
   @Get()
@@ -74,7 +74,7 @@ export class WaitlistController {
     default: {
       limit: 3,
       ttl: minutes(20),
-      blockDuration: minutes(60),
+      blockDuration: minutes(60 * 5),
     },
   })
   @Get('by-email')

@@ -1,6 +1,11 @@
 import { VocabularyWord } from '../../../vocabulary/domain/entities/vocabulary-word';
 import { UserLearningProfile } from '../../../user-learning/domain/entities/user-learning-profile';
 import { VocabularyWordAggregate } from '../../../vocabulary/domain/repositories/vocabulary.repository';
+import {
+  UserWordProgress,
+  UserWordProgressMasteryLevel,
+  UserWordProgressStatus,
+} from '../entities/user-word-progress';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 
@@ -21,6 +26,20 @@ export type TodayWordAssignment = VocabularyWordAggregate & {
   assignedFor: Date;
 };
 
+export interface FindUserWordProgressParams {
+  userId: string;
+  wordId: string;
+}
+
+export interface SetUserWordProgressStatusParams {
+  userId: string;
+  wordId: string;
+  status: UserWordProgressStatus;
+  masteryLevel: UserWordProgressMasteryLevel;
+  seenAt?: Date | null;
+  nextReviewAt?: Date | null;
+}
+
 export interface LearningRepository {
   findTodayAssignment(
     params: FindTodayAssignmentParams,
@@ -33,4 +52,12 @@ export interface LearningRepository {
   findCandidateWord(
     profile: UserLearningProfile,
   ): Promise<VocabularyWord | null>;
+
+  findUserWordProgress(
+    params: FindUserWordProgressParams,
+  ): Promise<UserWordProgress | null>;
+
+  setUserWordProgressStatus(
+    params: SetUserWordProgressStatusParams,
+  ): Promise<UserWordProgress>;
 }
