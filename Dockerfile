@@ -23,7 +23,9 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod=false
 
 COPY . .
-ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/wordhabit?schema=public"
+
+ARG DATABASE_URL="postgresql://postgres:postgres@localhost:5432/wordhabit?schema=public"
+ENV DATABASE_URL="${DATABASE_URL}"
 
 RUN npx prisma generate
 RUN pnpm run build
