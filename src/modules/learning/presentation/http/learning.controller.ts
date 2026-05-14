@@ -8,6 +8,7 @@ import { ApiSuccessResponse } from '../../../../shared/presentation/http/api-suc
 import { SetUserWordProgressCommand } from '../../application/commands/set-user-word-progress.command';
 import { SetUserWordProgressRequestDto } from '../../application/dtos/set-user-word-progress-request.dto';
 import { GetUserWordProgressQuery } from '../../application/queries/get-user-word-progress.query';
+import { GetRandomWordForLandingQuery } from '../../application/queries/get-random-word-for-landing.query';
 
 @Controller('learning')
 export class LearningController {
@@ -15,6 +16,15 @@ export class LearningController {
     private readonly queryBus: QueryBus,
     private readonly commandBus: CommandBus,
   ) {}
+
+  @Get('random-word')
+  async getRandomWordForLanding() {
+    const randomWord = await this.queryBus.execute(
+      new GetRandomWordForLandingQuery(),
+    );
+
+    return ApiSuccessResponse.of(randomWord);
+  }
 
   @Get('users/:userId/today-word')
   async getTodayWordForUser(@Param('userId') userId: string) {

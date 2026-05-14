@@ -1,8 +1,10 @@
 import {
   CreateDailyAssignmentParams,
+  FindRandomWordParams,
   FindTodayAssignmentParams,
   FindUserWordProgressParams,
   LearningRepository,
+  RandomWord,
   TodayWordAssignment,
 } from '../../domain/repositories/learning.repository';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
@@ -217,6 +219,39 @@ export class PrismaLearningRepository implements LearningRepository {
         examples: found.word.examples,
         pronunciations: found.word.pronunciations,
         synonyms: found.word.synonyms,
+      }),
+    };
+  }
+
+  async findRandomWord(
+    params: FindRandomWordParams,
+  ): Promise<RandomWord | null> {
+    const count = await this.prisma.vocabularyWord.count({ where: params });
+
+    if (count === 0) {
+      return null;
+    }
+
+    const randomSkip = Math.floor(Math.random() * count);
+
+    const randomWord = await this.prisma.vocabularyWord.findFirstOrThrow({
+      where: params,
+      skip: randomSkip,
+      include: {
+        definitions: true,
+        examples: true,
+        pronunciations: true,
+        synonyms: true,
+      },
+    });
+
+    return {
+      ...PrismaVocabularyMapper.toDomainAggregate({
+        word: randomWord,
+        definitions: randomWord.definitions,
+        examples: randomWord.examples,
+        pronunciations: randomWord.pronunciations,
+        synonyms: randomWord.synonyms,
       }),
     };
   }

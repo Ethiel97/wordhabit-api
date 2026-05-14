@@ -6,6 +6,7 @@ import {
   UserWordProgressMasteryLevel,
   UserWordProgressStatus,
 } from '../entities/user-word-progress';
+import { LanguageCode } from '../../../../../generated/prisma/enums';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 
@@ -26,6 +27,8 @@ export type TodayWordAssignment = VocabularyWordAggregate & {
   assignedFor: Date;
 };
 
+export type RandomWord = VocabularyWordAggregate;
+
 export interface FindUserWordProgressParams {
   userId: string;
   wordId: string;
@@ -38,6 +41,10 @@ export interface SetUserWordProgressStatusParams {
   masteryLevel: UserWordProgressMasteryLevel;
   seenAt?: Date | null;
   nextReviewAt?: Date | null;
+}
+
+export interface FindRandomWordParams {
+  targetLanguage?: LanguageCode;
 }
 
 export interface LearningRepository {
@@ -60,4 +67,6 @@ export interface LearningRepository {
   setUserWordProgressStatus(
     params: SetUserWordProgressStatusParams,
   ): Promise<UserWordProgress>;
+
+  findRandomWord(params: FindRandomWordParams): Promise<RandomWord | null>;
 }

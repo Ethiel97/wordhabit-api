@@ -8,9 +8,14 @@ import { UserLearningModule } from '../user-learning/user-learning.module';
 import { GetTodayWordForUserHandler } from './application/handlers/get-today-word-for-user.handler';
 import { SetUserWordProgressCommand } from './application/commands/set-user-word-progress.command';
 import { GetUserWordProgressHandler } from './application/handlers/get-user-word-progress.handler';
+import { GetRandomWordForLandingHandler } from './application/handlers/get-random-word-for-landing.handler';
 
 const commandHandlers = [SetUserWordProgressCommand];
-const queryHandlers = [GetTodayWordForUserHandler, GetUserWordProgressHandler];
+const queryHandlers = [
+  GetTodayWordForUserHandler,
+  GetUserWordProgressHandler,
+  GetRandomWordForLandingHandler,
+];
 
 @Module({
   imports: [VocabularyModule, UserLearningModule, CqrsModule],
