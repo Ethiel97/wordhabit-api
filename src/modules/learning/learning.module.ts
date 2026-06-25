@@ -6,11 +6,11 @@ import { PrismaLearningRepository } from './infrastructure/persistence/prisma-le
 import { LEARNING_REPOSITORY } from './domain/repositories/learning.repository';
 import { UserLearningModule } from '../user-learning/user-learning.module';
 import { GetTodayWordForUserHandler } from './application/handlers/get-today-word-for-user.handler';
-import { SetUserWordProgressCommand } from './application/commands/set-user-word-progress.command';
 import { GetUserWordProgressHandler } from './application/handlers/get-user-word-progress.handler';
 import { GetRandomWordForLandingHandler } from './application/handlers/get-random-word-for-landing.handler';
+import { SetUserWordProgressHandler } from './application/handlers/set-user-word-progress.handler';
 
-const commandHandlers = [SetUserWordProgressCommand];
+const commandHandlers = [SetUserWordProgressHandler];
 const queryHandlers = [
   GetTodayWordForUserHandler,
   GetUserWordProgressHandler,
