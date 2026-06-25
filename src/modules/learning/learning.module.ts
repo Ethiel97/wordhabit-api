@@ -9,12 +9,14 @@ import { GetTodayWordForUserHandler } from './application/handlers/get-today-wor
 import { GetUserWordProgressHandler } from './application/handlers/get-user-word-progress.handler';
 import { GetRandomWordForLandingHandler } from './application/handlers/get-random-word-for-landing.handler';
 import { SetUserWordProgressHandler } from './application/handlers/set-user-word-progress.handler';
+import { GetReviewQueueHandler } from './application/handlers/get-review-queue.handler';
 
 const commandHandlers = [SetUserWordProgressHandler];
 const queryHandlers = [
   GetTodayWordForUserHandler,
   GetUserWordProgressHandler,
   GetRandomWordForLandingHandler,
+  GetReviewQueueHandler,
 ];
 
 @Module({

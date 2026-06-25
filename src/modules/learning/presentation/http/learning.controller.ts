@@ -9,6 +9,10 @@ import { SetUserWordProgressCommand } from '../../application/commands/set-user-
 import { SetUserWordProgressRequestDto } from '../../application/dtos/set-user-word-progress-request.dto';
 import { GetUserWordProgressQuery } from '../../application/queries/get-user-word-progress.query';
 import { GetRandomWordForLandingQuery } from '../../application/queries/get-random-word-for-landing.query';
+import {
+  GetReviewQueueQuery,
+  GetReviewQueueResult,
+} from '../../application/queries/get-review-queue.query';
 
 @Controller('learning')
 export class LearningController {
@@ -58,5 +62,14 @@ export class LearningController {
     );
 
     return ApiSuccessResponse.of(progress);
+  }
+
+  @Get('users/:userId/review-queue')
+  async getReviewQueue(@Param('userId') userId: string) {
+    const result: GetReviewQueueResult = await this.queryBus.execute(
+      new GetReviewQueueQuery(userId),
+    );
+
+    return ApiSuccessResponse.of(result);
   }
 }

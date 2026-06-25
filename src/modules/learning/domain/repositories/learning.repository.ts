@@ -29,6 +29,16 @@ export type TodayWordAssignment = VocabularyWordAggregate & {
 
 export type RandomWord = VocabularyWordAggregate;
 
+export type ReviewQueueItem = {
+  progressId: string;
+  wordId: string;
+  term: string;
+  masteryLevel: number;
+  reviewCount: number;
+  status: UserWordProgressStatus;
+  nextReviewAt: Date | null;
+};
+
 export interface FindUserWordProgressParams {
   userId: string;
   wordId: string;
@@ -45,6 +55,12 @@ export interface SetUserWordProgressStatusParams {
 
 export interface FindRandomWordParams {
   targetLanguage?: LanguageCode;
+}
+
+export interface FindReviewQueueParams {
+  userId: string;
+  now: Date;
+  limit: number;
 }
 
 export interface LearningRepository {
@@ -69,4 +85,6 @@ export interface LearningRepository {
   ): Promise<UserWordProgress>;
 
   findRandomWord(params: FindRandomWordParams): Promise<RandomWord | null>;
+
+  findReviewQueue(params: FindReviewQueueParams): Promise<ReviewQueueItem[]>;
 }

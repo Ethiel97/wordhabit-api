@@ -1,10 +1,12 @@
 import {
   CreateDailyAssignmentParams,
   FindRandomWordParams,
+  FindReviewQueueParams,
   FindTodayAssignmentParams,
   FindUserWordProgressParams,
   LearningRepository,
   RandomWord,
+  ReviewQueueItem,
   TodayWordAssignment,
 } from '../../domain/repositories/learning.repository';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
@@ -24,6 +26,39 @@ export class PrismaLearningRepository implements LearningRepository {
   private readonly logger = new Logger(PrismaLearningRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async findReviewQueue(
+    params: FindReviewQueueParams,
+  ): Promise<ReviewQueueItem[]> {
+    const { userId, now, limit } = params;
+
+    this.logger.log('Finding review queue', { userId, now, limit });
+
+    const items = await this.prisma.userWordProgress.findMany({
+      where: {
+        status: UserWordProgressStatus.LEARNING,
+        userId,
+        nextReviewAt: {
+          lte: now,
+        },
+      },
+      take: limit,
+      orderBy: [{ nextReviewAt: 'asc' }, { masteryLevel: 'asc' }],
+      include: {
+        word: true,
+      },
+    });
+
+    return items.map((item) => ({
+      progressId: item.id,
+      wordId: item.wordId,
+      term: item.word.term,
+      masteryLevel: item.masteryLevel,
+      reviewCount: item.reviewCount,
+      status: PrismaLearningMapper.toDomainUserWordProgressStatus(item.status),
+      nextReviewAt: item.nextReviewAt,
+    }));
+  }
 
   async findUserWordProgress(
     params: FindUserWordProgressParams,
