@@ -8,8 +8,9 @@ import { GetUserLearningProfilesQuery } from '../../application/queries/get-user
 import { SetUserLearningProfileThemesRequestDto } from '../../application/dtos/set-user-learning-profile-themes.request.dto';
 import { SetUserLearningProfileThemesCommand } from '../../application/commands/set-user-learning-profile-themes.command';
 import { ActivateUserLearningProfileCommand } from '../../application/commands/activate-user-learning-profile.command';
+import { USER_LEARNING } from '../../../../shared/presentation/http/endpoints';
 
-@Controller('user-learning')
+@Controller(USER_LEARNING.BASE)
 export class UserLearningController {
   constructor(
     private readonly commandBus: CommandBus,
@@ -33,7 +34,7 @@ export class UserLearningController {
     return ApiSuccessResponse.of(result);
   }
 
-  @Get('users/:userId/profiles/active')
+  @Get(USER_LEARNING.GET_ACTIVE_PROFILE)
   async getActiveUserLearningProfile(@Param('userId') userId: string) {
     const result = await this.queryBus.execute(
       new GetActiveUserLearningProfileQuery(userId),
@@ -42,7 +43,7 @@ export class UserLearningController {
     return ApiSuccessResponse.of(result);
   }
 
-  @Get('users/:userId/profiles')
+  @Get(USER_LEARNING.LIST_PROFILES)
   async getUsersLearningProfiles(@Param('userId') userId: string) {
     const result = await this.queryBus.execute(
       new GetUserLearningProfilesQuery(userId),
@@ -51,7 +52,7 @@ export class UserLearningController {
     return ApiSuccessResponse.of(result);
   }
 
-  @Patch('users/:userId/profiles/:profileId/activate')
+  @Patch(USER_LEARNING.ACTIVATE_PROFILE)
   async activateUserLearningProfile(
     @Param('userId') userId: string,
     @Param('profileId') profileId: string,
@@ -63,7 +64,7 @@ export class UserLearningController {
     return ApiSuccessResponse.of(result);
   }
 
-  @Patch('profiles/:profileId/themes')
+  @Patch(USER_LEARNING.SET_THEMES)
   async setUserLearningProfileThemes(
     @Param('profileId') profileId: string,
     @Body() body: SetUserLearningProfileThemesRequestDto,

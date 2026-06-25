@@ -8,8 +8,9 @@ import { GetVocabularyWordByTermQuery } from '../../../application/queries/get-v
 import { LanguageCode } from '../../../domain/entities/language-code';
 import { ListVocabularyWordsQuery } from '../../../application/queries/list-vocabulary-words.query';
 import { ListVocabularyWordsRequestDto } from '../../../application/dto/list-vocabulary-words.request.dto';
+import { VOCABULARY } from '../../../../../shared/presentation/http/endpoints';
 
-@Controller('vocabulary/words')
+@Controller(VOCABULARY.BASE)
 export class VocabularyController {
   constructor(
     private readonly commandBus: CommandBus,
@@ -35,7 +36,7 @@ export class VocabularyController {
     return ApiSuccessResponse.of(result);
   }
 
-  @Get(':id')
+  @Get(VOCABULARY.GET_BY_ID)
   async getWordById(@Param('id') id: string) {
     const result = await this.queryBus.execute(
       new GetVocabularyWordByIdQuery(id),

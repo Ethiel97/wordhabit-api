@@ -16,15 +16,16 @@ import { GetThemeBySlugQuery } from '../../../application/queries/get-theme-by-s
 import { UpdateThemeRequestDto } from '../../../application/dto/update-theme.request.dto';
 import { UpdateThemeCommand } from '../../../application/commands/update-theme.command';
 import { DeleteThemeCommand } from '../../../application/commands/delete-theme.command';
+import { THEMES } from '../../../../../shared/presentation/http/endpoints';
 
-@Controller('vocabulary/themes')
+@Controller(THEMES.BASE)
 export class ThemeController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {}
 
-  @Post()
+  @Post(THEMES.CREATE)
   async createTheme(@Body() body: CreateThemeRequestDto) {
     const result = await this.commandBus.execute(
       new CreateThemeCommand(body.name, body.slug, body.description),
@@ -32,19 +33,19 @@ export class ThemeController {
     return ApiSuccessResponse.of(result);
   }
 
-  @Get()
+  @Get(THEMES.LIST)
   async listThemes() {
     const result = await this.queryBus.execute(new ListThemesQuery());
     return ApiSuccessResponse.of(result);
   }
 
-  @Get(':slug')
+  @Get(THEMES.GET_BY_SLUG)
   async getThemeBySlug(@Param('slug') slug: string) {
     const result = await this.queryBus.execute(new GetThemeBySlugQuery(slug));
     return ApiSuccessResponse.of(result);
   }
 
-  @Patch(':id')
+  @Patch(THEMES.UPDATE)
   async updateTheme(
     @Param('id') id: string,
     @Body() body: UpdateThemeRequestDto,
@@ -55,7 +56,7 @@ export class ThemeController {
     return ApiSuccessResponse.of(result);
   }
 
-  @Delete(':id')
+  @Delete(THEMES.DELETE)
   async deleteTheme(@Param('id') id: string) {
     await this.commandBus.execute(new DeleteThemeCommand(id));
     return ApiSuccessResponse.of(null);
