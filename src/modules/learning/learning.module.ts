@@ -10,8 +10,9 @@ import { GetUserWordProgressHandler } from './application/handlers/get-user-word
 import { GetRandomWordForLandingHandler } from './application/handlers/get-random-word-for-landing.handler';
 import { SetUserWordProgressHandler } from './application/handlers/set-user-word-progress.handler';
 import { GetReviewQueueHandler } from './application/handlers/get-review-queue.handler';
+import { SubmitWordReviewHandler } from './application/handlers/submit-word-review.handler';
 
-const commandHandlers = [SetUserWordProgressHandler];
+const commandHandlers = [SetUserWordProgressHandler, SubmitWordReviewHandler];
 const queryHandlers = [
   GetTodayWordForUserHandler,
   GetUserWordProgressHandler,

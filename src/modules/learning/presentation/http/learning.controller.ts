@@ -13,6 +13,8 @@ import {
   GetReviewQueueQuery,
   GetReviewQueueResult,
 } from '../../application/queries/get-review-queue.query';
+import { SubmitWordReviewCommand } from '../../application/commands/submit-word-review.command';
+import { SubmitWordReviewRequestDto } from '../../application/dtos/submit-word-review-request.dto';
 
 @Controller('learning')
 export class LearningController {
@@ -68,6 +70,19 @@ export class LearningController {
   async getReviewQueue(@Param('userId') userId: string) {
     const result: GetReviewQueueResult = await this.queryBus.execute(
       new GetReviewQueueQuery(userId),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Patch('users/:userId/words/:wordId/review')
+  async submitWordReview(
+    @Param('userId') userId: string,
+    @Param('wordId') wordId: string,
+    @Body() body: SubmitWordReviewRequestDto,
+  ) {
+    const result = await this.commandBus.execute(
+      new SubmitWordReviewCommand(userId, wordId, body.correct),
     );
 
     return ApiSuccessResponse.of(result);

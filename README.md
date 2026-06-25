@@ -4,7 +4,7 @@ Backend service for **Wordhabit**, a vocabulary learning platform that helps use
 
 ## Overview
 
-Wordhabit is a modular NestJS backend backed by PostgreSQL, Prisma, Redis, BullMQ, and AI-assisted vocabulary generation. The current API supports:
+Wordhabit is a modular NestJS backend backed by PostgreSQL, Prisma, Redis, BullMQ, and AI-assisted vocabulary generation. The currentUserWordProgress API supports:
 
 - waitlist signups and lookup
 - vocabulary words with definitions, examples, pronunciations, synonyms, and themes
@@ -210,7 +210,7 @@ pnpm worker:dev
 
 ## Endpoint Catalog
 
-This is a compact map of the current HTTP surface, not a full API reference.
+This is a compact map of the currentUserWordProgress HTTP surface, not a full API reference.
 
 ### Health
 

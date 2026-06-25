@@ -8,6 +8,7 @@ import {
   RandomWord,
   ReviewQueueItem,
   TodayWordAssignment,
+  UpdateUserWordReviewParams,
 } from '../../domain/repositories/learning.repository';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
 import { VocabularyWord } from '../../../vocabulary/domain/entities/vocabulary-word';
@@ -26,6 +27,34 @@ export class PrismaLearningRepository implements LearningRepository {
   private readonly logger = new Logger(PrismaLearningRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
+  async updateUserWordReview(
+    params: UpdateUserWordReviewParams,
+  ): Promise<UserWordProgress> {
+    const updated = await this.prisma.userWordProgress.update({
+      where: {
+        userId_wordId: {
+          userId: params.userId,
+          wordId: params.wordId,
+        },
+      },
+      data: {
+        status: PrismaLearningMapper.toPrismaUserWordProgressStatus(
+          params.status,
+        ),
+        masteryLevel: params.masteryLevel,
+        reviewCount: params.reviewCount,
+        lastReviewedAt: params.lastReviewedAt,
+        nextReviewAt: params.nextReviewAt,
+      },
+    });
+
+    return {
+      ...updated,
+      status: PrismaLearningMapper.toDomainUserWordProgressStatus(
+        updated.status,
+      ),
+    };
+  }
 
   async findReviewQueue(
     params: FindReviewQueueParams,

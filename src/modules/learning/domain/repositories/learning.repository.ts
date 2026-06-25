@@ -63,6 +63,16 @@ export interface FindReviewQueueParams {
   limit: number;
 }
 
+export interface UpdateUserWordReviewParams {
+  userId: string;
+  wordId: string;
+  status: UserWordProgressStatus;
+  masteryLevel: number;
+  reviewCount: number;
+  lastReviewedAt: Date;
+  nextReviewAt: Date | null;
+}
+
 export interface LearningRepository {
   findTodayAssignment(
     params: FindTodayAssignmentParams,
@@ -87,4 +97,8 @@ export interface LearningRepository {
   findRandomWord(params: FindRandomWordParams): Promise<RandomWord | null>;
 
   findReviewQueue(params: FindReviewQueueParams): Promise<ReviewQueueItem[]>;
+
+  updateUserWordReview(
+    params: UpdateUserWordReviewParams,
+  ): Promise<UserWordProgress>;
 }
