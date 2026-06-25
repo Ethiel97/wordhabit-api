@@ -90,6 +90,9 @@ export class PrismaLearningRepository implements LearningRepository {
       where: { userId_wordId: { userId, wordId } },
       update: {
         status: PrismaLearningMapper.toPrismaUserWordProgressStatus(status),
+        masteryLevel: params.masteryLevel,
+        seenAt: params.seenAt,
+        nextReviewAt: params.nextReviewAt,
       },
       create: {
         userId,

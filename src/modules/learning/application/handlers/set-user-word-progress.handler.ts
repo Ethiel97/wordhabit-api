@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Inject } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 import type { LearningRepository } from '../../domain/repositories/learning.repository';
 import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
 import {
@@ -13,6 +13,8 @@ export class SetUserWordProgressHandler implements ICommandHandler<
   SetUserWordProgressCommand,
   SetUserWordProgressStatusResult
 > {
+  private readonly logger = new Logger(SetUserWordProgressHandler.name);
+
   constructor(
     @Inject(LEARNING_REPOSITORY)
     private readonly learningRepository: LearningRepository,
