@@ -7,6 +7,7 @@ import {
 import type { LearningRepository } from '../../domain/repositories/learning.repository';
 import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
 import { computeWordReviewState } from '../../domain/services/user-word-review-scheduler';
+import { computeNextDailyStreak } from '../../domain/services/daily-streak-calculator';
 
 @CommandHandler(SubmitWordReviewCommand)
 export class SubmitWordReviewHandler implements ICommandHandler<
@@ -33,16 +34,33 @@ export class SubmitWordReviewHandler implements ICommandHandler<
       );
     }
 
+    const now = new Date();
+
     const nextState = computeWordReviewState({
       current: currentUserWordProgress,
       correct: command.correct,
-      now: new Date(),
+      now,
     });
 
     const updated = await this.learningRepository.updateUserWordReview({
       userId: command.userId,
       wordId: command.wordId,
       ...nextState,
+    });
+
+    const currentLearningStreak =
+      await this.learningRepository.findUserLearningStreak(command.userId);
+
+    const nextLearningStreak = computeNextDailyStreak({
+      current: currentLearningStreak,
+      activityAt: now,
+    });
+
+    await this.learningRepository.upsertUserLearningStreak({
+      userId: command.userId,
+      currentStreak: nextLearningStreak.currentStreak,
+      longestStreak: nextLearningStreak.longestStreak,
+      lastActivityDate: nextLearningStreak.lastActivityDate,
     });
 
     return {

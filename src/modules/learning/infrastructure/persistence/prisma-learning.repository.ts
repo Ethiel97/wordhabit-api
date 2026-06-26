@@ -9,6 +9,7 @@ import {
   ReviewQueueItem,
   TodayWordAssignment,
   UpdateUserWordReviewParams,
+  UpsertUserLearningStreakParams,
 } from '../../domain/repositories/learning.repository';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
 import { VocabularyWord } from '../../../vocabulary/domain/entities/vocabulary-word';
@@ -21,12 +22,66 @@ import {
   UserWordProgressStatus,
 } from '../../domain/entities/user-word-progress';
 import { PrismaLearningMapper } from './prisma-learning.mapper';
+import { UserLearningStreak } from '../../domain/entities/user-learning-streak';
 
 @Injectable()
 export class PrismaLearningRepository implements LearningRepository {
   private readonly logger = new Logger(PrismaLearningRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async findUserLearningStreak(
+    userId: string,
+  ): Promise<UserLearningStreak | null> {
+    const found = await this.prisma.userLearningStreak.findUnique({
+      where: {
+        userId,
+      },
+    });
+
+    if (!found) {
+      return null;
+    }
+    return {
+      id: found.id,
+      lastActivityDate: found.lastActivityDate as Date,
+      userId: found.userId,
+      currentStreak: found.currentStreak,
+      longestStreak: found.longestStreak,
+      createdAt: found.createdAt,
+      updatedAt: found.updatedAt,
+    };
+  }
+  async upsertUserLearningStreak(
+    params: UpsertUserLearningStreakParams,
+  ): Promise<UserLearningStreak> {
+    const { userId, currentStreak, longestStreak, lastActivityDate } = params;
+
+    const upserted = await this.prisma.userLearningStreak.upsert({
+      where: { userId },
+      update: {
+        currentStreak,
+        longestStreak,
+        lastActivityDate,
+      },
+      create: {
+        userId,
+        currentStreak,
+        longestStreak,
+        lastActivityDate,
+      },
+    });
+
+    return {
+      id: upserted.id,
+      lastActivityDate: upserted.lastActivityDate as Date,
+      userId: upserted.userId,
+      currentStreak: upserted.currentStreak,
+      longestStreak: upserted.longestStreak,
+      createdAt: upserted.createdAt,
+      updatedAt: upserted.updatedAt,
+    };
+  }
   async updateUserWordReview(
     params: UpdateUserWordReviewParams,
   ): Promise<UserWordProgress> {

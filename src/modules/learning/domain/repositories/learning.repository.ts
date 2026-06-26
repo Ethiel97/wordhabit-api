@@ -7,6 +7,7 @@ import {
   UserWordProgressStatus,
 } from '../entities/user-word-progress';
 import { LanguageCode } from '../../../../../generated/prisma/enums';
+import { UserLearningStreak } from '../entities/user-learning-streak';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 
@@ -73,6 +74,13 @@ export interface UpdateUserWordReviewParams {
   nextReviewAt: Date | null;
 }
 
+export interface UpsertUserLearningStreakParams {
+  userId: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityDate: Date;
+}
+
 export interface LearningRepository {
   findTodayAssignment(
     params: FindTodayAssignmentParams,
@@ -101,4 +109,10 @@ export interface LearningRepository {
   updateUserWordReview(
     params: UpdateUserWordReviewParams,
   ): Promise<UserWordProgress>;
+
+  findUserLearningStreak(userId: string): Promise<UserLearningStreak | null>;
+
+  upsertUserLearningStreak(
+    params: UpsertUserLearningStreakParams,
+  ): Promise<UserLearningStreak>;
 }

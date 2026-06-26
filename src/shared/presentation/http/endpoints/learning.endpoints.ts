@@ -5,4 +5,5 @@ export const LEARNING = {
   WORD_PROGRESS: 'users/:userId/words/:wordId/progress',
   REVIEW_QUEUE: 'users/:userId/review-queue',
   WORD_REVIEW: 'users/:userId/words/:wordId/review',
+  DASHBOARD: 'users/:userId/dashboard',
 } as const;
