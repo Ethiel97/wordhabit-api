@@ -10,6 +10,7 @@ import {
   TodayWordAssignment,
   UpdateUserWordReviewParams,
   UpsertUserLearningStreakParams,
+  UserLearningStats,
 } from '../../domain/repositories/learning.repository';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
 import { VocabularyWord } from '../../../vocabulary/domain/entities/vocabulary-word';
@@ -29,6 +30,29 @@ export class PrismaLearningRepository implements LearningRepository {
   private readonly logger = new Logger(PrismaLearningRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async findUserLearningStats(userId: string): Promise<UserLearningStats> {
+    const grouped = await this.prisma.userWordProgress.groupBy({
+      by: ['status'],
+      where: {
+        userId,
+      },
+      _count: {
+        status: true,
+      },
+    });
+
+    return {
+      seen: grouped.find((item) => item.status === 'SEEN')?._count.status ?? 0,
+      learning:
+        grouped.find((item) => item.status === 'LEARNING')?._count.status ?? 0,
+      mastered:
+        grouped.find((item) => item.status === 'MASTERED')?._count.status ?? 0,
+      skipped:
+        grouped.find((item) => item.status === 'SKIPPED')?._count.status ?? 0,
+      total: grouped.reduce((acc, item) => acc + item._count.status, 0),
+    };
+  }
 
   async findUserLearningStreak(
     userId: string,

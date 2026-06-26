@@ -11,6 +11,14 @@ import { UserLearningStreak } from '../entities/user-learning-streak';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 
+export type UserLearningStats = {
+  seen: number;
+  learning: number;
+  mastered: number;
+  skipped: number;
+  total: number;
+};
+
 export interface CreateDailyAssignmentParams {
   userId: string;
   userLearningProfileId: string;
@@ -115,4 +123,6 @@ export interface LearningRepository {
   upsertUserLearningStreak(
     params: UpsertUserLearningStreakParams,
   ): Promise<UserLearningStreak>;
+
+  findUserLearningStats(userId: string): Promise<UserLearningStats>;
 }

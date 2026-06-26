@@ -16,6 +16,10 @@ import {
 import { SubmitWordReviewCommand } from '../../application/commands/submit-word-review.command';
 import { SubmitWordReviewRequestDto } from '../../application/dtos/submit-word-review-request.dto';
 import { LEARNING } from '../../../../shared/presentation/http/endpoints';
+import {
+  GetLearningDashboardQuery,
+  GetLearningDashboardResult,
+} from '../../application/queries/get-learning-dashboard.query';
 
 @Controller(LEARNING.BASE)
 export class LearningController {
@@ -83,6 +87,15 @@ export class LearningController {
   ) {
     const result = await this.commandBus.execute(
       new SubmitWordReviewCommand(userId, wordId, body.correct),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Get(LEARNING.DASHBOARD)
+  async getLearningDashboard(@Param('userId') userId: string) {
+    const result: GetLearningDashboardResult = await this.queryBus.execute(
+      new GetLearningDashboardQuery(userId),
     );
 
     return ApiSuccessResponse.of(result);
