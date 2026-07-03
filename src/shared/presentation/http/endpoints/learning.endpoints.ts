@@ -6,4 +6,5 @@ export const LEARNING = {
   REVIEW_QUEUE: 'users/:userId/review-queue',
   WORD_REVIEW: 'users/:userId/words/:wordId/review',
   DASHBOARD: 'users/:userId/dashboard',
+  LIBRARY: 'users/:userId/library',
 } as const;

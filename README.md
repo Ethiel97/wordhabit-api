@@ -197,16 +197,16 @@ pnpm worker:dev
 
 ## Environment Variables
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string used by Prisma. |
-| `REDIS_URL` | Optional full Redis connection URL for BullMQ. |
-| `REDIS_HOST` | Redis host when `REDIS_URL` is not set. Defaults to `localhost`. |
-| `REDIS_PORT` | Redis port when `REDIS_URL` is not set. Defaults to `6379`. |
-| `OPENAI_API_KEY` | API key used by vocabulary generation. |
-| `OPENAI_VOCABULARY_MODEL` | Optional model override for vocabulary generation. Defaults to `gpt-4.1-mini`. |
-| `PORT` | HTTP port. Local default is `4000`; Docker/Fly configs set `3000`. |
-| `NODE_ENV` | Runtime environment. Production enables production database schema behavior and scheduled generation. |
+| Variable                  | Purpose                                                                                               |
+|---------------------------|-------------------------------------------------------------------------------------------------------|
+| `DATABASE_URL`            | PostgreSQL connection string used by Prisma.                                                          |
+| `REDIS_URL`               | Optional full Redis connection URL for BullMQ.                                                        |
+| `REDIS_HOST`              | Redis host when `REDIS_URL` is not set. Defaults to `localhost`.                                      |
+| `REDIS_PORT`              | Redis port when `REDIS_URL` is not set. Defaults to `6379`.                                           |
+| `OPENAI_API_KEY`          | API key used by vocabulary generation.                                                                |
+| `OPENAI_VOCABULARY_MODEL` | Optional model override for vocabulary generation. Defaults to `gpt-4.1-mini`.                        |
+| `PORT`                    | HTTP port. Local default is `4000`; Docker/Fly configs set `3000`.                                    |
+| `NODE_ENV`                | Runtime environment. Production enables production database schema behavior and scheduled generation. |
 
 ## Endpoint Catalog
 

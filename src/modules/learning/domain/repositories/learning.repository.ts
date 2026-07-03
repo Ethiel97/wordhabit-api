@@ -89,6 +89,32 @@ export interface UpsertUserLearningStreakParams {
   lastActivityDate: Date;
 }
 
+export type FindUserWordLibraryParams = {
+  userId: string;
+  status?: UserWordProgressStatus;
+  search?: string;
+  limit: number;
+  cursor?: string;
+};
+
+export type UserWordLibraryItem = {
+  progressId: string;
+  wordId: string;
+  term: string;
+  normalizedTerm: string;
+  status: UserWordProgressStatus;
+  masteryLevel: number;
+  reviewCount: number;
+  lastReviewedAt: Date | null;
+  nextReviewAt: Date | null;
+  updatedAt: Date;
+};
+
+export type UserWordLibraryResult = {
+  items: UserWordLibraryItem[];
+  nextCursor: string | null;
+};
+
 export interface LearningRepository {
   findTodayAssignment(
     params: FindTodayAssignmentParams,
@@ -125,4 +151,8 @@ export interface LearningRepository {
   ): Promise<UserLearningStreak>;
 
   findUserLearningStats(userId: string): Promise<UserLearningStats>;
+
+  findUserWordLibrary(
+    params: FindUserWordLibraryParams,
+  ): Promise<UserWordLibraryResult>;
 }

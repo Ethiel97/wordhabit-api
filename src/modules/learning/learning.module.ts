@@ -12,6 +12,7 @@ import { SetUserWordProgressHandler } from './application/handlers/set-user-word
 import { GetReviewQueueHandler } from './application/handlers/get-review-queue.handler';
 import { SubmitWordReviewHandler } from './application/handlers/submit-word-review.handler';
 import { GetLearningDashboardHandler } from './application/handlers/get-learning-dashboard.handler';
+import { GetUserWordLibraryHandler } from './application/handlers/get-user-word-library.handler';
 
 const commandHandlers = [SetUserWordProgressHandler, SubmitWordReviewHandler];
 const queryHandlers = [
@@ -20,6 +21,7 @@ const queryHandlers = [
   GetRandomWordForLandingHandler,
   GetReviewQueueHandler,
   GetLearningDashboardHandler,
+  GetUserWordLibraryHandler,
 ];
 
 @Module({

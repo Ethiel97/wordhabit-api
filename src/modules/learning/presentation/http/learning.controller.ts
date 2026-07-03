@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
   GetTodayWordForUserQuery,
@@ -20,6 +20,11 @@ import {
   GetLearningDashboardQuery,
   GetLearningDashboardResult,
 } from '../../application/queries/get-learning-dashboard.query';
+import {
+  GetUserWordLibraryQuery,
+  GetUserWordLibraryResult,
+} from '../../application/queries/get-user-word-library.query';
+import { GetUserWordLibraryRequestDto } from '../../application/dtos/get-user-word-library-request.dto';
 
 @Controller(LEARNING.BASE)
 export class LearningController {
@@ -96,6 +101,24 @@ export class LearningController {
   async getLearningDashboard(@Param('userId') userId: string) {
     const result: GetLearningDashboardResult = await this.queryBus.execute(
       new GetLearningDashboardQuery(userId),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Get(LEARNING.LIBRARY)
+  async getUserWordLibrary(
+    @Param('userId') userId: string,
+    @Query() request: GetUserWordLibraryRequestDto,
+  ) {
+    const result: GetUserWordLibraryResult = await this.queryBus.execute(
+      new GetUserWordLibraryQuery(
+        userId,
+        request.status,
+        request.search,
+        request.limit,
+        request.cursor,
+      ),
     );
 
     return ApiSuccessResponse.of(result);
