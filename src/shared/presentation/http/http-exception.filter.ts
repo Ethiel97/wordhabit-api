@@ -8,20 +8,22 @@ type ApiErrorCode =
   | 'HTTP_ERROR'
   | 'INTERNAL_SERVER_ERROR';
 
+import type { ArgumentsHost } from '@nestjs/common';
 import {
-  ArgumentsHost,
   Catch,
   ExceptionFilter,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
+import { SentryExceptionCaptured } from '@sentry/nestjs';
 import { ApiErrorResponse } from './api-error-response';
 import { AppError } from '../../application/errors/app-error';
-
 import type { Request, Response } from 'express';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  @SentryExceptionCaptured()
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -77,6 +79,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
           },
         }),
       );
+
+      if (status >= 500) {
+        Sentry.captureException(exception);
+      }
 
       return;
     }

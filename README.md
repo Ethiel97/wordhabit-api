@@ -148,6 +148,11 @@ REDIS_HOST="localhost"
 REDIS_PORT="6379"
 OPENAI_API_KEY=""
 OPENAI_VOCABULARY_MODEL="gpt-4.1-mini"
+SENTRY_DSN=""
+SENTRY_ENVIRONMENT="dev"
+SENTRY_TRACES_SAMPLE_RATE="0.1"
+SENTRY_PROFILES_SAMPLE_RATE="0.1"
+SENTRY_RELEASE=""
 PORT="4000"
 NODE_ENV="development"
 ```
@@ -205,6 +210,11 @@ pnpm worker:dev
 | `REDIS_PORT`              | Redis port when `REDIS_URL` is not set. Defaults to `6379`.                                           |
 | `OPENAI_API_KEY`          | API key used by vocabulary generation.                                                                |
 | `OPENAI_VOCABULARY_MODEL` | Optional model override for vocabulary generation. Defaults to `gpt-4.1-mini`.                        |
+| `SENTRY_DSN`              | Sentry DSN. When set, error tracking and profiling are enabled for both API and worker processes.     |
+| `SENTRY_ENVIRONMENT`      | Optional Sentry environment. Supported values are `dev` and `production`. Defaults to `dev` (or `production` when `NODE_ENV=production`). |
+| `SENTRY_TRACES_SAMPLE_RATE` | Trace sample rate from `0` to `1`. Defaults to `0.1`.                                               |
+| `SENTRY_PROFILES_SAMPLE_RATE` | Profile sample rate from `0` to `1`. Defaults to `0.1`.                                           |
+| `SENTRY_RELEASE`          | Optional release identifier used in Sentry events.                                                     |
 | `PORT`                    | HTTP port. Local default is `4000`; Docker/Fly configs set `3000`.                                    |
 | `NODE_ENV`                | Runtime environment. Production enables production database schema behavior and scheduled generation. |
 
