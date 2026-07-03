@@ -14,8 +14,9 @@ import {
 } from '../../../application/queries/get-waitlist-entries.query';
 import { GetWaitlistEntryQueryDto } from '../../../application/dto/get-waitlist-entry.query.dto';
 import { minutes, Throttle } from '@nestjs/throttler';
+import { WAITLIST } from '../../../../../shared/presentation/http/endpoints';
 
-@Controller('waitlist')
+@Controller(WAITLIST.BASE)
 export class WaitlistController {
   constructor(
     private readonly commandBus: CommandBus,
@@ -29,7 +30,7 @@ export class WaitlistController {
       blockDuration: minutes(60 * 5),
     },
   })
-  @Post()
+  @Post(WAITLIST.JOIN)
   async joinWaitlist(@Body() body: JoinWaitlistRequestDto) {
     const result = await this.commandBus.execute(
       new JoinWaitlistCommand(body.email, body.source),
@@ -45,7 +46,7 @@ export class WaitlistController {
       blockDuration: minutes(60 * 5),
     },
   })
-  @Get('count')
+  @Get(WAITLIST.COUNT)
   async getWaitlistCount() {
     const result: GetWaitlistCountResult = await this.queryBus.execute(
       new GetWaitlistCountQuery(),
@@ -61,7 +62,7 @@ export class WaitlistController {
       blockDuration: minutes(60 * 5),
     },
   })
-  @Get()
+  @Get(WAITLIST.LIST)
   async getWaitlistEntries() {
     const result: GetWaitlistEntriesResult = await this.queryBus.execute(
       new GetWaitlistEntriesQuery(),
@@ -77,7 +78,7 @@ export class WaitlistController {
       blockDuration: minutes(60 * 5),
     },
   })
-  @Get('by-email')
+  @Get(WAITLIST.GET_BY_EMAIL)
   async getWaitlistEntry(@Query() { email }: GetWaitlistEntryQueryDto) {
     const result = await this.queryBus.execute(
       new GetWaitlistEntryQuery(email),

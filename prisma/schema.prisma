@@ -189,6 +189,7 @@ model User {
   userLearningProfiles UserLearningProfile[]
   dailyWordAssignments DailyWordAssignment[]
   userWordProgresses   UserWordProgress[]
+  userLearningStreaks  UserLearningStreak[]
 
   @@index([email])
   @@index([username])
@@ -267,4 +268,20 @@ model UserWordProgress {
   @@index([userId, status])
   @@index([nextReviewAt])
   @@map("user_word_progress")
+}
+
+model UserLearningStreak {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  currentStreak    Int       @default(0)
+  longestStreak    Int       @default(0)
+  lastActivityDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_learning_streaks")
 }

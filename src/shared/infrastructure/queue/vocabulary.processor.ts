@@ -51,7 +51,7 @@ export class GenerateVocabularyBatchProcessor extends WorkerHost {
       allowedThemeSlugs,
     });
 
-    console.log('Vocabulary processor result: ', result.items);
+    this.logger.log('Vocabulary processor result: ', result.items);
 
     for (const item of result.items) {
       try {

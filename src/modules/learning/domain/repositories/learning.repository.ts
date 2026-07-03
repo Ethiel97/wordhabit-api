@@ -7,8 +7,17 @@ import {
   UserWordProgressStatus,
 } from '../entities/user-word-progress';
 import { LanguageCode } from '../../../../../generated/prisma/enums';
+import { UserLearningStreak } from '../entities/user-learning-streak';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
+
+export type UserLearningStats = {
+  seen: number;
+  learning: number;
+  mastered: number;
+  skipped: number;
+  total: number;
+};
 
 export interface CreateDailyAssignmentParams {
   userId: string;
@@ -29,6 +38,16 @@ export type TodayWordAssignment = VocabularyWordAggregate & {
 
 export type RandomWord = VocabularyWordAggregate;
 
+export type ReviewQueueItem = {
+  progressId: string;
+  wordId: string;
+  term: string;
+  masteryLevel: number;
+  reviewCount: number;
+  status: UserWordProgressStatus;
+  nextReviewAt: Date | null;
+};
+
 export interface FindUserWordProgressParams {
   userId: string;
   wordId: string;
@@ -46,6 +65,55 @@ export interface SetUserWordProgressStatusParams {
 export interface FindRandomWordParams {
   targetLanguage?: LanguageCode;
 }
+
+export interface FindReviewQueueParams {
+  userId: string;
+  now: Date;
+  limit: number;
+}
+
+export interface UpdateUserWordReviewParams {
+  userId: string;
+  wordId: string;
+  status: UserWordProgressStatus;
+  masteryLevel: number;
+  reviewCount: number;
+  lastReviewedAt: Date;
+  nextReviewAt: Date | null;
+}
+
+export interface UpsertUserLearningStreakParams {
+  userId: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityDate: Date;
+}
+
+export type FindUserWordLibraryParams = {
+  userId: string;
+  status?: UserWordProgressStatus;
+  search?: string;
+  limit: number;
+  cursor?: string;
+};
+
+export type UserWordLibraryItem = {
+  progressId: string;
+  wordId: string;
+  term: string;
+  normalizedTerm: string;
+  status: UserWordProgressStatus;
+  masteryLevel: number;
+  reviewCount: number;
+  lastReviewedAt: Date | null;
+  nextReviewAt: Date | null;
+  updatedAt: Date;
+};
+
+export type UserWordLibraryResult = {
+  items: UserWordLibraryItem[];
+  nextCursor: string | null;
+};
 
 export interface LearningRepository {
   findTodayAssignment(
@@ -69,4 +137,22 @@ export interface LearningRepository {
   ): Promise<UserWordProgress>;
 
   findRandomWord(params: FindRandomWordParams): Promise<RandomWord | null>;
+
+  findReviewQueue(params: FindReviewQueueParams): Promise<ReviewQueueItem[]>;
+
+  updateUserWordReview(
+    params: UpdateUserWordReviewParams,
+  ): Promise<UserWordProgress>;
+
+  findUserLearningStreak(userId: string): Promise<UserLearningStreak | null>;
+
+  upsertUserLearningStreak(
+    params: UpsertUserLearningStreakParams,
+  ): Promise<UserLearningStreak>;
+
+  findUserLearningStats(userId: string): Promise<UserLearningStats>;
+
+  findUserWordLibrary(
+    params: FindUserWordLibraryParams,
+  ): Promise<UserWordLibraryResult>;
 }

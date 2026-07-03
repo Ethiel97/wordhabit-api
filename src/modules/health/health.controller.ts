@@ -1,18 +1,19 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../../shared/infrastructure/database/prisma.service';
+import { HEALTH } from '../../shared/presentation/http/endpoints';
 
-@Controller('health')
+@Controller(HEALTH.BASE)
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 
-  @Get()
+  @Get(HEALTH.LIVENESS)
   getLiveness() {
     return {
       status: 'ok',
     };
   }
 
-  @Get('ready')
+  @Get(HEALTH.READINESS)
   async getReadiness() {
     const checks = {
       database: 'ok',

@@ -10,9 +10,11 @@ import { QueueModule } from './shared/infrastructure/queue/queue.module';
 import { HealthModule } from './modules/health/health.module';
 import { UserLearningModule } from './modules/user-learning/user-learning.module';
 import { LearningModule } from './modules/learning/learning.module';
+import { SentryModule } from '@sentry/nestjs/setup';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
