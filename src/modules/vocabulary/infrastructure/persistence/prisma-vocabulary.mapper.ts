@@ -64,7 +64,6 @@ export class PrismaVocabularyMapper {
       case 'FR':
         return LanguageCode.FR;
       default: {
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         throw new Error(`Unhandled language code: ${value}`);
       }
     }

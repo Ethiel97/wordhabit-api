@@ -13,8 +13,16 @@ import { GetReviewQueueHandler } from './application/handlers/get-review-queue.h
 import { SubmitWordReviewHandler } from './application/handlers/submit-word-review.handler';
 import { GetLearningDashboardHandler } from './application/handlers/get-learning-dashboard.handler';
 import { GetUserWordLibraryHandler } from './application/handlers/get-user-word-library.handler';
+import { GetUserFavoriteWordsHandler } from './application/handlers/get-user-favorite-words.handler';
+import { AddUserFavoriteWordHandler } from './application/handlers/add-user-favorite-word.handler';
+import { RemoveUserFavoriteWordHandler } from './application/handlers/remove-user-favorite-word.handler';
 
-const commandHandlers = [SetUserWordProgressHandler, SubmitWordReviewHandler];
+const commandHandlers = [
+  SetUserWordProgressHandler,
+  SubmitWordReviewHandler,
+  AddUserFavoriteWordHandler,
+  RemoveUserFavoriteWordHandler,
+];
 const queryHandlers = [
   GetTodayWordForUserHandler,
   GetUserWordProgressHandler,
@@ -22,6 +30,7 @@ const queryHandlers = [
   GetReviewQueueHandler,
   GetLearningDashboardHandler,
   GetUserWordLibraryHandler,
+  GetUserFavoriteWordsHandler,
 ];
 
 @Module({

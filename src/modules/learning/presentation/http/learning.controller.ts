@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
   GetTodayWordForUserQuery,
@@ -25,6 +34,12 @@ import {
   GetUserWordLibraryResult,
 } from '../../application/queries/get-user-word-library.query';
 import { GetUserWordLibraryRequestDto } from '../../application/dtos/get-user-word-library-request.dto';
+import {
+  GetUserFavoriteWordsQuery,
+  GetUserFavoriteWordsResult,
+} from '../../application/queries/get-user-favorite-words.query';
+import { AddUserFavoriteWordCommand } from '../../application/commands/add-user-favorite-word.command';
+import { RemoveUserFavoriteWordCommand } from '../../application/commands/remove-user-favorite-word.command';
 
 @Controller(LEARNING.BASE)
 export class LearningController {
@@ -119,6 +134,39 @@ export class LearningController {
         request.limit,
         request.cursor,
       ),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Get(LEARNING.FAVORITE_WORDS)
+  async getUserFavoriteWords(@Param('userId') userId: string) {
+    const result: GetUserFavoriteWordsResult = await this.queryBus.execute(
+      new GetUserFavoriteWordsQuery(userId),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Post(LEARNING.FAVORITE_WORD)
+  async addUserFavoriteWord(
+    @Param('userId') userId: string,
+    @Param('wordId') wordId: string,
+  ) {
+    const result = await this.commandBus.execute(
+      new AddUserFavoriteWordCommand(userId, wordId),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Delete(LEARNING.FAVORITE_WORD)
+  async removeUserFavoriteWord(
+    @Param('userId') userId: string,
+    @Param('wordId') wordId: string,
+  ) {
+    const result = await this.commandBus.execute(
+      new RemoveUserFavoriteWordCommand(userId, wordId),
     );
 
     return ApiSuccessResponse.of(result);

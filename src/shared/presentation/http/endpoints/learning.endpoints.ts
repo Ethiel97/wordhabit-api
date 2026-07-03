@@ -7,4 +7,6 @@ export const LEARNING = {
   WORD_REVIEW: 'users/:userId/words/:wordId/review',
   DASHBOARD: 'users/:userId/dashboard',
   LIBRARY: 'users/:userId/library',
+  FAVORITE_WORDS: 'users/:userId/favorite-words',
+  FAVORITE_WORD: 'users/:userId/favorite-words/:wordId',
 } as const;

@@ -8,6 +8,7 @@ import {
 } from '../entities/user-word-progress';
 import { LanguageCode } from '../../../../../generated/prisma/enums';
 import { UserLearningStreak } from '../entities/user-learning-streak';
+import { FavoriteWord } from '../entities/favorite-word';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 
@@ -155,4 +156,10 @@ export interface LearningRepository {
   findUserWordLibrary(
     params: FindUserWordLibraryParams,
   ): Promise<UserWordLibraryResult>;
+
+  findUserFavoriteWords(userId: string): Promise<FavoriteWord[]>;
+
+  addUserFavoriteWord(userId: string, wordId: string): Promise<FavoriteWord>;
+
+  removeUserFavoriteWord(userId: string, wordId: string): Promise<boolean>;
 }

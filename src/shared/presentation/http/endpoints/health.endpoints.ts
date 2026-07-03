@@ -3,4 +3,3 @@ export const HEALTH = {
   LIVENESS: '',
   READINESS: 'ready',
 } as const;
-

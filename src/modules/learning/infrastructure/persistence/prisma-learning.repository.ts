@@ -26,12 +26,74 @@ import {
 } from '../../domain/entities/user-word-progress';
 import { PrismaLearningMapper } from './prisma-learning.mapper';
 import { UserLearningStreak } from '../../domain/entities/user-learning-streak';
+import { FavoriteWord } from '../../domain/entities/favorite-word';
 
 @Injectable()
 export class PrismaLearningRepository implements LearningRepository {
   private readonly logger = new Logger(PrismaLearningRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async findUserFavoriteWords(userId: string): Promise<FavoriteWord[]> {
+    const favorites = await this.prisma.favoriteWord.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      include: {
+        word: true, // Include the related word entity
+      },
+    });
+
+    return favorites.map((favorite) => ({
+      id: favorite.id,
+      userId: favorite.userId,
+      term: favorite.word.term, // Access the term from the related word entity
+      normalizedTerm: favorite.word.normalizedTerm, // Access the normalizedTerm from the related word entity
+      wordId: favorite.wordId,
+      createdAt: favorite.createdAt,
+    }));
+  }
+
+  async addUserFavoriteWord(
+    userId: string,
+    wordId: string,
+  ): Promise<FavoriteWord> {
+    const favorite = await this.prisma.favoriteWord.upsert({
+      where: {
+        userId_wordId: {
+          userId,
+          wordId,
+        },
+      },
+      update: {},
+      create: {
+        userId,
+        wordId,
+      },
+      include: {
+        word: true, // Include the related word entity
+      },
+    });
+
+    return {
+      id: favorite.id,
+      term: favorite.word.term, // Access the term from the related word entity
+      normalizedTerm: favorite.word.normalizedTerm, // Access the normalizedTerm from the related word entity
+      userId: favorite.userId,
+      wordId: favorite.wordId,
+      createdAt: favorite.createdAt,
+    };
+  }
+
+  async removeUserFavoriteWord(
+    userId: string,
+    wordId: string,
+  ): Promise<boolean> {
+    const result = await this.prisma.favoriteWord.deleteMany({
+      where: { userId, wordId },
+    });
+
+    return result.count > 0;
+  }
 
   async findUserWordLibrary(
     params: FindUserWordLibraryParams,

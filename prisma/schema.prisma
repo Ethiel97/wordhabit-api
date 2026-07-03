@@ -90,6 +90,7 @@ model VocabularyWord {
   themes               VocabularyWordTheme[]
   dailyWordAssignments DailyWordAssignment[]
   userWordProgresses   UserWordProgress[]
+  favoriteWords        FavoriteWord[]
 
   @@unique([normalizedTerm, targetLanguage])
   @@index([targetLanguage])
@@ -190,6 +191,7 @@ model User {
   dailyWordAssignments DailyWordAssignment[]
   userWordProgresses   UserWordProgress[]
   userLearningStreaks  UserLearningStreak[]
+  favoriteWords        FavoriteWord[]
 
   @@index([email])
   @@index([username])
@@ -284,4 +286,19 @@ model UserLearningStreak {
 
   @@index([userId])
   @@map("user_learning_streaks")
+}
+
+model FavoriteWord {
+  id        String   @id @default(cuid())
+  userId    String
+  wordId    String
+  createdAt DateTime @default(now())
+
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, wordId])
+  @@index([userId])
+  @@index([wordId])
+  @@map("favorite_words")
 }
