@@ -364,6 +364,11 @@ export class PrismaLearningRepository implements LearningRepository {
             definitions: true,
             pronunciations: true,
             synonyms: true,
+            themes: {
+              include: {
+                theme: true,
+              },
+            },
           },
         },
       },
@@ -378,6 +383,7 @@ export class PrismaLearningRepository implements LearningRepository {
         examples: created.word.examples,
         pronunciations: created.word.pronunciations,
         synonyms: created.word.synonyms,
+        themes: created.word.themes.map((t) => t.theme),
       }),
     };
   }
@@ -456,6 +462,8 @@ export class PrismaLearningRepository implements LearningRepository {
     };
   }
 
+  // Find today's assignment for a user
+  // This method retrieves the daily word assignment for a specific user on a given date.
   async findTodayAssignment(
     params: FindTodayAssignmentParams,
   ): Promise<TodayWordAssignment | null> {
@@ -477,6 +485,11 @@ export class PrismaLearningRepository implements LearningRepository {
             examples: true,
             pronunciations: true,
             synonyms: true,
+            themes: {
+              include: {
+                theme: true,
+              },
+            },
           },
         },
       },
@@ -495,6 +508,7 @@ export class PrismaLearningRepository implements LearningRepository {
         examples: found.word.examples,
         pronunciations: found.word.pronunciations,
         synonyms: found.word.synonyms,
+        themes: found.word.themes.map((t) => t.theme),
       }),
     };
   }
@@ -518,6 +532,11 @@ export class PrismaLearningRepository implements LearningRepository {
         examples: true,
         pronunciations: true,
         synonyms: true,
+        themes: {
+          include: {
+            theme: true,
+          },
+        },
       },
     });
 
@@ -528,6 +547,7 @@ export class PrismaLearningRepository implements LearningRepository {
         examples: randomWord.examples,
         pronunciations: randomWord.pronunciations,
         synonyms: randomWord.synonyms,
+        themes: randomWord.themes.map((t) => t.theme),
       }),
     };
   }

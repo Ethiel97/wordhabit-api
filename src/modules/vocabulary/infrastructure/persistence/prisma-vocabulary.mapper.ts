@@ -218,7 +218,8 @@ export class PrismaVocabularyMapper {
         this.toDomainPronunciation(p),
       ),
       synonyms: data.synonyms.map((s) => this.toDomainSynonym(s)),
-      themes: data.themes?.map((t) => t.name),
+      //TODO: Decide later if we want to return the slug or the name of the theme. For now, we return the slug.
+      themes: data.themes?.map((t) => t.slug),
     };
   }
 }
