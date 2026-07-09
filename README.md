@@ -239,7 +239,7 @@ This is a compact map of the currentUserWordProgress HTTP surface, not a full AP
 - `POST /api/vocabulary/words`
 - `GET /api/vocabulary/words`
 - `GET /api/vocabulary/words/:id`
-- `GET /api/vocabulary/words/by-term/search`
+- `GET /api/vocabulary/words/search`
 
 ### Vocabulary Themes
 

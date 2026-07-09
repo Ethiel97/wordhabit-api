@@ -39,8 +39,10 @@ export interface CreateVocabularyWordParams {
 }
 
 export interface FindVocabularyWordParams {
-  normalizedTerm: string;
-  targetLanguage: LanguageCode;
+  normalizedTerm?: string;
+  difficulty?: WordDifficulty;
+  targetLanguage?: LanguageCode;
+  theme?: string;
 }
 
 export interface VocabularyWordAggregate {
@@ -81,9 +83,7 @@ export interface VocabularyRepository {
 
   findWordById(wordId: string): Promise<VocabularyWordAggregate | null>;
 
-  findWordByNormalizedTerm(
-    params: FindVocabularyWordParams,
-  ): Promise<VocabularyWordAggregate | null>;
+  search(params: FindVocabularyWordParams): Promise<VocabularyWordAggregate[]>;
 
   findByNormalizedTerm(
     params: FindVocabularyWordParams,

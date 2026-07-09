@@ -1,14 +1,22 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateVocabularyWordCommand } from '../../../application/commands/create-vocabulary-word.command';
 import { CreateVocabularyWordRequestDto } from '../../../application/dto/create-vocabulary-word.request.dto';
 import { ApiSuccessResponse } from '../../../../../shared/presentation/http/api-success-response';
 import { GetVocabularyWordByIdQuery } from '../../../application/queries/get-vocabulary-word-by-id.query';
-import { GetVocabularyWordByTermQuery } from '../../../application/queries/get-vocabulary-word-by-term.query';
-import { LanguageCode } from '../../../domain/entities/language-code';
+import { SearchVocabularyWordsQuery } from '../../../application/queries/search-vocabulary-words.query';
 import { ListVocabularyWordsQuery } from '../../../application/queries/list-vocabulary-words.query';
 import { ListVocabularyWordsRequestDto } from '../../../application/dto/list-vocabulary-words.request.dto';
 import { VOCABULARY } from '../../../../../shared/presentation/http/endpoints';
+import { SearchVocabularyWordsRequestDto } from '../../../application/dto/search-vocabulary-words.request.dto';
 
 @Controller(VOCABULARY.BASE)
 export class VocabularyController {
@@ -36,22 +44,24 @@ export class VocabularyController {
     return ApiSuccessResponse.of(result);
   }
 
-  @Get(VOCABULARY.GET_BY_ID)
-  async getWordById(@Param('id') id: string) {
+  @Get(VOCABULARY.SEARCH)
+  async searchWords(@Query() query: SearchVocabularyWordsRequestDto) {
     const result = await this.queryBus.execute(
-      new GetVocabularyWordByIdQuery(id),
+      new SearchVocabularyWordsQuery(
+        query.q,
+        query.targetLanguage,
+        query.theme,
+        query.difficulty,
+      ),
     );
 
     return ApiSuccessResponse.of(result);
   }
 
-  @Get('by-term/search')
-  async getWordByTerm(
-    @Query('term') term: string,
-    @Query('targetLanguage') targetLanguage: LanguageCode,
-  ) {
+  @Get(VOCABULARY.GET_BY_ID)
+  async getWordById(@Param('id', new ParseUUIDPipe()) id: string) {
     const result = await this.queryBus.execute(
-      new GetVocabularyWordByTermQuery(term, targetLanguage),
+      new GetVocabularyWordByIdQuery(id),
     );
 
     return ApiSuccessResponse.of(result);

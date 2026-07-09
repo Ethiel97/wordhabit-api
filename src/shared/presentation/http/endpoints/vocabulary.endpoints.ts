@@ -2,7 +2,7 @@ export const VOCABULARY = {
   BASE: 'vocabulary/words',
   CREATE: '',
   GET_BY_ID: ':id',
-  GET_BY_TERM: 'by-term/search',
+  SEARCH: '/search',
   LIST: '',
 } as const;
 

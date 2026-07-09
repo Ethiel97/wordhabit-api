@@ -89,41 +89,72 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
       totalPages: Math.ceil(total / pageSize),
     };
   }
-  async findWordByNormalizedTerm(
+  async search(
     params: FindVocabularyWordParams,
-  ): Promise<VocabularyWordAggregate | null> {
-    const aggregate = await this.prisma.vocabularyWord.findUnique({
+  ): Promise<VocabularyWordAggregate[]> {
+    const words = await this.prisma.vocabularyWord.findMany({
       where: {
-        normalizedTerm_targetLanguage: {
-          normalizedTerm: params.normalizedTerm,
-          targetLanguage: PrismaVocabularyMapper.toPrismaLanguageCode(
-            params.targetLanguage ?? this.getDefaultLanguage(),
-          ),
-        },
+        ...(params.normalizedTerm
+          ? {
+              normalizedTerm: {
+                contains: params.normalizedTerm,
+                mode: 'insensitive',
+              },
+            }
+          : {}),
+        ...(params.difficulty ? { difficulty: params.difficulty } : {}),
+        ...(params.targetLanguage
+          ? { targetLanguage: params.targetLanguage }
+          : {}),
+        ...(params.theme
+          ? {
+              themes: {
+                some: {
+                  theme: {
+                    OR: [
+                      {
+                        slug: params.theme,
+                      },
+                      {
+                        name: {
+                          contains: params.theme,
+                          mode: 'insensitive',
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            }
+          : {}),
       },
       include: {
         definitions: true,
         examples: true,
         pronunciations: true,
         synonyms: true,
-        themes: true,
+        themes: {
+          include: {
+            theme: true,
+          },
+        },
+      },
+      take: 20,
+      orderBy: {
+        term: 'asc',
       },
     });
 
-    if (!aggregate) {
-      return null;
-    }
-
-    return {
-      ...PrismaVocabularyMapper.toDomainAggregate({
-        word: aggregate,
-        definitions: aggregate.definitions,
-        examples: aggregate.examples,
-        pronunciations: aggregate.pronunciations,
-        synonyms: aggregate.synonyms,
+    return words.map((word) =>
+      PrismaVocabularyMapper.toDomainAggregate({
+        word,
+        definitions: word.definitions,
+        examples: word.examples,
+        pronunciations: word.pronunciations,
+        synonyms: word.synonyms,
+        themes: word.themes.map((t) => t.theme),
       }),
-      // themes: aggregate.themes.map((t) => t.theme.slug),
-    };
+    );
   }
   async findWordById(wordId: string): Promise<VocabularyWordAggregate | null> {
     const aggregate = await this.prisma.vocabularyWord.findUnique({
@@ -257,13 +288,14 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
     });
   }
 
-  async findByNormalizedTerm(
-    params: FindVocabularyWordParams,
-  ): Promise<VocabularyWord | null> {
+  async findByNormalizedTerm(params: {
+    term: string;
+    targetLanguage: LanguageCode;
+  }): Promise<VocabularyWord | null> {
     const found = await this.prisma.vocabularyWord.findUnique({
       where: {
         normalizedTerm_targetLanguage: {
-          normalizedTerm: params.normalizedTerm,
+          normalizedTerm: params.term,
           targetLanguage: PrismaVocabularyMapper.toPrismaLanguageCode(
             params.targetLanguage ?? this.getDefaultLanguage(),
           ),

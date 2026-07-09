@@ -9,7 +9,7 @@ import { THEME_REPOSITORY } from './domain/repositories/theme.repository';
 import { THEME_LOOKUP_PORT } from '../../shared/application/ports/theme-lookup.port';
 import { CreateVocabularyWordHandler } from './application/handlers/create-vocabulary-word.handler';
 import { GetVocabularyWordByIdHandler } from './application/handlers/get-vocabulary-word-by-id.handler';
-import { GetVocabularyWordByTermHandler } from './application/handlers/get-vocabulary-word-by-term.handler';
+import { SearchVocabularyWordsHandler } from './application/handlers/search-vocabulary-words.handler';
 import { ListVocabularyWordsHandler } from './application/handlers/list-vocabulary-words.handler';
 import { CreateThemeHandler } from './application/handlers/create-theme.handler';
 import { UpdateThemeHandler } from './application/handlers/update-theme.handler';
@@ -26,7 +26,7 @@ const commandHandlers = [
 
 const queryHandlers = [
   GetVocabularyWordByIdHandler,
-  GetVocabularyWordByTermHandler,
+  SearchVocabularyWordsHandler,
   ListVocabularyWordsHandler,
   ListThemesHandler,
   GetThemeBySlugHandler,

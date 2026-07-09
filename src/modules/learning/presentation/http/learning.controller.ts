@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -91,7 +92,7 @@ export class LearningController {
   }
 
   @Get(LEARNING.REVIEW_QUEUE)
-  async getReviewQueue(@Param('userId') userId: string) {
+  async getReviewQueue(@Param('userId', new ParseUUIDPipe()) userId: string) {
     const result: GetReviewQueueResult = await this.queryBus.execute(
       new GetReviewQueueQuery(userId),
     );
@@ -123,7 +124,7 @@ export class LearningController {
 
   @Get(LEARNING.LIBRARY)
   async getUserWordLibrary(
-    @Param('userId') userId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
     @Query() request: GetUserWordLibraryRequestDto,
   ) {
     const result: GetUserWordLibraryResult = await this.queryBus.execute(
