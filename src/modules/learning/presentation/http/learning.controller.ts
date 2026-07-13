@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -41,6 +40,8 @@ import {
 } from '../../application/queries/get-user-favorite-words.query';
 import { AddUserFavoriteWordCommand } from '../../application/commands/add-user-favorite-word.command';
 import { RemoveUserFavoriteWordCommand } from '../../application/commands/remove-user-favorite-word.command';
+import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
+import type { AuthenticatedUser } from '../../../auth/domain/entities/authenticated-user';
 
 @Controller(LEARNING.BASE)
 export class LearningController {
@@ -59,21 +60,21 @@ export class LearningController {
   }
 
   @Get(LEARNING.TODAY_WORD)
-  async getTodayWordForUser(@Param('userId') userId: string) {
+  async getTodayWordForUser(@CurrentUser() user: AuthenticatedUser) {
     const todayWord: GetTodayWordForUserResult = await this.queryBus.execute(
-      new GetTodayWordForUserQuery(userId),
+      new GetTodayWordForUserQuery(user.id),
     );
 
     return ApiSuccessResponse.of(todayWord);
   }
 
   async setUserWordProgressStatus(
-    @Param('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('wordId') wordId: string,
     @Body() body: SetUserWordProgressRequestDto,
   ) {
     const progress = await this.commandBus.execute(
-      new SetUserWordProgressCommand(userId, wordId, body.status),
+      new SetUserWordProgressCommand(user.id, wordId, body.status),
     );
 
     return ApiSuccessResponse.of(progress);
@@ -81,20 +82,20 @@ export class LearningController {
 
   @Get(LEARNING.WORD_PROGRESS)
   async getUserWordProgressStatus(
-    @Param('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('wordId') wordId: string,
   ) {
     const progress = await this.queryBus.execute(
-      new GetUserWordProgressQuery(userId, wordId),
+      new GetUserWordProgressQuery(user.id, wordId),
     );
 
     return ApiSuccessResponse.of(progress);
   }
 
   @Get(LEARNING.REVIEW_QUEUE)
-  async getReviewQueue(@Param('userId', new ParseUUIDPipe()) userId: string) {
+  async getReviewQueue(@CurrentUser() user: AuthenticatedUser) {
     const result: GetReviewQueueResult = await this.queryBus.execute(
-      new GetReviewQueueQuery(userId),
+      new GetReviewQueueQuery(user.id),
     );
 
     return ApiSuccessResponse.of(result);
@@ -102,21 +103,21 @@ export class LearningController {
 
   @Patch(LEARNING.WORD_REVIEW)
   async submitWordReview(
-    @Param('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('wordId') wordId: string,
     @Body() body: SubmitWordReviewRequestDto,
   ) {
     const result = await this.commandBus.execute(
-      new SubmitWordReviewCommand(userId, wordId, body.correct),
+      new SubmitWordReviewCommand(user.id, wordId, body.correct),
     );
 
     return ApiSuccessResponse.of(result);
   }
 
   @Get(LEARNING.DASHBOARD)
-  async getLearningDashboard(@Param('userId') userId: string) {
+  async getLearningDashboard(@CurrentUser() user: AuthenticatedUser) {
     const result: GetLearningDashboardResult = await this.queryBus.execute(
-      new GetLearningDashboardQuery(userId),
+      new GetLearningDashboardQuery(user.id),
     );
 
     return ApiSuccessResponse.of(result);
@@ -124,12 +125,12 @@ export class LearningController {
 
   @Get(LEARNING.LIBRARY)
   async getUserWordLibrary(
-    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Query() request: GetUserWordLibraryRequestDto,
   ) {
     const result: GetUserWordLibraryResult = await this.queryBus.execute(
       new GetUserWordLibraryQuery(
-        userId,
+        user.id,
         request.status,
         request.search,
         request.limit,
@@ -141,9 +142,9 @@ export class LearningController {
   }
 
   @Get(LEARNING.FAVORITE_WORDS)
-  async getUserFavoriteWords(@Param('userId') userId: string) {
+  async getUserFavoriteWords(@CurrentUser() user: AuthenticatedUser) {
     const result: GetUserFavoriteWordsResult = await this.queryBus.execute(
-      new GetUserFavoriteWordsQuery(userId),
+      new GetUserFavoriteWordsQuery(user.id),
     );
 
     return ApiSuccessResponse.of(result);
@@ -151,11 +152,11 @@ export class LearningController {
 
   @Post(LEARNING.FAVORITE_WORD)
   async addUserFavoriteWord(
-    @Param('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('wordId') wordId: string,
   ) {
     const result = await this.commandBus.execute(
-      new AddUserFavoriteWordCommand(userId, wordId),
+      new AddUserFavoriteWordCommand(user.id, wordId),
     );
 
     return ApiSuccessResponse.of(result);
@@ -163,11 +164,11 @@ export class LearningController {
 
   @Delete(LEARNING.FAVORITE_WORD)
   async removeUserFavoriteWord(
-    @Param('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('wordId') wordId: string,
   ) {
     const result = await this.commandBus.execute(
-      new RemoveUserFavoriteWordCommand(userId, wordId),
+      new RemoveUserFavoriteWordCommand(user.id, wordId),
     );
 
     return ApiSuccessResponse.of(result);

@@ -11,6 +11,7 @@ import { HealthModule } from './modules/health/health.module';
 import { UserLearningModule } from './modules/user-learning/user-learning.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { SentryModule } from '@sentry/nestjs/setup';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SentryModule } from '@sentry/nestjs/setup';
     VocabularyModule,
     VocabularyIngestionModule,
     WaitlistModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

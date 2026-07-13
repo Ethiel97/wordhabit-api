@@ -15,6 +15,7 @@ import {
 import { GetWaitlistEntryQueryDto } from '../../../application/dto/get-waitlist-entry.query.dto';
 import { minutes, Throttle } from '@nestjs/throttler';
 import { WAITLIST } from '../../../../../shared/presentation/http/endpoints';
+import { Public } from '../../../../auth/presentation/public.decorator';
 
 @Controller(WAITLIST.BASE)
 export class WaitlistController {
@@ -31,6 +32,7 @@ export class WaitlistController {
     },
   })
   @Post(WAITLIST.JOIN)
+  @Public()
   async joinWaitlist(@Body() body: JoinWaitlistRequestDto) {
     const result = await this.commandBus.execute(
       new JoinWaitlistCommand(body.email, body.source),

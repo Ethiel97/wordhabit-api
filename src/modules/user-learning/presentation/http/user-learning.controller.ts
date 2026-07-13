@@ -9,6 +9,8 @@ import { SetUserLearningProfileThemesRequestDto } from '../../application/dtos/s
 import { SetUserLearningProfileThemesCommand } from '../../application/commands/set-user-learning-profile-themes.command';
 import { ActivateUserLearningProfileCommand } from '../../application/commands/activate-user-learning-profile.command';
 import { USER_LEARNING } from '../../../../shared/presentation/http/endpoints';
+import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
+import type { AuthenticatedUser } from '../../../auth/domain/entities/authenticated-user';
 
 @Controller(USER_LEARNING.BASE)
 export class UserLearningController {
@@ -35,18 +37,18 @@ export class UserLearningController {
   }
 
   @Get(USER_LEARNING.GET_ACTIVE_PROFILE)
-  async getActiveUserLearningProfile(@Param('userId') userId: string) {
+  async getActiveUserLearningProfile(@CurrentUser() user: AuthenticatedUser) {
     const result = await this.queryBus.execute(
-      new GetActiveUserLearningProfileQuery(userId),
+      new GetActiveUserLearningProfileQuery(user.id),
     );
 
     return ApiSuccessResponse.of(result);
   }
 
   @Get(USER_LEARNING.LIST_PROFILES)
-  async getUsersLearningProfiles(@Param('userId') userId: string) {
+  async getUsersLearningProfiles(@CurrentUser() user: AuthenticatedUser) {
     const result = await this.queryBus.execute(
-      new GetUserLearningProfilesQuery(userId),
+      new GetUserLearningProfilesQuery(user.id),
     );
 
     return ApiSuccessResponse.of(result);
@@ -54,11 +56,11 @@ export class UserLearningController {
 
   @Patch(USER_LEARNING.ACTIVATE_PROFILE)
   async activateUserLearningProfile(
-    @Param('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('profileId') profileId: string,
   ) {
     const result = await this.commandBus.execute(
-      new ActivateUserLearningProfileCommand(userId, profileId),
+      new ActivateUserLearningProfileCommand(user.id, profileId),
     );
 
     return ApiSuccessResponse.of(result);
