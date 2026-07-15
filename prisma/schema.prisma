@@ -181,22 +181,38 @@ model VocabularyWordTheme {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  password  String?
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  password        String?
+  emailVerifiedAt DateTime?
 
-  userLearningProfiles UserLearningProfile[]
-  dailyWordAssignments DailyWordAssignment[]
-  userWordProgresses   UserWordProgress[]
-  userLearningStreaks  UserLearningStreak[]
-  favoriteWords        FavoriteWord[]
+  userLearningProfiles   UserLearningProfile[]
+  dailyWordAssignments   DailyWordAssignment[]
+  userWordProgresses     UserWordProgress[]
+  userLearningStreaks    UserLearningStreak[]
+  favoriteWords          FavoriteWord[]
+  emailVerificationCodes EmailVerificationCode[]
 
   @@index([email])
-  @@index([username])
   @@map("users")
+}
+
+model EmailVerificationCode {
+  id         String    @id @default(cuid())
+  userId     String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_codes")
 }
 
 model UserLearningProfile {

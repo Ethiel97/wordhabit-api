@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterUserRequestDto {
   @IsEmail()
@@ -6,7 +12,8 @@ export class RegisterUserRequestDto {
 
   @IsString()
   @IsNotEmpty()
-  username!: string;
+  @MaxLength(100)
+  name!: string;
 
   @IsString()
   @MinLength(8)

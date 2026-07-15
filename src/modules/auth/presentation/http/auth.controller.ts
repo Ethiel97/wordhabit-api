@@ -12,6 +12,9 @@ import { RegisterUserCommand } from '../../application/commands/register-user.co
 import { AUTH } from '../endpoints/auth.endpoints';
 import { LoginUserRequestDto } from '../../application/dto/login-user-request.dto';
 import { LoginUserCommand } from '../../application/commands/login-user.command';
+import { VerifyEmailRequestDto } from '../../application/dto/verify-email-request.dto';
+import { VerifyEmailCommand } from '../../application/commands/verify-email.command';
+import { ResendVerificationEmailCommand } from '../../application/commands/resend-verification-email.command';
 import { JwtAuthGuard } from '../../infrastructure/authentication/jwt-auth.guard';
 import { CurrentUser } from '../current-user.decoraor';
 import { type AuthenticatedUser } from '../../domain/entities/authenticated-user';
@@ -33,7 +36,7 @@ export class AuthController {
   @HttpCode(201)
   async register(@Body() body: RegisterUserRequestDto) {
     return this.commandBus.execute(
-      new RegisterUserCommand(body.email, body.username, body.password),
+      new RegisterUserCommand(body.email, body.name, body.password),
     );
   }
 
@@ -44,5 +47,22 @@ export class AuthController {
     return this.commandBus.execute(
       new LoginUserCommand(body.email, body.password),
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(AUTH.VERIFY_EMAIL)
+  @HttpCode(200)
+  async verifyEmail(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: VerifyEmailRequestDto,
+  ) {
+    return this.commandBus.execute(new VerifyEmailCommand(user.id, body.code));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(AUTH.RESEND_VERIFICATION_EMAIL)
+  @HttpCode(200)
+  async resendVerificationEmail(@CurrentUser() user: AuthenticatedUser) {
+    return this.commandBus.execute(new ResendVerificationEmailCommand(user.id));
   }
 }

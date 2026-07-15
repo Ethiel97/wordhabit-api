@@ -4,7 +4,7 @@ export const AUTH_USER_REPOSITORY = Symbol('AUTH_USER_REPOSITORY');
 
 export interface CreateAuthUserParams {
   email: string;
-  username: string;
+  name: string;
   password: string;
 }
 
@@ -14,4 +14,6 @@ export interface AuthUserRepository {
   findById(userId: string): Promise<User | null>;
 
   create(params: CreateAuthUserParams): Promise<User>;
+
+  markEmailVerified(userId: string): Promise<User>;
 }

@@ -27,12 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
-    });
-
-    console.log(
-      'JWT Strategy initialized with secret:',
-      configService.getOrThrow<string>('JWT_SECRET'),
-    ); // Debugging line to log the secret
+    }); // Debugging line to log the secret
   }
 
   async validate(payload: AccessTokenPayload): Promise<AuthenticatedUser> {
@@ -45,7 +40,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     return {
       id: user.id,
       email: user.email,
-      username: user.username,
+      name: user.name,
+      emailVerified: user.emailVerifiedAt !== null,
     };
   }
 }

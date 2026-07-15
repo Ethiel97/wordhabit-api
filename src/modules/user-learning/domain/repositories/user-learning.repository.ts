@@ -25,7 +25,7 @@ export interface SetUserLearningProfileThemesParams {
 
 export interface CreateUserParams {
   email: string;
-  username: string;
+  name: string;
 }
 
 export interface CreateUserLearningProfileParams {

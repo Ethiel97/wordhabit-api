@@ -167,7 +167,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
     return this.prisma.user.create({
       data: {
         email: params.email.trim().toLowerCase(),
-        username: params.username,
+        name: params.name,
       },
     });
   }

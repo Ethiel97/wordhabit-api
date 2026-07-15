@@ -42,9 +42,17 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
     const user = await this.prisma.user.create({
       data: {
         email: params.email,
-        username: params.username,
+        name: params.name,
         password: params.password,
       },
+    });
+    return PrismaUserMapper.toDomain(user);
+  }
+
+  async markEmailVerified(userId: string): Promise<User> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerifiedAt: new Date() },
     });
     return PrismaUserMapper.toDomain(user);
   }

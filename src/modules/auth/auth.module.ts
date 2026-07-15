@@ -15,13 +15,31 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './infrastructure/authentication/jwt-auth.guard';
 import { CqrsModule } from '@nestjs/cqrs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
+import { VerifyEmailHandler } from './application/handlers/verify-email.handler';
+import { ResendVerificationEmailHandler } from './application/handlers/resend-verification-email.handler';
+import { EmailVerificationService } from './application/services/email-verification.service';
+import { EMAIL_VERIFICATION_CODE_REPOSITORY } from './domain/repositories/email-verification-code.repository';
+import { PrismaEmailVerificationCodeRepository } from './infrastructure/persistence/prisma-email-verification-code.repository';
+import { AUTH_EMAIL_QUEUE } from './infrastructure/queue/auth-email-queue.constants';
+import { SendWelcomeEmailOnEmailVerifiedHandler } from './application/handlers/send-welcome-email-on-email-verified.handler';
 
-const commandHandlers = [RegisterUserHandler, LoginUserHandler];
+const commandHandlers = [
+  RegisterUserHandler,
+  LoginUserHandler,
+  VerifyEmailHandler,
+  ResendVerificationEmailHandler,
+];
+
+const eventHandlers = [SendWelcomeEmailOnEmailVerifiedHandler];
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     CqrsModule,
+    BullModule.registerQueue({
+      name: AUTH_EMAIL_QUEUE,
+    }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -35,9 +53,15 @@ const commandHandlers = [RegisterUserHandler, LoginUserHandler];
   providers: [
     JwtStrategy,
     ...commandHandlers,
+    ...eventHandlers,
+    EmailVerificationService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: EMAIL_VERIFICATION_CODE_REPOSITORY,
+      useClass: PrismaEmailVerificationCodeRepository,
     },
     {
       provide: PASSWORD_SERVICE,

@@ -7,8 +7,9 @@ export class PrismaUserMapper {
     return {
       id: prismaUser.id,
       email: prismaUser.email,
-      username: prismaUser.username,
+      name: prismaUser.name,
       password: prismaUser.password,
+      emailVerifiedAt: prismaUser.emailVerifiedAt,
       createdAt: prismaUser.createdAt,
       updatedAt: prismaUser.updatedAt,
     };
@@ -18,8 +19,9 @@ export class PrismaUserMapper {
     return {
       id: domainUser.id,
       email: domainUser.email,
-      username: domainUser.username,
+      name: domainUser.name,
       password: domainUser.password,
+      emailVerifiedAt: domainUser.emailVerifiedAt,
       createdAt: domainUser.createdAt,
       updatedAt: domainUser.updatedAt,
     };

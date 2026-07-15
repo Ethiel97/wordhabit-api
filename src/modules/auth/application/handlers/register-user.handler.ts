@@ -16,6 +16,7 @@ import {
   TOKEN_SERVICE,
   type TokenService,
 } from '../../domain/services/token-service';
+import { EmailVerificationService } from '../services/email-verification.service';
 
 @CommandHandler(RegisterUserCommand)
 export class RegisterUserHandler implements ICommandHandler<
@@ -31,6 +32,8 @@ export class RegisterUserHandler implements ICommandHandler<
 
     @Inject(TOKEN_SERVICE)
     private readonly tokenService: TokenService,
+
+    private readonly emailVerificationService: EmailVerificationService,
   ) {}
 
   async execute(command: RegisterUserCommand): Promise<RegisterUserResult> {
@@ -45,8 +48,14 @@ export class RegisterUserHandler implements ICommandHandler<
 
     const newUser = await this.authUserRepository.create({
       email: command.email,
-      username: command.username.trim(),
+      name: command.name.trim(),
       password: hashedPassword,
+    });
+
+    await this.emailVerificationService.issueVerificationCode({
+      userId: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
     });
 
     const accessToken = await this.tokenService.signAccessToken({
@@ -58,7 +67,8 @@ export class RegisterUserHandler implements ICommandHandler<
       user: {
         id: newUser.id,
         email: newUser.email,
-        username: newUser.username,
+        name: newUser.name,
+        emailVerified: false,
       },
       accessToken,
     };

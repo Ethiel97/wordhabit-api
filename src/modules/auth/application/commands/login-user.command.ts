@@ -4,7 +4,8 @@ export type LoginUserResult = {
   user: {
     id: string;
     email: string;
-    username: string;
+    name: string;
+    emailVerified: boolean;
   };
   accessToken: string;
 };

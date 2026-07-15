@@ -4,17 +4,23 @@ import { CreateUserLearningProfileRequestDto } from '../../application/dtos/crea
 import { CreateUserLearningProfileCommand } from '../../application/commands/create-user-learning-profile.command';
 import { ApiSuccessResponse } from '../../../../shared/presentation/http/api-success-response';
 import { ONBOARDING } from '../../../../shared/presentation/http/endpoints';
+import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
+import type { AuthenticatedUser } from '../../../auth/domain/entities/authenticated-user';
 
 @Controller(ONBOARDING.BASE)
 export class OnboardingController {
   constructor(private readonly commandBus: CommandBus) {}
 
   @Post(ONBOARDING.COMPLETE)
-  async completeOnboarding(@Body() body: CreateUserLearningProfileRequestDto) {
+  async completeOnboarding(
+    @CurrentUser() user: AuthenticatedUser,
+
+    @Body() body: CreateUserLearningProfileRequestDto,
+  ) {
     const result = await this.commandBus.execute(
       new CreateUserLearningProfileCommand(
-        body.email,
-        body.username,
+        user.email,
+        user.name,
         body.targetLanguage,
         body.interfaceLanguage,
         body.themeSlugs,

@@ -19,14 +19,15 @@ export class UserLearningController {
     private readonly queryBus: QueryBus,
   ) {}
 
-  @Post('profiles')
+  @Post(USER_LEARNING.CREATE_PROFILE)
   async createUserLearningProfile(
+    @CurrentUser() user: AuthenticatedUser,
     @Body() body: CreateUserLearningProfileRequestDto,
   ) {
     const result = await this.commandBus.execute(
       new CreateUserLearningProfileCommand(
-        body.email,
-        body.username,
+        user.email,
+        user.name,
         body.targetLanguage,
         body.interfaceLanguage,
         body.themeSlugs,

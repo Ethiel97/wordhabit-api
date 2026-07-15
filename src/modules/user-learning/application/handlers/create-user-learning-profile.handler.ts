@@ -31,7 +31,7 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
       foundUser ??
       (await this.userLearningRepository.createUser({
         email: command.email,
-        username: command.username,
+        name: command.name,
       }));
 
     const foundProfile =
