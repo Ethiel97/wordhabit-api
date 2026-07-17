@@ -2,10 +2,11 @@ import {
   JoinWaitlistCommand,
   JoinWaitlistResult,
 } from '../commands/join-waitlist.command';
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import type { WaitlistRepository } from '../../domain/repositories/waitlist.repository';
 import { WAITLIST_REPOSITORY } from '../../domain/repositories/waitlist.repository';
 import { ConflictException, Inject } from '@nestjs/common';
+import { WaitlistJoinedEvent } from '../../domain/events/waitlist-joined.event';
 
 @CommandHandler(JoinWaitlistCommand)
 export class JoinWaitlistHandler implements ICommandHandler<
@@ -15,6 +16,8 @@ export class JoinWaitlistHandler implements ICommandHandler<
   constructor(
     @Inject(WAITLIST_REPOSITORY)
     private readonly waitlistRepository: WaitlistRepository,
+
+    private readonly eventBus: EventBus,
   ) {}
 
   async execute(command: JoinWaitlistCommand): Promise<JoinWaitlistResult> {
@@ -31,6 +34,8 @@ export class JoinWaitlistHandler implements ICommandHandler<
       email: normalizedEmail,
       source: command.source,
     });
+
+    this.eventBus.publish(new WaitlistJoinedEvent(normalizedEmail));
 
     return {
       id: created.id,

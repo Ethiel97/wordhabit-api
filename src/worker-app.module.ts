@@ -6,6 +6,7 @@ import { QueueModule } from './shared/infrastructure/queue/queue.module';
 import { VocabularyModule } from './modules/vocabulary/vocabulary.module';
 import { VocabularyIngestionWorkerModule } from './modules/vocabulary-ingestion/vocabulary-ingestion-worker.module';
 import { AuthWorkerModule } from './modules/auth/auth-worker.module';
+import { WaitlistWorkerModule } from './modules/waitlist/waitlist-worker.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthWorkerModule } from './modules/auth/auth-worker.module';
     VocabularyModule,
     VocabularyIngestionWorkerModule,
     AuthWorkerModule,
+    WaitlistWorkerModule,
   ],
 })
 export class WorkerAppModule {}

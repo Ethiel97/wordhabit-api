@@ -7,6 +7,9 @@ import { WAITLIST_REPOSITORY } from './domain/repositories/waitlist.repository';
 import { GetWaitlistCountHandler } from './application/handlers/get-waitlist-count.handler';
 import { GetWaitlistEntryHandler } from './application/handlers/get-waitlist-entry.handler';
 import { GetWaitlistEntriesHandler } from './application/handlers/get-waitlist-entries.handler';
+import { BullModule } from '@nestjs/bullmq';
+import { WAITLIST_QUEUE } from './infrastructure/queue/waitlist-queue.constants';
+import { SendWaitlistConfirmationEmailHandler } from './application/handlers/send-waitlist-confirmation-email.handler';
 
 const commandHandlers = [JoinWaitlistHandler];
 
@@ -16,10 +19,18 @@ const queryHandlers = [
   GetWaitlistEntryHandler,
 ];
 
+const eventHandlers = [SendWaitlistConfirmationEmailHandler];
+
 @Module({
-  imports: [CqrsModule],
+  imports: [
+    CqrsModule,
+    BullModule.registerQueue({
+      name: WAITLIST_QUEUE,
+    }),
+  ],
   controllers: [WaitlistController],
   providers: [
+    ...eventHandlers,
     ...commandHandlers,
     ...queryHandlers,
     PrismaWaitlistRepository,

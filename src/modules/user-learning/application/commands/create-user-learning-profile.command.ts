@@ -14,7 +14,7 @@ export class CreateUserLearningProfileCommand extends Command<CreateUserLearning
 }
 
 export interface CreateUserLearningProfileResult {
-  learningProfileId: string;
+  id: string;
   userId: string;
   isActive: boolean;
   interfaceLanguage: LanguageCode;

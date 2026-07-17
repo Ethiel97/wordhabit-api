@@ -61,7 +61,7 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
       createdAt: profile.createdAt,
       interfaceLanguage: profile.interfaceLanguage,
       isActive: profile.isActive,
-      learningProfileId: profile.id,
+      id: profile.id,
       targetLanguage: profile.targetLanguage,
       themeSlugs: profile.themeSlugs,
       updatedAt: profile.updatedAt,
