@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Inject, Logger } from '@nestjs/common';
 import {
@@ -13,9 +13,10 @@ import {
   SendWelcomeEmailJobData,
 } from './auth-email-queue.constants';
 import { EmailTemplates } from '../../../../shared/infrastructure/mailer/resend-mailer.service';
+import { SentryReportingWorkerHost } from '../../../../shared/infrastructure/queue/sentry-reporting-processor';
 
 @Processor(AUTH_EMAIL_QUEUE)
-export class AuthEmailsProcessor extends WorkerHost {
+export class AuthEmailsProcessor extends SentryReportingWorkerHost {
   private readonly logger = new Logger(AuthEmailsProcessor.name);
 
   constructor(

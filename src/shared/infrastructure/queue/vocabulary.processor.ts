@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Inject, Logger } from '@nestjs/common';
 import type { VocabularyGenerationProvider } from '../../../modules/vocabulary-ingestion/domain/providers/vocabulary-generation.provider';
@@ -12,9 +12,10 @@ import {
 } from '../../../modules/vocabulary-ingestion/infrastructure/queue/vocabulary-queue.constants';
 import type { ThemeRepository } from '../../../modules/vocabulary/domain/repositories/theme.repository';
 import { THEME_REPOSITORY } from '../../../modules/vocabulary/domain/repositories/theme.repository';
+import { SentryReportingWorkerHost } from './sentry-reporting-processor';
 
 @Processor(VOCABULARY_QUEUE)
-export class GenerateVocabularyBatchProcessor extends WorkerHost {
+export class GenerateVocabularyBatchProcessor extends SentryReportingWorkerHost {
   private readonly logger = new Logger(GenerateVocabularyBatchProcessor.name);
 
   constructor(

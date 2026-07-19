@@ -42,6 +42,7 @@ import { AddUserFavoriteWordCommand } from '../../application/commands/add-user-
 import { RemoveUserFavoriteWordCommand } from '../../application/commands/remove-user-favorite-word.command';
 import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
 import type { AuthenticatedUser } from '../../../auth/domain/entities/authenticated-user';
+import { Public } from '../../../auth/presentation/public.decorator';
 
 @Controller(LEARNING.BASE)
 export class LearningController {
@@ -50,6 +51,7 @@ export class LearningController {
     private readonly commandBus: CommandBus,
   ) {}
 
+  @Public()
   @Get(LEARNING.RANDOM_WORD)
   async getRandomWordForLanding() {
     const randomWord = await this.queryBus.execute(
@@ -68,6 +70,7 @@ export class LearningController {
     return ApiSuccessResponse.of(todayWord);
   }
 
+  @Patch(LEARNING.WORD_PROGRESS)
   async setUserWordProgressStatus(
     @CurrentUser() user: AuthenticatedUser,
     @Param('wordId') wordId: string,

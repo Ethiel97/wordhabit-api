@@ -1,4 +1,4 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor } from '@nestjs/bullmq';
 import {
   SEND_WAITLIST_CONFIRMATION_EMAIL_JOB,
   SendWaitlistConfirmationEmailJobData,
@@ -12,9 +12,10 @@ import {
   type Mailer,
 } from '../../../../shared/application/ports/mailer.port';
 import { EmailTemplates } from '../../../../shared/infrastructure/mailer/resend-mailer.service';
+import { SentryReportingWorkerHost } from '../../../../shared/infrastructure/queue/sentry-reporting-processor';
 
 @Processor(WAITLIST_QUEUE)
-export class WaitlistProcessor extends WorkerHost {
+export class WaitlistProcessor extends SentryReportingWorkerHost {
   private readonly logger = new Logger(WaitlistProcessor.name);
   constructor(
     @Inject(MAILER)
