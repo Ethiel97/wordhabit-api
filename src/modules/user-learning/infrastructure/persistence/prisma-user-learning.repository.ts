@@ -179,6 +179,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       data: {
         userId: params.userId,
         targetLanguage: params.targetLanguage,
+        isActive: true,
         interfaceLanguage: params.interfaceLanguage,
         themes: {
           create: params.themeSlugs.map((themeSlug) => ({

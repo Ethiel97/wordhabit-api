@@ -48,6 +48,7 @@ export class WaitlistController {
       blockDuration: minutes(60 * 5),
     },
   })
+  @Public()
   @Get(WAITLIST.COUNT)
   async getWaitlistCount() {
     const result: GetWaitlistCountResult = await this.queryBus.execute(

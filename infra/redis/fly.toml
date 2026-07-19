@@ -1,0 +1,18 @@
+app = "wordhabit-redis"
+primary_region = "yyz"
+
+[build]
+  dockerfile = "Dockerfile"
+
+# No [http_service] / [[services]] on purpose: the app is reachable only over
+# Fly private networking at wordhabit-redis.internal:6379 (same org apps only).
+# Machines without services never auto-stop, so Redis stays up.
+
+[mounts]
+  source = "redis_data"
+  destination = "/data"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
