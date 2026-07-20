@@ -22,6 +22,7 @@ export interface GetLearningDashboardResult {
   streak: {
     currentStreak: number;
     longestStreak: number;
+    lastActivityDate: Date | null;
   };
 
   stats: UserLearningStats;

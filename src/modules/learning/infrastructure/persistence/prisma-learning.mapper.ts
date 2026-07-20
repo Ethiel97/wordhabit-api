@@ -8,15 +8,14 @@ export class PrismaLearningMapper {
     switch (value) {
       case 'NEW':
         return UserWordProgressStatus.NEW;
+      case 'SEEN':
+        return UserWordProgressStatus.SEEN;
       case 'LEARNING':
         return UserWordProgressStatus.LEARNING;
       case 'SKIPPED':
         return UserWordProgressStatus.SKIPPED;
       case 'MASTERED':
         return UserWordProgressStatus.MASTERED;
-
-      default:
-        return UserWordProgressStatus.NEW;
     }
   }
 
@@ -26,14 +25,14 @@ export class PrismaLearningMapper {
     switch (value) {
       case UserWordProgressStatus.NEW:
         return 'NEW';
+      case UserWordProgressStatus.SEEN:
+        return 'SEEN';
       case UserWordProgressStatus.LEARNING:
         return 'LEARNING';
       case UserWordProgressStatus.SKIPPED:
         return 'SKIPPED';
       case UserWordProgressStatus.MASTERED:
         return 'MASTERED';
-      default:
-        return 'NEW';
     }
   }
 }

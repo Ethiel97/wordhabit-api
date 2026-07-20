@@ -6,6 +6,9 @@ import {
 import { Inject } from '@nestjs/common';
 import type { LearningRepository } from '../../domain/repositories/learning.repository';
 import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import { TodayWordService } from '../services/today-word.service';
+import { UserLearningProfileNotFoundError } from '../../../user-learning/application/errors/user-learning-profile-not-found.error';
+import { CandidateWordNotFoundError } from '../errors/candidate-word-not-found.error';
 
 @QueryHandler(GetLearningDashboardQuery)
 export class GetLearningDashboardHandler implements IQueryHandler<
@@ -15,6 +18,8 @@ export class GetLearningDashboardHandler implements IQueryHandler<
   constructor(
     @Inject(LEARNING_REPOSITORY)
     private readonly learningRepository: LearningRepository,
+
+    private readonly todayWordService: TodayWordService,
   ) {}
 
   async execute(
@@ -26,14 +31,22 @@ export class GetLearningDashboardHandler implements IQueryHandler<
     today.setHours(0, 0, 0, 0);
 
     const [todayWord, reviewQueue, streak, stats] = await Promise.all([
-      this.learningRepository.findTodayAssignment({
-        userId: query.userId,
-        assignedFor: today,
-      }),
+      this.todayWordService
+        .getOrAssignTodayWord(query.userId)
+        .catch((error) => {
+          if (
+            error instanceof UserLearningProfileNotFoundError ||
+            error instanceof CandidateWordNotFoundError
+          ) {
+            return null;
+          }
+
+          throw error;
+        }),
 
       this.learningRepository.findReviewQueue({
         userId: query.userId,
-        now,
+        now: today,
         limit: 5,
       }),
 
@@ -53,6 +66,10 @@ export class GetLearningDashboardHandler implements IQueryHandler<
       streak: {
         currentStreak: streak?.currentStreak ?? 0,
         longestStreak: streak?.longestStreak ?? 0,
+        // A streak is consecutive days ending here, so this one date
+        // lets clients derive per-day activity (e.g. the week strip)
+        // without any history table.
+        lastActivityDate: streak?.lastActivityDate ?? null,
       },
 
       stats,

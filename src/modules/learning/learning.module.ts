@@ -16,6 +16,7 @@ import { GetUserWordLibraryHandler } from './application/handlers/get-user-word-
 import { GetUserFavoriteWordsHandler } from './application/handlers/get-user-favorite-words.handler';
 import { AddUserFavoriteWordHandler } from './application/handlers/add-user-favorite-word.handler';
 import { RemoveUserFavoriteWordHandler } from './application/handlers/remove-user-favorite-word.handler';
+import { TodayWordService } from './application/services/today-word.service';
 
 const commandHandlers = [
   SetUserWordProgressHandler,
@@ -33,6 +34,8 @@ const queryHandlers = [
   GetUserFavoriteWordsHandler,
 ];
 
+const services = [TodayWordService];
+
 @Module({
   imports: [VocabularyModule, UserLearningModule, CqrsModule],
   controllers: [LearningController],
@@ -43,6 +46,7 @@ const queryHandlers = [
       provide: LEARNING_REPOSITORY,
       useClass: PrismaLearningRepository,
     },
+    ...services,
   ],
 })
 export class LearningModule {}

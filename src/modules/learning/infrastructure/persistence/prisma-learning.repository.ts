@@ -336,6 +336,12 @@ export class PrismaLearningRepository implements LearningRepository {
         userId,
         wordId,
         status: PrismaLearningMapper.toPrismaUserWordProgressStatus(status),
+        // The first transition must persist the computed state too,
+        // not just the status — otherwise a fresh word lands at
+        // mastery 0 with no seenAt regardless of the state machine.
+        masteryLevel: params.masteryLevel,
+        seenAt: params.seenAt,
+        nextReviewAt: params.nextReviewAt,
       },
     });
 
