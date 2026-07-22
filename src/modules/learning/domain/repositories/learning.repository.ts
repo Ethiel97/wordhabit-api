@@ -98,17 +98,29 @@ export type FindUserWordLibraryParams = {
   cursor?: string;
 };
 
+export type UserWordLibraryDefinition = {
+  id: string;
+  text: string;
+  explanationLanguage: LanguageCode;
+};
+
 export type UserWordLibraryItem = {
   progressId: string;
   wordId: string;
   term: string;
   normalizedTerm: string;
+  targetLanguage: LanguageCode;
   status: UserWordProgressStatus;
   masteryLevel: number;
   reviewCount: number;
   lastReviewedAt: Date | null;
   nextReviewAt: Date | null;
   updatedAt: Date;
+  // A trimmed set of definitions (meaning text + its explanation
+  // language) — enough for the list's short meaning preview and to
+  // let the client pick the right language. The full word (examples,
+  // synonyms, pronunciations) loads on the detail screen.
+  definitions: UserWordLibraryDefinition[];
 };
 
 export type UserWordLibraryResult = {

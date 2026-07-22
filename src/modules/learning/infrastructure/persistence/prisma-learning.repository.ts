@@ -120,7 +120,14 @@ export class PrismaLearningRepository implements LearningRepository {
           : {}),
       },
       include: {
-        word: true,
+        word: {
+          include: {
+            definitions: {
+              select: { id: true, text: true, explanationLanguage: true },
+              orderBy: { createdAt: 'asc' },
+            },
+          },
+        },
       },
       orderBy: [
         {
@@ -148,6 +155,7 @@ export class PrismaLearningRepository implements LearningRepository {
         wordId: item.wordId,
         term: item.word.term,
         normalizedTerm: item.word.normalizedTerm,
+        targetLanguage: item.word.targetLanguage,
         status: PrismaLearningMapper.toDomainUserWordProgressStatus(
           item.status,
         ),
@@ -156,6 +164,11 @@ export class PrismaLearningRepository implements LearningRepository {
         lastReviewedAt: item.lastReviewedAt,
         nextReviewAt: item.nextReviewAt,
         updatedAt: item.updatedAt,
+        definitions: item.word.definitions.map((definition) => ({
+          id: definition.id,
+          text: definition.text,
+          explanationLanguage: definition.explanationLanguage,
+        })),
       })),
       nextCursor: hasNextPage ? pageItems[pageItems.length - 1].id : null,
     };

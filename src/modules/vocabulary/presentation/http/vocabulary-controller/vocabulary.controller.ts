@@ -59,7 +59,7 @@ export class VocabularyController {
   }
 
   @Get(VOCABULARY.GET_BY_ID)
-  async getWordById(@Param('id', new ParseUUIDPipe()) id: string) {
+  async getWordById(@Param('id') id: string) {
     const result = await this.queryBus.execute(
       new GetVocabularyWordByIdQuery(id),
     );
