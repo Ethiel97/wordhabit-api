@@ -9,6 +9,11 @@ import {
 import { LanguageCode } from '../../../../../generated/prisma/enums';
 import { UserLearningStreak } from '../entities/user-learning-streak';
 import { FavoriteWord } from '../entities/favorite-word';
+import { WordDefinition } from '../../../vocabulary/domain/entities/word-definition';
+import { WordExample } from '../../../vocabulary/domain/entities/word-example';
+import { WordPronunciation } from '../../../vocabulary/domain/entities/word-pronounciation';
+import { WordSynonym } from '../../../vocabulary/domain/entities/word-synonym';
+import { PartOfSpeech } from '../../../vocabulary/domain/entities/part-of-speech';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 
@@ -47,6 +52,16 @@ export type ReviewQueueItem = {
   reviewCount: number;
   status: UserWordProgressStatus;
   nextReviewAt: Date | null;
+  // The card front needs the part of speech and, for text-to-speech, the
+  // language the word is in; the back needs meaning, example and synonyms.
+  // A review session preloads its whole deck, so the card never waits on
+  // a fetch mid-flip.
+  partOfSpeech: PartOfSpeech;
+  targetLanguage: LanguageCode;
+  definitions: WordDefinition[];
+  examples: WordExample[];
+  pronunciations: WordPronunciation[];
+  synonyms: WordSynonym[];
 };
 
 export interface FindUserWordProgressParams {

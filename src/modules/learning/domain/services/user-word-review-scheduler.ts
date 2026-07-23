@@ -22,9 +22,15 @@ export function computeWordReviewState({
   correct,
   now,
 }: ComputeWordReviewStateParams): SubmitWordReviewResultState {
+  // A missed card costs no mastery — it only resets the interval, so the
+  // word comes back tomorrow instead of in a month. Flashcard grading is
+  // self-assessed: docking progress for admitting you forgot teaches the
+  // user to tap "Got it" instead, which corrupts the very signal the
+  // scheduler runs on. The interval *is* the correction. An objectively
+  // scored quiz can afford to penalise, because it cannot be gamed.
   const nextMasteryLevel = correct
     ? Math.min(current.masteryLevel + 15, 100)
-    : Math.max(current.masteryLevel - 10, 0);
+    : current.masteryLevel;
 
   const status =
     nextMasteryLevel >= 100

@@ -64,6 +64,10 @@ export class PrismaVocabularyMapper {
       case 'FR':
         return LanguageCode.FR;
       default: {
+        // Deliberately throws: this is the exhaustiveness guard. Adding a
+        // language to the Prisma enum must fail loudly here rather than
+        // silently mislabel every word as English. Nullable columns are
+        // handled at the call site, never by weakening this contract.
         throw new Error(`Unhandled language code: ${value}`);
       }
     }

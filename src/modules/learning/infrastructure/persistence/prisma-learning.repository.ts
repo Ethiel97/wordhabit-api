@@ -287,16 +287,28 @@ export class PrismaLearningRepository implements LearningRepository {
 
     const items = await this.prisma.userWordProgress.findMany({
       where: {
-        status: UserWordProgressStatus.LEARNING,
         userId,
-        nextReviewAt: {
-          lte: now,
+        // A word is due either because it has never been practised (just
+        // discovered, so no review is scheduled yet) or because its
+        // scheduled review has come around. MASTERED and SKIPPED are
+        // excluded by the status filter, so a null nextReviewAt here can
+        // only mean "discovered, not yet practised".
+        status: {
+          in: [UserWordProgressStatus.SEEN, UserWordProgressStatus.LEARNING],
         },
+        OR: [{ nextReviewAt: null }, { nextReviewAt: { lte: now } }],
       },
       take: limit,
       orderBy: [{ nextReviewAt: 'asc' }, { masteryLevel: 'asc' }],
       include: {
-        word: true,
+        word: {
+          include: {
+            examples: true,
+            definitions: true,
+            pronunciations: true,
+            synonyms: true,
+          },
+        },
       },
     });
 
@@ -308,6 +320,20 @@ export class PrismaLearningRepository implements LearningRepository {
       reviewCount: item.reviewCount,
       status: PrismaLearningMapper.toDomainUserWordProgressStatus(item.status),
       nextReviewAt: item.nextReviewAt,
+      partOfSpeech: PrismaVocabularyMapper.toDomainPartOfSpeech(
+        item.word.partOfSpeech,
+      ),
+      targetLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
+        item.word.targetLanguage,
+      ),
+      definitions: item.word.definitions.map(
+        PrismaVocabularyMapper.toDomainDefinition,
+      ),
+      examples: item.word.examples.map(PrismaVocabularyMapper.toDomainExample),
+      pronunciations: item.word.pronunciations.map(
+        PrismaVocabularyMapper.toDomainPronunciation,
+      ),
+      synonyms: item.word.synonyms.map(PrismaVocabularyMapper.toDomainSynonym),
     }));
   }
 
