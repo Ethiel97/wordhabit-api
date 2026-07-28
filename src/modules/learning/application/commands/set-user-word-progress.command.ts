@@ -9,6 +9,12 @@ export class SetUserWordProgressCommand extends Command<SetUserWordProgressStatu
     public readonly userId: string,
     public readonly wordId: string,
     public readonly status: UserWordProgressStatus,
+    /**
+     * The client's calendar day, `yyyy-MM-dd`. Discovering a word advances
+     * the streak, so this path needs the day for the same reason reviewing
+     * does.
+     */
+    public readonly localDate: string,
   ) {
     super();
   }

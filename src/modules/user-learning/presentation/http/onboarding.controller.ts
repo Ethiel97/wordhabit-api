@@ -18,12 +18,17 @@ export class OnboardingController {
     @Body() body: CreateUserLearningProfileRequestDto,
   ) {
     const result = await this.commandBus.execute(
+      // The command takes interfaceLanguage *before* targetLanguage.
+      // These two were passed the other way round, which silently
+      // reversed the pair — invisible while both were EN, and wrong the
+      // moment setup let a user learn French.
       new CreateUserLearningProfileCommand(
         user.email,
         user.name,
-        body.targetLanguage,
         body.interfaceLanguage,
+        body.targetLanguage,
         body.themeSlugs,
+        body.difficulty,
       ),
     );
 

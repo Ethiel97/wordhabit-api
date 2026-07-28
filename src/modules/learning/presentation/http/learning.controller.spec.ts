@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LearningController } from './learning.controller';
 import { CqrsModule, QueryBus } from '@nestjs/cqrs';
-import { GetRandomWordForLandingQuery } from '../../application/queries/get-random-word-for-landing.query';
+import { GetRandomWordQuery } from '../../application/queries/get-random-word.query';
 
 describe('LearningController', () => {
   let controller: LearningController;
@@ -21,8 +21,8 @@ describe('LearningController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('getRandomWordForLanding', () => {
-    it('should execute GetRandomWordForLandingQuery and return ApiSuccessResponse', async () => {
+  describe('getRandomWord', () => {
+    it('should execute GetRandomWordQuery and return ApiSuccessResponse', async () => {
       const mockRandomWord = {
         id: 'test-id-123',
         term: 'serendipity',
@@ -64,11 +64,13 @@ describe('LearningController', () => {
 
       jest.spyOn(queryBus, 'execute').mockResolvedValueOnce(mockRandomWord);
 
-      const result = await controller.getRandomWordForLanding();
+      // The route now takes a filter DTO; an empty one is the welcome
+      // screen's case, before any language or level has been chosen.
+      const result = await controller.getRandomWord({});
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(queryBus.execute).toHaveBeenCalledWith(
-        expect.any(GetRandomWordForLandingQuery),
+        expect.any(GetRandomWordQuery),
       );
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockRandomWord);

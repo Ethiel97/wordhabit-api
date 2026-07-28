@@ -6,6 +6,8 @@ export const LEARNING = {
   REVIEW_QUEUE: 'review-queue',
   WORD_REVIEW: 'words/:wordId/review',
   DASHBOARD: 'dashboard',
+  ACTIVITY: 'activity',
+  ACTIVITY_DETAIL: 'activity/detail',
   LIBRARY: 'library',
   FAVORITE_WORDS: 'favorite-words',
   FAVORITE_WORD: 'favorite-words/:wordId',

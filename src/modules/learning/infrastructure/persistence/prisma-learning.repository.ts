@@ -1,19 +1,26 @@
 import {
+  ActivityDetailWord,
   CreateDailyAssignmentParams,
   FindRandomWordParams,
   FindReviewQueueParams,
   FindTodayAssignmentParams,
+  FindUserActivityDetailParams,
+  FindUserDailyActivityParams,
   FindUserWordLibraryParams,
   FindUserWordProgressParams,
   LearningRepository,
   RandomWord,
+  RecordWordReviewEventParams,
   ReviewQueueItem,
   TodayWordAssignment,
   UpdateUserWordReviewParams,
   UpsertUserLearningStreakParams,
+  UserActivityDetail,
+  UserDailyActivity,
   UserLearningStats,
   UserWordLibraryResult,
 } from '../../domain/repositories/learning.repository';
+import type { Prisma } from '../../../../../generated/prisma/client';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
 import { VocabularyWord } from '../../../vocabulary/domain/entities/vocabulary-word';
 import { UserLearningProfile } from '../../../user-learning/domain/entities/user-learning-profile';
@@ -99,57 +106,88 @@ export class PrismaLearningRepository implements LearningRepository {
     params: FindUserWordLibraryParams,
   ): Promise<UserWordLibraryResult> {
     const { userId, status, search, limit, cursor } = params;
-    const items = await this.prisma.userWordProgress.findMany({
-      where: {
-        userId,
-        ...(status ? { status } : {}),
-        ...(search
-          ? {
-              word: {
-                OR: [
-                  { term: { contains: search, mode: 'insensitive' } },
-                  {
-                    normalizedTerm: {
-                      contains: search.toLowerCase(),
-                      mode: 'insensitive',
+
+    // Whole-library aggregates for the header and the filter chips'
+    // counts — deliberately unfiltered, so they never change as the
+    // user searches or filters.
+    const [grouped, aggregate, items] = await Promise.all([
+      this.prisma.userWordProgress.groupBy({
+        by: ['status'],
+        where: { userId },
+        _count: { status: true },
+      }),
+      this.prisma.userWordProgress.aggregate({
+        where: { userId },
+        _avg: { masteryLevel: true },
+        _count: { id: true },
+      }),
+      this.prisma.userWordProgress.findMany({
+        where: {
+          userId,
+          ...(status ? { status } : {}),
+          ...(search
+            ? {
+                word: {
+                  OR: [
+                    { term: { contains: search, mode: 'insensitive' } },
+                    {
+                      normalizedTerm: {
+                        contains: search.toLowerCase(),
+                        mode: 'insensitive',
+                      },
                     },
-                  },
-                ],
+                  ],
+                },
+              }
+            : {}),
+        },
+        include: {
+          word: {
+            include: {
+              definitions: {
+                select: { id: true, text: true, explanationLanguage: true },
+                orderBy: { createdAt: 'asc' },
               },
-            }
-          : {}),
-      },
-      include: {
-        word: {
-          include: {
-            definitions: {
-              select: { id: true, text: true, explanationLanguage: true },
-              orderBy: { createdAt: 'asc' },
+              pronunciations: true,
             },
           },
         },
-      },
-      orderBy: [
-        {
-          updatedAt: 'desc',
-        },
-        {
-          id: 'desc',
-        },
-      ],
-      take: limit + 1,
-      ...(cursor
-        ? {
-            cursor: { id: cursor },
-            skip: 1,
-          }
-        : {}),
-    });
+        orderBy: [
+          {
+            updatedAt: 'desc',
+          },
+          {
+            id: 'desc',
+          },
+        ],
+        take: limit + 1,
+        ...(cursor
+          ? {
+              cursor: { id: cursor },
+              skip: 1,
+            }
+          : {}),
+      }),
+    ]);
 
     const hasNextPage = items.length > limit;
     const pageItems = hasNextPage ? items.slice(0, limit) : items;
 
+    const countOf = (wanted: string) =>
+      grouped.find((group) => group.status === wanted)?._count.status ?? 0;
+
     return {
+      summary: {
+        total: aggregate._count.id,
+        averageMastery: Math.round(aggregate._avg.masteryLevel ?? 0),
+        statusCounts: {
+          [UserWordProgressStatus.NEW]: countOf('NEW'),
+          [UserWordProgressStatus.SEEN]: countOf('SEEN'),
+          [UserWordProgressStatus.LEARNING]: countOf('LEARNING'),
+          [UserWordProgressStatus.MASTERED]: countOf('MASTERED'),
+          [UserWordProgressStatus.SKIPPED]: countOf('SKIPPED'),
+        },
+      },
       items: pageItems.map((item) => ({
         progressId: item.id,
         wordId: item.wordId,
@@ -168,6 +206,14 @@ export class PrismaLearningRepository implements LearningRepository {
           id: definition.id,
           text: definition.text,
           explanationLanguage: definition.explanationLanguage,
+        })),
+        pronunciations: item.word.pronunciations.map((pronunciation) => ({
+          id: pronunciation.id,
+          wordId: pronunciation.wordId,
+          phonetic: pronunciation.phonetic,
+          provider: pronunciation.provider,
+          audioUrl: pronunciation.audioUrl,
+          createdAt: pronunciation.createdAt,
         })),
       })),
       nextCursor: hasNextPage ? pageItems[pageItems.length - 1].id : null,
@@ -197,6 +243,124 @@ export class PrismaLearningRepository implements LearningRepository {
     };
   }
 
+  async recordWordReviewEvent(
+    params: RecordWordReviewEventParams,
+  ): Promise<void> {
+    await this.prisma.userWordReviewEvent.create({
+      data: {
+        userId: params.userId,
+        wordId: params.wordId,
+        correct: params.correct,
+        localDate: params.localDate,
+      },
+    });
+  }
+
+  async findUserDailyActivity(
+    params: FindUserDailyActivityParams,
+  ): Promise<UserDailyActivity[]> {
+    // The day was decided when the review was recorded, so reading it back
+    // is a string range and a group — no offsets, no instant arithmetic,
+    // nothing to get wrong at a DST boundary.
+    const grouped = await this.prisma.userWordReviewEvent.groupBy({
+      by: ['localDate', 'correct'],
+      where: {
+        userId: params.userId,
+        localDate: { gte: params.from, lte: params.to },
+      },
+      _count: { _all: true },
+      orderBy: { localDate: 'asc' },
+    });
+
+    this.logger.debug('Grouped daily activity', { grouped });
+
+    // Two rows per active day at most (correct true/false); fold them.
+    const byDate = new Map<string, UserDailyActivity>();
+    for (const row of grouped) {
+      const day = byDate.get(row.localDate) ?? {
+        date: row.localDate,
+        reviewCount: 0,
+        correctCount: 0,
+      };
+      day.reviewCount += row._count._all;
+      if (row.correct) {
+        day.correctCount += row._count._all;
+      }
+      byDate.set(row.localDate, day);
+    }
+
+    this.logger.debug('Folded daily activity', { byDate });
+
+    return [...byDate.values()];
+  }
+
+  async findUserActivityDetail(
+    params: FindUserActivityDetailParams,
+  ): Promise<UserActivityDetail> {
+    const range = { gte: params.from, lte: params.to };
+
+    // Per-word tallies plus the totals; independent, so run them together.
+    const [byWord, totals] = await Promise.all([
+      this.prisma.userWordReviewEvent.groupBy({
+        by: ['wordId'],
+        where: { userId: params.userId, localDate: range },
+        _count: { wordId: true },
+        orderBy: { _count: { wordId: 'desc' } },
+      }),
+      this.prisma.userWordReviewEvent.aggregate({
+        where: { userId: params.userId, localDate: range },
+        _count: { id: true },
+      }),
+    ]);
+
+    this.logger.debug('Grouped activity detail', { byWord, totals });
+
+    const correctCount = await this.prisma.userWordReviewEvent.count({
+      where: { userId: params.userId, localDate: range, correct: true },
+    });
+
+    const topWordIds = byWord.slice(0, params.limit).map((row) => row.wordId);
+
+    // Terms live on the vocabulary word; mastery is per user, so both are
+    // read through the progress row.
+    const progresses = topWordIds.length
+      ? await this.prisma.userWordProgress.findMany({
+          where: { userId: params.userId, wordId: { in: topWordIds } },
+          select: {
+            wordId: true,
+            masteryLevel: true,
+            word: { select: { term: true } },
+          },
+        })
+      : [];
+
+    const progressByWordId = new Map(
+      progresses.map((progress) => [progress.wordId, progress]),
+    );
+
+    // Rebuilt from topWordIds so the busiest-first order survives the
+    // unordered findMany.
+    const words: ActivityDetailWord[] = [];
+    for (const row of byWord.slice(0, params.limit)) {
+      const progress = progressByWordId.get(row.wordId);
+      if (!progress) continue;
+      words.push({
+        wordId: row.wordId,
+        term: progress.word.term,
+        masteryLevel: progress.masteryLevel,
+        reviewCount: row._count.wordId,
+      });
+    }
+
+    return {
+      reviewCount: totals._count.id,
+      correctCount,
+      distinctWordCount: byWord.length,
+      words,
+      hasMoreWords: byWord.length > params.limit,
+    };
+  }
+
   async findUserLearningStreak(
     userId: string,
   ): Promise<UserLearningStreak | null> {
@@ -211,7 +375,7 @@ export class PrismaLearningRepository implements LearningRepository {
     }
     return {
       id: found.id,
-      lastActivityDate: found.lastActivityDate as Date,
+      lastActivityLocalDate: found.lastActivityLocalDate,
       userId: found.userId,
       currentStreak: found.currentStreak,
       longestStreak: found.longestStreak,
@@ -222,26 +386,27 @@ export class PrismaLearningRepository implements LearningRepository {
   async upsertUserLearningStreak(
     params: UpsertUserLearningStreakParams,
   ): Promise<UserLearningStreak> {
-    const { userId, currentStreak, longestStreak, lastActivityDate } = params;
+    const { userId, currentStreak, longestStreak, lastActivityLocalDate } =
+      params;
 
     const upserted = await this.prisma.userLearningStreak.upsert({
       where: { userId },
       update: {
         currentStreak,
         longestStreak,
-        lastActivityDate,
+        lastActivityLocalDate,
       },
       create: {
         userId,
         currentStreak,
         longestStreak,
-        lastActivityDate,
+        lastActivityLocalDate,
       },
     });
 
     return {
       id: upserted.id,
-      lastActivityDate: upserted.lastActivityDate as Date,
+      lastActivityLocalDate: upserted.lastActivityLocalDate,
       userId: upserted.userId,
       currentStreak: upserted.currentStreak,
       longestStreak: upserted.longestStreak,
@@ -327,13 +492,21 @@ export class PrismaLearningRepository implements LearningRepository {
         item.word.targetLanguage,
       ),
       definitions: item.word.definitions.map(
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         PrismaVocabularyMapper.toDomainDefinition,
       ),
-      examples: item.word.examples.map(PrismaVocabularyMapper.toDomainExample),
+      examples: item.word.examples.map(
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        PrismaVocabularyMapper.toDomainExample,
+      ),
       pronunciations: item.word.pronunciations.map(
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         PrismaVocabularyMapper.toDomainPronunciation,
       ),
-      synonyms: item.word.synonyms.map(PrismaVocabularyMapper.toDomainSynonym),
+      synonyms: item.word.synonyms.map(
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        PrismaVocabularyMapper.toDomainSynonym,
+      ),
     }));
   }
 
@@ -433,37 +606,15 @@ export class PrismaLearningRepository implements LearningRepository {
     };
   }
 
-  async findCandidateWord(
-    profile: UserLearningProfile,
-  ): Promise<VocabularyWord | null> {
-    const { themeSlugs } = profile;
-    const { targetLanguage } = profile;
-
-    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-
-    this.logger.log('Finding candidate words for profile', {
-      themeSlugs,
-      targetLanguage,
-      twoWeeksAgo,
-    });
-
-    const candidateWords = await this.prisma.vocabularyWord.findMany({
-      where: {
-        themes: { some: { theme: { slug: { in: themeSlugs } } } },
-        targetLanguage: targetLanguage,
-        //TODO: Add status filter to exclude drafts and archived words
-
-        // Exclude words that have already been assigned to the user
-        // and words that were assigned less than 2 weeks ago
-        dailyWordAssignments: {
-          none: {
-            userId: profile.userId,
-            assignedFor: {
-              gte: twoWeeksAgo,
-            },
-          },
-        },
-      },
+  /**
+   * Words matching `where`, with the theme slugs the caller needs.
+   *
+   * Split out so the daily-word search can be run twice — once at the
+   * user's level, once without it — without restating the query.
+   */
+  private findCandidateWordsMatching(where: Prisma.VocabularyWordWhereInput) {
+    return this.prisma.vocabularyWord.findMany({
+      where,
       include: {
         themes: {
           include: {
@@ -476,9 +627,47 @@ export class PrismaLearningRepository implements LearningRepository {
         },
       },
     });
+  }
 
-    this.logger.log('candidateWords', candidateWords);
+  async findCandidateWord(
+    profile: UserLearningProfile,
+  ): Promise<VocabularyWord | null> {
+    const { themeSlugs, targetLanguage, difficulty } = profile;
 
+    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
+    const baseWhere = {
+      themes: { some: { theme: { slug: { in: themeSlugs } } } },
+      targetLanguage: targetLanguage,
+
+      // No status filter — same reason as findRandomWord: the corpus
+      // is all DRAFT for now, so filtering would leave no daily word.
+
+      // Exclude words that have already been assigned to the user
+      // and words that were assigned less than 2 weeks ago
+      dailyWordAssignments: {
+        none: {
+          userId: profile.userId,
+          assignedFor: {
+            gte: twoWeeksAgo,
+          },
+        },
+      },
+    };
+
+    // Difficulty is a preference, not a requirement.
+    //
+    // Narrowing five topics by language *and* level can easily leave an
+    // empty pool — and an empty pool here means the user simply has no
+    // word today, which is a far worse outcome than a word one level
+    // off. So try their level first, then widen.
+    const candidateWords = await this.findCandidateWordsMatching(
+      difficulty ? { ...baseWhere, difficulty } : baseWhere,
+    ).then((words) =>
+      words.length > 0 || !difficulty
+        ? words
+        : this.findCandidateWordsMatching(baseWhere),
+    );
     if (candidateWords.length === 0) {
       return null;
     }
@@ -486,7 +675,6 @@ export class PrismaLearningRepository implements LearningRepository {
     const randomIndex = Math.floor(Math.random() * candidateWords.length);
     const randomWord = candidateWords[randomIndex];
 
-    this.logger.log('randomWord', randomWord);
     return {
       id: randomWord.id,
       term: randomWord.term,
@@ -561,17 +749,35 @@ export class PrismaLearningRepository implements LearningRepository {
   async findRandomWord(
     params: FindRandomWordParams,
   ): Promise<RandomWord | null> {
-    const count = await this.prisma.vocabularyWord.count({ where: params });
+    const { themes, targetLanguage, difficulty } = params;
+
+    const where = {
+      // No status filter on purpose: the seeded corpus is entirely
+      // DRAFT today, so requiring PUBLISHED would return nothing and
+      // leave the welcome screen with no word. Add it once ingestion
+      // starts publishing.
+      ...(themes?.length
+        ? { themes: { some: { theme: { slug: { in: themes } } } } }
+        : {}),
+      ...(targetLanguage ? { targetLanguage } : {}),
+      ...(difficulty ? { difficulty } : {}),
+    };
+
+    // Count then skip, rather than loading every match and picking in
+    // memory: this endpoint is public and uncached, and the whole
+    // vocabulary with all its relations is not something to pull on
+    // every request.
+    const count = await this.prisma.vocabularyWord.count({ where });
 
     if (count === 0) {
       return null;
     }
 
-    const randomSkip = Math.floor(Math.random() * count);
-
-    const randomWord = await this.prisma.vocabularyWord.findFirstOrThrow({
-      where: params,
-      skip: randomSkip,
+    // `findFirst`, not `findFirstOrThrow`: rows can disappear between
+    // the count and the read, and an empty page beats a 500.
+    const randomWord = await this.prisma.vocabularyWord.findFirst({
+      where,
+      skip: Math.floor(Math.random() * count),
       include: {
         definitions: true,
         examples: true,
@@ -584,6 +790,10 @@ export class PrismaLearningRepository implements LearningRepository {
         },
       },
     });
+
+    if (!randomWord) {
+      return null;
+    }
 
     return {
       ...PrismaVocabularyMapper.toDomainAggregate({

@@ -90,6 +90,7 @@ model VocabularyWord {
   themes               VocabularyWordTheme[]
   dailyWordAssignments DailyWordAssignment[]
   userWordProgresses   UserWordProgress[]
+  userWordReviewEvents UserWordReviewEvent[]
   favoriteWords        FavoriteWord[]
 
   @@unique([normalizedTerm, targetLanguage])
@@ -192,6 +193,7 @@ model User {
   userLearningProfiles   UserLearningProfile[]
   dailyWordAssignments   DailyWordAssignment[]
   userWordProgresses     UserWordProgress[]
+  userWordReviewEvents   UserWordReviewEvent[]
   userLearningStreaks    UserLearningStreak[]
   favoriteWords          FavoriteWord[]
   emailVerificationCodes EmailVerificationCode[]
@@ -221,8 +223,10 @@ model UserLearningProfile {
   isActive          Boolean      @default(true)
   interfaceLanguage LanguageCode
   targetLanguage    LanguageCode
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  difficulty WordDifficulty?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -289,12 +293,57 @@ model UserWordProgress {
   @@map("user_word_progress")
 }
 
+/// Append-only log of every review a user submits.
+///
+/// UserWordProgress keeps only `lastReviewedAt`, which is overwritten on
+/// each review, so per-day history cannot be reconstructed from it. This
+/// table is what the progress heatmap and the activity chart aggregate.
+/// Rows are never updated — one row per review.
+model UserWordReviewEvent {
+  id      String  @id @default(cuid())
+  userId  String
+  wordId  String
+  correct Boolean
+
+  /// The calendar day the user experienced, `yyyy-MM-dd`, supplied by the
+  /// client that submitted the review.
+  ///
+  /// Stored as text on purpose. ISO-8601 dates sort chronologically as
+  /// strings, so every activity query is a plain string range — no
+  /// timezone offsets, no instant arithmetic, no date_trunc. The day is
+  /// recorded once, by the only party that knows it, and read back
+  /// verbatim; that also makes it immune to DST and to the user changing
+  /// timezone later.
+  localDate String @db.VarChar(10)
+
+  /// The precise instant, kept for ordering and audit — never for
+  /// grouping by day.
+  reviewedAt DateTime @default(now())
+
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  // Serves every activity range scan directly.
+  @@index([userId, localDate])
+  @@index([wordId])
+  @@map("user_word_review_events")
+}
+
 model UserLearningStreak {
-  id               String    @id @default(cuid())
-  userId           String    @unique
-  currentStreak    Int       @default(0)
-  longestStreak    Int       @default(0)
-  lastActivityDate DateTime?
+  id            String @id @default(cuid())
+  userId        String @unique
+  currentStreak Int    @default(0)
+  longestStreak Int    @default(0)
+
+  /// The last calendar day the user was active, `yyyy-MM-dd`, as reported
+  /// by their device.
+  ///
+  /// A date rather than an instant: "did they show up today, yesterday, or
+  /// break the chain" is a question about the user's calendar, and deriving
+  /// it from a timestamp in the server's timezone let an evening review
+  /// count as tomorrow — inflating or breaking streaks for anyone far from
+  /// UTC. Matches UserWordReviewEvent.localDate.
+  lastActivityLocalDate String? @db.VarChar(10)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

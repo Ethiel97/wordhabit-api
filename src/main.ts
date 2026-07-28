@@ -12,7 +12,9 @@ async function bootstrap() {
     logger: new SentryLogger(),
   });
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: ['nestlens', 'nestlens/*', '__nestlens__', '__nestlens__/*'],
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

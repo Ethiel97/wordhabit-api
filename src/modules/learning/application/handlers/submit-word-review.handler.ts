@@ -48,19 +48,29 @@ export class SubmitWordReviewHandler implements ICommandHandler<
       ...nextState,
     });
 
+    // Append to the activity log before touching the streak: this is the
+    // only durable record of *when* each review happened, since
+    // `lastReviewedAt` above is overwritten every time.
+    await this.learningRepository.recordWordReviewEvent({
+      userId: command.userId,
+      wordId: command.wordId,
+      correct: command.correct,
+      localDate: command.localDate,
+    });
+
     const currentLearningStreak =
       await this.learningRepository.findUserLearningStreak(command.userId);
 
     const nextLearningStreak = computeNextDailyStreak({
       current: currentLearningStreak,
-      activityAt: now,
+      activityLocalDate: command.localDate,
     });
 
     await this.learningRepository.upsertUserLearningStreak({
       userId: command.userId,
       currentStreak: nextLearningStreak.currentStreak,
       longestStreak: nextLearningStreak.longestStreak,
-      lastActivityDate: nextLearningStreak.lastActivityDate,
+      lastActivityLocalDate: nextLearningStreak.lastActivityLocalDate,
     });
 
     return {

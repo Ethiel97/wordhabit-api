@@ -9,6 +9,7 @@ import {
 } from '../../domain/repositories/user-learning.repository';
 import { User } from '../../domain/entities/user';
 import { UserLearningProfile } from '../../domain/entities/user-learning-profile';
+import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 import { Injectable } from '@nestjs/common';
@@ -42,6 +43,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       isActive: found.isActive,
       interfaceLanguage: found.interfaceLanguage as LanguageCode,
       targetLanguage: found.targetLanguage as LanguageCode,
+      difficulty: (found.difficulty as WordDifficulty | null) ?? undefined,
       themeSlugs: found.themes.map((t) => t.theme.slug),
       createdAt: found.createdAt,
       updatedAt: found.updatedAt,
@@ -84,6 +86,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       isActive: updated.isActive,
       interfaceLanguage: updated.interfaceLanguage as LanguageCode,
       targetLanguage: updated.targetLanguage as LanguageCode,
+      difficulty: (updated.difficulty as WordDifficulty | null) ?? undefined,
       themeSlugs: updated.themes.map((t) => t.theme.slug),
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,
@@ -127,6 +130,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
         isActive: activated.isActive,
         interfaceLanguage: activated.interfaceLanguage as LanguageCode,
         targetLanguage: activated.targetLanguage as LanguageCode,
+        difficulty: (activated.difficulty as WordDifficulty | null) ?? undefined,
         themeSlugs: activated.themes.map((t) => t.theme.slug),
         createdAt: activated.createdAt,
         updatedAt: activated.updatedAt,
@@ -157,6 +161,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       isActive: profile.isActive,
       interfaceLanguage: profile.interfaceLanguage as LanguageCode,
       targetLanguage: profile.targetLanguage as LanguageCode,
+      difficulty: (profile.difficulty as WordDifficulty | null) ?? undefined,
       themeSlugs: profile.themes.map((t) => t.theme.slug),
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt,
@@ -181,6 +186,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
         targetLanguage: params.targetLanguage,
         isActive: true,
         interfaceLanguage: params.interfaceLanguage,
+        difficulty: params.difficulty,
         themes: {
           create: params.themeSlugs.map((themeSlug) => ({
             theme: {
@@ -205,6 +211,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       isActive: userLearningProfile.isActive,
       interfaceLanguage: userLearningProfile.interfaceLanguage as LanguageCode,
       targetLanguage: userLearningProfile.targetLanguage as LanguageCode,
+      difficulty: (userLearningProfile.difficulty as WordDifficulty | null) ?? undefined,
       themeSlugs: userLearningProfile.themes.map((t) => t.theme.slug),
       createdAt: userLearningProfile.createdAt,
       updatedAt: userLearningProfile.updatedAt,
@@ -236,6 +243,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       isActive: found.isActive,
       interfaceLanguage: found.interfaceLanguage as LanguageCode,
       targetLanguage: found.targetLanguage as LanguageCode,
+      difficulty: (found.difficulty as WordDifficulty | null) ?? undefined,
       themeSlugs: found.themes.map((t) => t.theme.slug),
       createdAt: found.createdAt,
       updatedAt: found.updatedAt,
@@ -294,6 +302,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       isActive: found.isActive,
       interfaceLanguage: found.interfaceLanguage as LanguageCode,
       targetLanguage: found.targetLanguage as LanguageCode,
+      difficulty: (found.difficulty as WordDifficulty | null) ?? undefined,
       themeSlugs: found.themes.map((t) => t.theme.slug),
       createdAt: found.createdAt,
       updatedAt: found.updatedAt,

@@ -7,12 +7,14 @@ import { LEARNING_REPOSITORY } from './domain/repositories/learning.repository';
 import { UserLearningModule } from '../user-learning/user-learning.module';
 import { GetTodayWordForUserHandler } from './application/handlers/get-today-word-for-user.handler';
 import { GetUserWordProgressHandler } from './application/handlers/get-user-word-progress.handler';
-import { GetRandomWordForLandingHandler } from './application/handlers/get-random-word-for-landing.handler';
+import { GetRandomWordHandler } from './application/handlers/get-random-word.handler';
 import { SetUserWordProgressHandler } from './application/handlers/set-user-word-progress.handler';
 import { GetReviewQueueHandler } from './application/handlers/get-review-queue.handler';
 import { SubmitWordReviewHandler } from './application/handlers/submit-word-review.handler';
 import { GetLearningDashboardHandler } from './application/handlers/get-learning-dashboard.handler';
 import { GetUserWordLibraryHandler } from './application/handlers/get-user-word-library.handler';
+import { GetUserActivityHandler } from './application/handlers/get-user-activity.handler';
+import { GetUserActivityDetailHandler } from './application/handlers/get-user-activity-detail.handler';
 import { GetUserFavoriteWordsHandler } from './application/handlers/get-user-favorite-words.handler';
 import { AddUserFavoriteWordHandler } from './application/handlers/add-user-favorite-word.handler';
 import { RemoveUserFavoriteWordHandler } from './application/handlers/remove-user-favorite-word.handler';
@@ -27,10 +29,12 @@ const commandHandlers = [
 const queryHandlers = [
   GetTodayWordForUserHandler,
   GetUserWordProgressHandler,
-  GetRandomWordForLandingHandler,
+  GetRandomWordHandler,
   GetReviewQueueHandler,
   GetLearningDashboardHandler,
   GetUserWordLibraryHandler,
+  GetUserActivityHandler,
+  GetUserActivityDetailHandler,
   GetUserFavoriteWordsHandler,
 ];
 

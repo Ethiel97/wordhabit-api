@@ -17,6 +17,7 @@ import { UpdateThemeRequestDto } from '../../../application/dto/update-theme.req
 import { UpdateThemeCommand } from '../../../application/commands/update-theme.command';
 import { DeleteThemeCommand } from '../../../application/commands/delete-theme.command';
 import { THEMES } from '../../../../../shared/presentation/http/endpoints';
+import { Public } from '../../../../auth/presentation/public.decorator';
 
 @Controller(THEMES.BASE)
 export class ThemeController {
@@ -33,6 +34,7 @@ export class ThemeController {
     return ApiSuccessResponse.of(result);
   }
 
+  @Public()
   @Get(THEMES.LIST)
   async listThemes() {
     const result = await this.queryBus.execute(new ListThemesQuery());

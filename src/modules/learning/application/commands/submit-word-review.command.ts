@@ -6,6 +6,8 @@ export class SubmitWordReviewCommand extends Command<SubmitWordReviewResult> {
     public readonly userId: string,
     public readonly wordId: string,
     public readonly correct: boolean,
+    /** The client's calendar day, `yyyy-MM-dd`. */
+    public readonly localDate: string,
   ) {
     super();
   }

@@ -1,6 +1,7 @@
 import { User } from '../entities/user';
 import { UserLearningProfile } from '../entities/user-learning-profile';
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
+import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 
 export const USER_LEARNING_REPOSITORY = Symbol('USER_LEARNING_REPOSITORY');
 
@@ -32,6 +33,7 @@ export interface CreateUserLearningProfileParams {
   userId: string;
   targetLanguage: LanguageCode;
   interfaceLanguage: LanguageCode;
+  difficulty?: WordDifficulty;
   themeSlugs: string[];
 }
 

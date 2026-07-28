@@ -69,7 +69,7 @@ export class GetLearningDashboardHandler implements IQueryHandler<
         // A streak is consecutive days ending here, so this one date
         // lets clients derive per-day activity (e.g. the week strip)
         // without any history table.
-        lastActivityDate: streak?.lastActivityDate ?? null,
+        lastActivityLocalDate: streak?.lastActivityLocalDate ?? null,
       },
 
       stats,

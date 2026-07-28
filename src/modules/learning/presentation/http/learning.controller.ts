@@ -17,7 +17,7 @@ import { ApiSuccessResponse } from '../../../../shared/presentation/http/api-suc
 import { SetUserWordProgressCommand } from '../../application/commands/set-user-word-progress.command';
 import { SetUserWordProgressRequestDto } from '../../application/dtos/set-user-word-progress-request.dto';
 import { GetUserWordProgressQuery } from '../../application/queries/get-user-word-progress.query';
-import { GetRandomWordForLandingQuery } from '../../application/queries/get-random-word-for-landing.query';
+import { GetRandomWordQuery } from '../../application/queries/get-random-word.query';
 import {
   GetReviewQueueQuery,
   GetReviewQueueResult,
@@ -35,6 +35,16 @@ import {
 } from '../../application/queries/get-user-word-library.query';
 import { GetUserWordLibraryRequestDto } from '../../application/dtos/get-user-word-library-request.dto';
 import {
+  GetUserActivityQuery,
+  GetUserActivityResult,
+} from '../../application/queries/get-user-activity.query';
+import { GetUserActivityRequestDto } from '../../application/dtos/get-user-activity-request.dto';
+import {
+  GetUserActivityDetailQuery,
+  GetUserActivityDetailResult,
+} from '../../application/queries/get-user-activity-detail.query';
+import { GetUserActivityDetailRequestDto } from '../../application/dtos/get-user-activity-detail-request.dto';
+import {
   GetUserFavoriteWordsQuery,
   GetUserFavoriteWordsResult,
 } from '../../application/queries/get-user-favorite-words.query';
@@ -43,6 +53,7 @@ import { RemoveUserFavoriteWordCommand } from '../../application/commands/remove
 import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
 import type { AuthenticatedUser } from '../../../auth/domain/entities/authenticated-user';
 import { Public } from '../../../auth/presentation/public.decorator';
+import { GetRandomWordDto } from '../../application/dtos/get-random-word.dto';
 
 @Controller(LEARNING.BASE)
 export class LearningController {
@@ -53,9 +64,13 @@ export class LearningController {
 
   @Public()
   @Get(LEARNING.RANDOM_WORD)
-  async getRandomWordForLanding() {
+  async getRandomWord(@Query() query: GetRandomWordDto) {
     const randomWord = await this.queryBus.execute(
-      new GetRandomWordForLandingQuery(),
+      new GetRandomWordQuery(
+        query.languageCode,
+        query.difficulty,
+        query.themes,
+      ),
     );
 
     return ApiSuccessResponse.of(randomWord);
@@ -77,7 +92,12 @@ export class LearningController {
     @Body() body: SetUserWordProgressRequestDto,
   ) {
     const progress = await this.commandBus.execute(
-      new SetUserWordProgressCommand(user.id, wordId, body.status),
+      new SetUserWordProgressCommand(
+        user.id,
+        wordId,
+        body.status,
+        body.localDate,
+      ),
     );
 
     return ApiSuccessResponse.of(progress);
@@ -111,7 +131,12 @@ export class LearningController {
     @Body() body: SubmitWordReviewRequestDto,
   ) {
     const result = await this.commandBus.execute(
-      new SubmitWordReviewCommand(user.id, wordId, body.correct),
+      new SubmitWordReviewCommand(
+        user.id,
+        wordId,
+        body.correct,
+        body.localDate,
+      ),
     );
 
     return ApiSuccessResponse.of(result);
@@ -139,6 +164,35 @@ export class LearningController {
         request.limit,
         request.cursor,
       ),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Get(LEARNING.ACTIVITY_DETAIL)
+  async getUserActivityDetail(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() request: GetUserActivityDetailRequestDto,
+  ) {
+    const result: GetUserActivityDetailResult = await this.queryBus.execute(
+      new GetUserActivityDetailQuery(
+        user.id,
+        request.from,
+        request.to,
+        request.limit,
+      ),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Get(LEARNING.ACTIVITY)
+  async getUserActivity(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() request: GetUserActivityRequestDto,
+  ) {
+    const result: GetUserActivityResult = await this.queryBus.execute(
+      new GetUserActivityQuery(user.id, request.to, request.days),
     );
 
     return ApiSuccessResponse.of(result);

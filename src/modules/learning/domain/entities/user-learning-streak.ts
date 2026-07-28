@@ -1,7 +1,8 @@
 export interface UserLearningStreak {
   id: string;
   userId: string;
-  lastActivityDate: Date;
+  /** `yyyy-MM-dd`, or null before the first activity. */
+  lastActivityLocalDate: string | null;
   currentStreak: number;
   longestStreak: number;
   createdAt: Date;

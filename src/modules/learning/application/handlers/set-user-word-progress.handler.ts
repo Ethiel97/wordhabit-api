@@ -77,14 +77,14 @@ export class SetUserWordProgressHandler implements ICommandHandler<
 
       const nextStreak = computeNextDailyStreak({
         current: currentStreak,
-        activityAt: date,
+        activityLocalDate: command.localDate,
       });
 
       await this.learningRepository.upsertUserLearningStreak({
         userId,
         currentStreak: nextStreak.currentStreak,
         longestStreak: nextStreak.longestStreak,
-        lastActivityDate: nextStreak.lastActivityDate,
+        lastActivityLocalDate: nextStreak.lastActivityLocalDate,
       });
     }
 

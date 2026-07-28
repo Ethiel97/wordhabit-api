@@ -34,14 +34,20 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
         name: command.name,
       }));
 
+    // Guarded per *user*, not per (user, targetLanguage).
+    //
+    // `UserLearningProfile.userId` is `@unique`, so the database allows
+    // exactly one profile per user whatever the language. Checking the
+    // pair let a second language slip past this guard and die on the
+    // unique constraint instead — a 500 where the caller deserves a
+    // 409 it can act on.
     const foundProfile =
-      await this.userLearningRepository.findUserLearningProfile({
-        userId: user.id,
-        targetLanguage: command.targetLanguage,
-      });
+      await this.userLearningRepository.findActiveUserLearningProfile(user.id);
 
     if (foundProfile) {
-      throw new UserLearningProfileAlreadyExistsError(command.targetLanguage);
+      throw new UserLearningProfileAlreadyExistsError(
+        foundProfile.targetLanguage,
+      );
     }
 
     const normalizedThemeSlugs =
@@ -54,6 +60,7 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
         userId: user.id,
         targetLanguage: command.targetLanguage,
         interfaceLanguage: command.interfaceLanguage,
+        difficulty: command.difficulty,
         themeSlugs: normalizedThemeSlugs,
       },
     );
@@ -63,6 +70,7 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
       isActive: profile.isActive,
       id: profile.id,
       targetLanguage: profile.targetLanguage,
+      difficulty: profile.difficulty,
       themeSlugs: profile.themeSlugs,
       updatedAt: profile.updatedAt,
       userId: profile.userId,

@@ -5,14 +5,19 @@ import { WordDefinition } from '../../../vocabulary/domain/entities/word-definit
 import { WordExample } from '../../../vocabulary/domain/entities/word-example';
 import { WordPronunciation } from '../../../vocabulary/domain/entities/word-pronounciation';
 import { WordSynonym } from '../../../vocabulary/domain/entities/word-synonym';
+import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 
-export class GetRandomWordForLandingQuery extends Query<GetRandomWordForLandingResult> {
-  constructor(public readonly targetLanguage?: LanguageCode) {
+export class GetRandomWordQuery extends Query<GetRandomWordResult> {
+  constructor(
+    public readonly targetLanguage?: LanguageCode,
+    public readonly difficulty?: WordDifficulty,
+    public readonly themes?: string[],
+  ) {
     super();
   }
 }
 
-export interface GetRandomWordForLandingResult {
+export interface GetRandomWordResult {
   word: VocabularyWord;
   definitions: WordDefinition[];
   examples: WordExample[];
