@@ -1,9 +1,9 @@
 export const USER_LEARNING = {
   BASE: 'user-learning',
   CREATE_PROFILE: 'profiles',
+  UPDATE_PROFILE: 'profiles/:profileId',
   GET_ACTIVE_PROFILE: 'profiles/active',
   LIST_PROFILES: 'profiles',
-  SET_THEMES: 'profiles/:profileId/themes',
   ACTIVATE_PROFILE: 'profiles/:profileId/activate',
 } as const;
 

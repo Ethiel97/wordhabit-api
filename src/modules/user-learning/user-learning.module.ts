@@ -5,7 +5,7 @@ import { PrismaUserLearningRepository } from './infrastructure/persistence/prism
 import { USER_LEARNING_REPOSITORY } from './domain/repositories/user-learning.repository';
 import { OnboardingController } from './presentation/http/onboarding.controller';
 import { CreateUserLearningProfileHandler } from './application/handlers/create-user-learning-profile.handler';
-import { SetUserLearningProfileThemesHandler } from './application/handlers/set-user-learning-profile-themes.handler';
+import { UpdateUserLearningProfileHandler } from './application/handlers/update-user-learning-profile.handler';
 import { GetActiveUserLearningProfileHandler } from './application/handlers/get-active-user-learning-profile.handler';
 import { GetUserLearningProfilesHandler } from './application/handlers/get-user-learning-profiles.handler';
 import { ActivateUserLearningProfileHandler } from './application/handlers/activate-user-learning-profile.handler';
@@ -15,7 +15,7 @@ import { EnsureThemesExistService } from './application/services/ensure-themes-e
 const commandHandlers = [
   ActivateUserLearningProfileHandler,
   CreateUserLearningProfileHandler,
-  SetUserLearningProfileThemesHandler,
+  UpdateUserLearningProfileHandler,
 ];
 const queryHandlers = [
   GetActiveUserLearningProfileHandler,

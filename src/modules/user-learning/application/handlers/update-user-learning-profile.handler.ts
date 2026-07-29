@@ -1,19 +1,19 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
 import {
-  SetUserLearningProfileThemesCommand,
-  SetUserLearningProfileThemesResult,
-} from '../commands/set-user-learning-profile-themes.command';
+  UpdateUserLearningProfileCommand,
+  UpdateUserLearningProfileResult,
+} from '../commands/update-user-learning-profile.command';
 import type { UserLearningRepository } from '../../domain/repositories/user-learning.repository';
 import { USER_LEARNING_REPOSITORY } from '../../domain/repositories/user-learning.repository';
 import { Inject } from '@nestjs/common';
 import { EnsureThemesExistService } from '../services/ensure-themes-exist.service';
 import { UserLearningProfileNotFoundError } from '../errors/user-learning-profile-not-found.error';
 
-@CommandHandler(SetUserLearningProfileThemesCommand)
-export class SetUserLearningProfileThemesHandler implements ICommandHandler<
-  SetUserLearningProfileThemesCommand,
-  SetUserLearningProfileThemesResult
+@CommandHandler(UpdateUserLearningProfileCommand)
+export class UpdateUserLearningProfileHandler implements ICommandHandler<
+  UpdateUserLearningProfileCommand,
+  UpdateUserLearningProfileResult
 > {
   constructor(
     @Inject(USER_LEARNING_REPOSITORY)
@@ -22,8 +22,8 @@ export class SetUserLearningProfileThemesHandler implements ICommandHandler<
   ) {}
 
   async execute(
-    command: SetUserLearningProfileThemesCommand,
-  ): Promise<SetUserLearningProfileThemesResult> {
+    command: UpdateUserLearningProfileCommand,
+  ): Promise<UpdateUserLearningProfileResult> {
     const foundProfile =
       await this.userLearningRepository.findUserLearningProfileById(
         command.profileId,
@@ -36,14 +36,20 @@ export class SetUserLearningProfileThemesHandler implements ICommandHandler<
       );
     }
 
-    const normalizedThemeSlugs =
-      await this.ensureThemesExistService.normalizeAndEnsure(
-        command.themeSlugs,
-      );
+    // Undefined means "leave the themes alone", which is not the same
+    // as an empty array — that one is a deliberate clear.
+    const normalizedThemeSlugs = command.themeSlugs
+      ? await this.ensureThemesExistService.normalizeAndEnsure(
+          command.themeSlugs,
+        )
+      : undefined;
 
-    return this.userLearningRepository.setUserLearningProfileThemes({
+    return this.userLearningRepository.updateUserLearningProfile({
       themeSlugs: normalizedThemeSlugs,
+      interfaceLanguage: command.interfaceLanguage,
+      targetLanguage: command.targetLanguage,
       profileId: command.profileId,
+      difficulty: command.difficulty,
     });
   }
 }

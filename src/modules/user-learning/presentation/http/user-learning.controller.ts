@@ -5,8 +5,8 @@ import { CreateUserLearningProfileCommand } from '../../application/commands/cre
 import { ApiSuccessResponse } from '../../../../shared/presentation/http/api-success-response';
 import { GetActiveUserLearningProfileQuery } from '../../application/queries/get-active-user-learning-profile.query';
 import { GetUserLearningProfilesQuery } from '../../application/queries/get-user-learning-profiles.query';
-import { SetUserLearningProfileThemesRequestDto } from '../../application/dtos/set-user-learning-profile-themes.request.dto';
-import { SetUserLearningProfileThemesCommand } from '../../application/commands/set-user-learning-profile-themes.command';
+import { UpdateUserLearningProfileDto } from '../../application/dtos/update-user-learning-profile.dto';
+import { UpdateUserLearningProfileCommand } from '../../application/commands/update-user-learning-profile.command';
 import { ActivateUserLearningProfileCommand } from '../../application/commands/activate-user-learning-profile.command';
 import { USER_LEARNING } from '../../../../shared/presentation/http/endpoints';
 import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
@@ -67,13 +67,19 @@ export class UserLearningController {
     return ApiSuccessResponse.of(result);
   }
 
-  @Patch(USER_LEARNING.SET_THEMES)
-  async setUserLearningProfileThemes(
+  @Patch(USER_LEARNING.UPDATE_PROFILE)
+  async updateUserLearningProfile(
     @Param('profileId') profileId: string,
-    @Body() body: SetUserLearningProfileThemesRequestDto,
+    @Body() body: UpdateUserLearningProfileDto,
   ) {
     const result = await this.commandBus.execute(
-      new SetUserLearningProfileThemesCommand(profileId, body.themeSlugs),
+      new UpdateUserLearningProfileCommand(
+        profileId,
+        body.themeSlugs,
+        body.interfaceLanguage,
+        body.targetLanguage,
+        body.difficulty,
+      ),
     );
 
     return ApiSuccessResponse.of(result);

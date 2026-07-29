@@ -4,7 +4,7 @@ import {
   CreateUserParams,
   FindUserLearningProfileParams,
   FindUserLearningProfilesParams,
-  SetUserLearningProfileThemesParams,
+  UpdateUserLearningProfileParams,
   UserLearningRepository,
 } from '../../domain/repositories/user-learning.repository';
 import { User } from '../../domain/entities/user';
@@ -50,26 +50,39 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
     };
   }
 
-  async setUserLearningProfileThemes(
-    params: SetUserLearningProfileThemesParams,
+  async updateUserLearningProfile(
+    params: UpdateUserLearningProfileParams,
   ): Promise<UserLearningProfile> {
-    const { profileId, themeSlugs } = params;
+    const {
+      profileId,
+      themeSlugs,
+      interfaceLanguage,
+      targetLanguage,
+      difficulty,
+    } = params;
 
     const updated = await this.prisma.userLearningProfile.update({
       where: {
         id: profileId,
       },
       data: {
-        themes: {
-          deleteMany: {},
-          create: themeSlugs.map((themeSlug) => ({
-            theme: {
-              connect: {
-                slug: themeSlug,
+        ...(themeSlugs != null
+          ? {
+              themes: {
+                deleteMany: {},
+                create: themeSlugs.map((themeSlug) => ({
+                  theme: {
+                    connect: {
+                      slug: themeSlug,
+                    },
+                  },
+                })),
               },
-            },
-          })),
-        },
+            }
+          : {}),
+        ...(interfaceLanguage != null ? { interfaceLanguage } : {}),
+        ...(targetLanguage != null ? { targetLanguage } : {}),
+        ...(difficulty != null ? { difficulty } : {}),
       },
       include: {
         themes: {
@@ -130,7 +143,8 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
         isActive: activated.isActive,
         interfaceLanguage: activated.interfaceLanguage as LanguageCode,
         targetLanguage: activated.targetLanguage as LanguageCode,
-        difficulty: (activated.difficulty as WordDifficulty | null) ?? undefined,
+        difficulty:
+          (activated.difficulty as WordDifficulty | null) ?? undefined,
         themeSlugs: activated.themes.map((t) => t.theme.slug),
         createdAt: activated.createdAt,
         updatedAt: activated.updatedAt,
@@ -211,7 +225,8 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       isActive: userLearningProfile.isActive,
       interfaceLanguage: userLearningProfile.interfaceLanguage as LanguageCode,
       targetLanguage: userLearningProfile.targetLanguage as LanguageCode,
-      difficulty: (userLearningProfile.difficulty as WordDifficulty | null) ?? undefined,
+      difficulty:
+        (userLearningProfile.difficulty as WordDifficulty | null) ?? undefined,
       themeSlugs: userLearningProfile.themes.map((t) => t.theme.slug),
       createdAt: userLearningProfile.createdAt,
       updatedAt: userLearningProfile.updatedAt,

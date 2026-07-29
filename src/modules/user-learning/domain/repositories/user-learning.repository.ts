@@ -19,9 +19,13 @@ export interface ActivateUserLearningProfileParams {
   profileId: string;
 }
 
-export interface SetUserLearningProfileThemesParams {
+export interface UpdateUserLearningProfileParams {
   profileId: string;
-  themeSlugs: string[];
+  /** Omitted leaves the current themes untouched. */
+  themeSlugs?: string[];
+  interfaceLanguage?: LanguageCode;
+  targetLanguage?: LanguageCode;
+  difficulty?: WordDifficulty;
 }
 
 export interface CreateUserParams {
@@ -68,7 +72,7 @@ export interface UserLearningRepository {
     params: ActivateUserLearningProfileParams,
   ): Promise<UserLearningProfile>;
 
-  setUserLearningProfileThemes(
-    params: SetUserLearningProfileThemesParams,
+  updateUserLearningProfile(
+    params: UpdateUserLearningProfileParams,
   ): Promise<UserLearningProfile>;
 }
