@@ -8,6 +8,17 @@ import { Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { LanguageCode } from '../../../../../generated/prisma/enums';
 
+/**
+ * Words generated per language, per night.
+ *
+ * Ten, not thirty: a user meets one word a day, so 10 × 3 languages
+ * still adds a hundred times what anyone consumes. The batch size is
+ * bounded by what the corpus needs, not by what one API call can carry —
+ * and at a reasoning model's price and latency (roughly three minutes
+ * for ten entries) the difference is most of the bill.
+ */
+const DAILY_BATCH_SIZE = 10;
+
 export class VocabularyDailyScheduler {
   private readonly logger = new Logger(VocabularyDailyScheduler.name);
 
@@ -25,22 +36,22 @@ export class VocabularyDailyScheduler {
       {
         targetLanguage: LanguageCode.EN,
         explanationLanguage: LanguageCode.FR,
-        count: 30,
+        count: DAILY_BATCH_SIZE,
       },
       {
         targetLanguage: LanguageCode.FR,
         explanationLanguage: LanguageCode.EN,
-        count: 30,
+        count: DAILY_BATCH_SIZE,
       },
       {
         targetLanguage: LanguageCode.ES,
         explanationLanguage: LanguageCode.EN,
-        count: 30,
+        count: DAILY_BATCH_SIZE,
       },
       /*{
         targetLanguage: LanguageCode.DE,
         explanationLanguage: LanguageCode.EN,
-        count: 30,
+        count: DAILY_BATCH_SIZE,
       },*/
     ];
 

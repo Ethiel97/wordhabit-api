@@ -1,10 +1,12 @@
 # Wordhabit API
 
-Backend service for **Wordhabit**, a vocabulary learning platform that helps users build a daily habit around useful words, themed learning, daily assignments, and progress tracking.
+Backend service for **Wordhabit**, a vocabulary learning platform that helps users build a daily habit around useful
+words, themed learning, daily assignments, and progress tracking.
 
 ## Overview
 
-Wordhabit is a modular NestJS backend backed by PostgreSQL, Prisma, Redis, BullMQ, and AI-assisted vocabulary generation. The currentUserWordProgress API supports:
+Wordhabit is a modular NestJS backend backed by PostgreSQL, Prisma, Redis, BullMQ, and AI-assisted vocabulary
+generation. The current API supports:
 
 - waitlist signups and lookup
 - vocabulary words with definitions, examples, pronunciations, synonyms, and themes
@@ -27,7 +29,8 @@ Wordhabit is a modular NestJS backend backed by PostgreSQL, Prisma, Redis, BullM
 
 ## Architecture
 
-The application is organized as a modular monolith. Each feature module keeps HTTP concerns, use cases, domain contracts, and infrastructure adapters separated.
+The application is organized as a modular monolith. Each feature module keeps HTTP concerns, use cases, domain
+contracts, and infrastructure adapters separated.
 
 ```txt
 HTTP request
@@ -120,7 +123,8 @@ Error responses use:
 }
 ```
 
-Validation is handled globally with `ValidationPipe`. Application and HTTP errors are normalized by `HttpExceptionFilter`.
+Validation is handled globally with `ValidationPipe`. Application and HTTP errors are normalized by
+`HttpExceptionFilter`.
 
 ## Setup
 
@@ -202,25 +206,25 @@ pnpm worker:dev
 
 ## Environment Variables
 
-| Variable                  | Purpose                                                                                               |
-|---------------------------|-------------------------------------------------------------------------------------------------------|
-| `DATABASE_URL`            | PostgreSQL connection string used by Prisma.                                                          |
-| `REDIS_URL`               | Optional full Redis connection URL for BullMQ.                                                        |
-| `REDIS_HOST`              | Redis host when `REDIS_URL` is not set. Defaults to `localhost`.                                      |
-| `REDIS_PORT`              | Redis port when `REDIS_URL` is not set. Defaults to `6379`.                                           |
-| `OPENAI_API_KEY`          | API key used by vocabulary generation.                                                                |
-| `OPENAI_VOCABULARY_MODEL` | Optional model override for vocabulary generation. Defaults to `gpt-4.1-mini`.                        |
-| `SENTRY_DSN`              | Sentry DSN. When set, error tracking and profiling are enabled for both API and worker processes.     |
-| `SENTRY_ENVIRONMENT`      | Optional Sentry environment. Supported values are `dev` and `production`. Defaults to `dev` (or `production` when `NODE_ENV=production`). |
-| `SENTRY_TRACES_SAMPLE_RATE` | Trace sample rate from `0` to `1`. Defaults to `0.1`.                                               |
-| `SENTRY_PROFILES_SAMPLE_RATE` | Profile sample rate from `0` to `1`. Defaults to `0.1`.                                           |
-| `SENTRY_RELEASE`          | Optional release identifier used in Sentry events.                                                     |
-| `PORT`                    | HTTP port. Local default is `4000`; Docker/Fly configs set `3000`.                                    |
-| `NODE_ENV`                | Runtime environment. Production enables production database schema behavior and scheduled generation. |
+| Variable                      | Purpose                                                                                                                                   |
+|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `DATABASE_URL`                | PostgreSQL connection string used by Prisma.                                                                                              |
+| `REDIS_URL`                   | Optional full Redis connection URL for BullMQ.                                                                                            |
+| `REDIS_HOST`                  | Redis host when `REDIS_URL` is not set. Defaults to `localhost`.                                                                          |
+| `REDIS_PORT`                  | Redis port when `REDIS_URL` is not set. Defaults to `6379`.                                                                               |
+| `OPENAI_API_KEY`              | API key used by vocabulary generation.                                                                                                    |
+| `OPENAI_VOCABULARY_MODEL`     | Optional model override for vocabulary generation. Defaults to `gpt-4.1-mini`.                                                            |
+| `SENTRY_DSN`                  | Sentry DSN. When set, error tracking and profiling are enabled for both API and worker processes.                                         |
+| `SENTRY_ENVIRONMENT`          | Optional Sentry environment. Supported values are `dev` and `production`. Defaults to `dev` (or `production` when `NODE_ENV=production`). |
+| `SENTRY_TRACES_SAMPLE_RATE`   | Trace sample rate from `0` to `1`. Defaults to `0.1`.                                                                                     |
+| `SENTRY_PROFILES_SAMPLE_RATE` | Profile sample rate from `0` to `1`. Defaults to `0.1`.                                                                                   |
+| `SENTRY_RELEASE`              | Optional release identifier used in Sentry events.                                                                                        |
+| `PORT`                        | HTTP port. Local default is `4000`; Docker/Fly configs set `3000`.                                                                        |
+| `NODE_ENV`                    | Runtime environment. Production enables production database schema behavior and scheduled generation.                                     |
 
 ## Endpoint Catalog
 
-This is a compact map of the currentUserWordProgress HTTP surface, not a full API reference.
+This is a compact map of the current HTTP surface, not a full API reference.
 
 ### Health
 
@@ -278,7 +282,8 @@ Vocabulary ingestion is intentionally asynchronous:
 
 - The HTTP API enqueues generation work in BullMQ.
 - Redis stores the queue state.
-- The worker consumes vocabulary generation jobs and creates vocabulary words through the same CQRS command path as normal application code.
+- The worker consumes vocabulary generation jobs and creates vocabulary words through the same CQRS command path as
+  normal application code.
 - In production, `VocabularyDailyScheduler` enqueues daily generation jobs for configured language pairs.
 
 Run both the API and worker locally when testing the ingestion endpoint.

@@ -53,17 +53,21 @@ export class LoginUserHandler implements ICommandHandler<
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const activeUser = user.deletedAt
+      ? await this.authUserRepository.restore(user.id)
+      : user;
+
     const accessToken = await this.tokenService.signAccessToken({
-      sub: user.id,
-      email: user.email,
+      sub: activeUser.id,
+      email: activeUser.email,
     });
 
     return {
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        emailVerified: user.emailVerifiedAt !== null,
+        id: activeUser.id,
+        email: activeUser.email,
+        name: activeUser.name,
+        emailVerified: activeUser.emailVerifiedAt !== null,
       },
       accessToken,
     };

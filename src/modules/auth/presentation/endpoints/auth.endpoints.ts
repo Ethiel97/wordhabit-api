@@ -9,4 +9,5 @@ export const AUTH = {
   RESET_PASSWORD: 'reset-password',
   VERIFY_EMAIL: 'verify-email',
   RESEND_VERIFICATION_EMAIL: 'resend-verification-email',
+  DELETE_ACCOUNT: 'me',
 } as const;

@@ -85,9 +85,53 @@ export interface VocabularyRepository {
 
   search(params: FindVocabularyWordParams): Promise<VocabularyWordAggregate[]>;
 
-  findByNormalizedTerm(
-    params: FindVocabularyWordParams,
-  ): Promise<VocabularyWord | null>;
+  findLeastCoveredThemes(params: {
+    targetLanguage: LanguageCode;
+    limit: number;
+  }): Promise<string[]>;
+
+  /**
+   * Both fields required, and named for what they are.
+   *
+   * It used to take the all-optional `FindVocabularyWordParams` while
+   * the implementation read `params.term`. Method parameters are
+   * bivariant in TypeScript, so `implements` accepted the mismatch and
+   * every call passed `normalizedTerm` into a lookup reading `term` —
+   * which threw on a missing argument, every time.
+   */
+  findByNormalizedTerm(params: {
+    normalizedTerm: string;
+    targetLanguage: LanguageCode;
+  }): Promise<VocabularyWord | null>;
+
+  /**
+   * A random sample of terms already held for a language.
+   *
+   * Random rather than newest: generation feeds this back to the model
+   * as "already covered", and a sample spread across the whole corpus
+   * shows it the territory taken, where the newest slice would only show
+   * it last night's corner.
+   */
+  sampleNormalizedTerms(params: {
+    targetLanguage: LanguageCode;
+    limit: number;
+  }): Promise<string[]>;
+
+  /** How many words the corpus holds for a language. */
+  countWords(params: { targetLanguage: LanguageCode }): Promise<number>;
+
+  /**
+   * The theme slugs the corpus covers least, thinnest first.
+   *
+   * Generation feeds these back to the model so the corpus fills its own
+   * gaps: themes are what a user picks at onboarding and what the daily
+   * word is filtered by, so a theme nobody generates for is a promise
+   * the app cannot keep.
+   */
+  findLeastCoveredThemes(params: {
+    targetLanguage: LanguageCode;
+    limit: number;
+  }): Promise<string[]>;
 
   createWord(params: {
     term: string;

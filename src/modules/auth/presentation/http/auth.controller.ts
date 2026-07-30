@@ -3,6 +3,7 @@ import { RegisterUserRequestDto } from '../../application/dto/register-user-requ
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Post,
@@ -19,10 +20,24 @@ import { JwtAuthGuard } from '../../infrastructure/authentication/jwt-auth.guard
 import { CurrentUser } from '../current-user.decoraor';
 import { type AuthenticatedUser } from '../../domain/entities/authenticated-user';
 import { Public } from '../public.decorator';
+import { DeleteAccountRequestDto } from '../../application/dto/delete-account-request.dto';
+import { DeleteAccountCommand } from '../../application/commands/delete-account.command';
 
 @Controller(AUTH.BASE)
 export class AuthController {
   constructor(private readonly commandBus: CommandBus) {}
+
+  @Delete(AUTH.DELETE_ACCOUNT)
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  deleteAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: DeleteAccountRequestDto,
+  ) {
+    return this.commandBus.execute(
+      new DeleteAccountCommand(user.id, body.reason),
+    );
+  }
 
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)

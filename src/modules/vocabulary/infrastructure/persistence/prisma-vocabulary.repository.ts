@@ -19,6 +19,69 @@ import { PartOfSpeech } from '../../domain/entities/part-of-speech';
 export class PrismaVocabularyRepository implements VocabularyRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  countWords(params: { targetLanguage: LanguageCode }): Promise<number> {
+    return this.prisma.vocabularyWord.count({
+      where: {
+        targetLanguage: PrismaVocabularyMapper.toPrismaLanguageCode(
+          params.targetLanguage,
+        ),
+      },
+    });
+  }
+
+  async sampleNormalizedTerms(params: {
+    targetLanguage: LanguageCode;
+    limit: number;
+  }): Promise<string[]> {
+    // Raw SQL for the random draw: Prisma has no ORDER BY RANDOM(), and
+    // the alternatives are worse — counting then offsetting costs two
+    // round trips and skews as rows are added, while sampling in the
+    // application would pull the whole corpus into memory to throw most
+    // of it away.
+    const rows = await this.prisma.$queryRaw<{ normalizedTerm: string }[]>`
+      SELECT "normalizedTerm"
+      FROM "vocabulary_words"
+      WHERE "targetLanguage" = CAST(${params.targetLanguage} AS "LanguageCode")
+      ORDER BY RANDOM()
+      LIMIT ${params.limit}
+    `;
+
+    return rows.map((row) => row.normalizedTerm);
+  }
+
+  /**
+   * Catch-all buckets, excluded from the "generate more of this" list.
+   *
+   * They are pickable at onboarding, but steering a batch towards
+   * "general" or "other" asks for nothing in particular — and "general"
+   * is already the tag the model reaches for when it has no better idea.
+   */
+  private static readonly CATCH_ALL_THEME_SLUGS = ['general', 'other'];
+
+  async findLeastCoveredThemes(params: {
+    targetLanguage: LanguageCode;
+    limit: number;
+  }): Promise<string[]> {
+    // LEFT JOIN, so a theme with no word at all counts zero and comes
+    // first — which is exactly the theme that most needs a batch. The
+    // language filter sits in the join condition rather than in WHERE,
+    // or it would turn the outer join back into an inner one.
+    const rows = await this.prisma.$queryRaw<{ slug: string }[]>`
+      SELECT t."slug", COUNT(w."id") AS word_count
+      FROM "themes" t
+      LEFT JOIN "vocabulary_word_themes" wt ON wt."themeId" = t."id"
+      LEFT JOIN "vocabulary_words" w
+        ON w."id" = wt."wordId"
+       AND w."targetLanguage" = CAST(${params.targetLanguage} AS "LanguageCode")
+      WHERE t."slug" NOT IN (${Prisma.join(PrismaVocabularyRepository.CATCH_ALL_THEME_SLUGS)})
+      GROUP BY t."slug"
+      ORDER BY word_count ASC, t."slug" ASC
+      LIMIT ${params.limit}
+    `;
+
+    return rows.map((row) => row.slug);
+  }
+
   async listWords(
     params: ListVocabularyWordsParams,
   ): Promise<PaginatedResult<VocabularyWordListItemProjection>> {
@@ -289,13 +352,13 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
   }
 
   async findByNormalizedTerm(params: {
-    term: string;
+    normalizedTerm: string;
     targetLanguage: LanguageCode;
   }): Promise<VocabularyWord | null> {
     const found = await this.prisma.vocabularyWord.findUnique({
       where: {
         normalizedTerm_targetLanguage: {
-          normalizedTerm: params.term,
+          normalizedTerm: params.normalizedTerm,
           targetLanguage: PrismaVocabularyMapper.toPrismaLanguageCode(
             params.targetLanguage ?? this.getDefaultLanguage(),
           ),

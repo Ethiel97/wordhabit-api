@@ -9,6 +9,12 @@ import type {
   GenerateVocabularyBatchInput,
   VocabularyGenerationProvider,
 } from '../../../domain/providers/vocabulary-generation.provider';
+import { MAX_VOCABULARY_BATCH_SIZE } from '../../../domain/providers/vocabulary-generation.provider';
+import {
+  buildExplorationBrief,
+  type ExplorationBrief,
+} from '../../../domain/exploration-brief';
+import { VocabularyGenerationQuotaExceededError } from '../../../domain/errors/vocabulary-generation-quota-exceeded.error';
 
 const LANGUAGE_CODES = ['EN', 'FR', 'ES'] as const;
 
@@ -31,7 +37,7 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
       );
     }
 
-    const count = Math.min(input.count, 30);
+    const count = Math.min(input.count, MAX_VOCABULARY_BATCH_SIZE);
 
     this.logger.debug({
       count,
@@ -40,10 +46,18 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
       allowedThemeSlugs: input.allowedThemeSlugs,
     });
 
-    const response = await this.client.responses.create({
-      model: process.env.OPENAI_VOCABULARY_MODEL ?? 'gpt-4.1-mini',
-      temperature: 0.9,
-      max_output_tokens: 12000,
+    const response = await this.createResponse({
+      model: process.env.OPENAI_VOCABULARY_MODEL ?? 'gpt-5.2-pro',
+      // No temperature: reasoning models reject the parameter outright
+      // (400 Unsupported parameter). It is no loss — variety now comes
+      // from the exclusion list and the exploration brief, which steer
+      // *where* the model looks rather than adding noise to what it
+      // says.
+      // ~350 tokens per bilingual entry with two definitions, two
+      // translated examples and phonetics. At 30 entries the old 12k
+      // ceiling truncated the JSON, and a truncated response fails
+      // JSON.parse — losing the whole batch, not the last few items.
+      max_output_tokens: 24000,
       input: [
         {
           role: 'system',
@@ -59,6 +73,18 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
                 targetLanguage: input.targetLanguage,
                 explanationLanguage,
                 allowedThemeSlugs: input.allowedThemeSlugs,
+                excludedTerms: input.excludedTerms ?? [],
+                underCoveredThemes: input.underCoveredThemes ?? [],
+                // Falls back to a brief for today, so a caller that has
+                // not been updated still gets a rotating territory
+                // rather than the same open question every night.
+                brief:
+                  input.brief ??
+                  buildExplorationBrief({
+                    targetLanguage: input.targetLanguage,
+                    count,
+                    on: new Date(),
+                  }),
               }),
             },
           ],
@@ -73,6 +99,14 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
         },
       },
     });
+
+    // Worth a log line rather than a silent cost: on a reasoning model
+    // the output budget also pays for the reasoning, so this is how you
+    // find out whether `max_output_tokens` is being eaten before any
+    // JSON is emitted.
+    this.logger.log(
+      `usage ${JSON.stringify(response.usage)} for ${count} ${input.targetLanguage} entries`,
+    );
 
     const jsonText = response.output_text;
 
@@ -96,64 +130,145 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
     };
   }
 
+  /**
+   * Wraps the API call so a spent quota becomes a domain error.
+   *
+   * The OpenAI SDK's own error type stays inside this provider — the
+   * queue that decides whether to retry has no business importing it,
+   * and would otherwise match on a vendor's error code.
+   */
+  private async createResponse(
+    body: OpenAI.Responses.ResponseCreateParamsNonStreaming,
+  ): Promise<OpenAI.Responses.Response> {
+    try {
+      return await this.client.responses.create(body);
+    } catch (error) {
+      if (
+        error instanceof OpenAI.APIError &&
+        error.code === 'insufficient_quota'
+      ) {
+        throw new VocabularyGenerationQuotaExceededError(error);
+      }
+      throw error;
+    }
+  }
+
   private buildSystemPrompt(): string {
     return [
-      'You are an elite multilingual lexicographer and language-learning content designer.',
-      'You generate premium structured vocabulary learning data.',
+      'You are a lexicographer building the vocabulary a curious adult meets one word a day.',
+      'You choose words a native speaker would be pleased a learner knew, and you explain them the way a well-read friend would.',
       'Return only valid JSON matching the provided schema.',
-      'Do not include markdown, explanations, comments, or surrounding text.',
+      'No markdown, no commentary, no text around the JSON.',
     ].join(' ');
   }
+
+  /**
+   * Words a language model reaches for whenever "sophisticated" or
+   * "nuanced" vocabulary is requested.
+   *
+   * Naming them is the only instruction that closes the default pool: an
+   * abstract "avoid clichés" makes the model think of clichés, while a
+   * list is something it can actually check itself against.
+   */
+  private static readonly OVERUSED_TERMS = [
+    'serendipity',
+    'ephemeral',
+    'liminal',
+    'petrichor',
+    'sonder',
+    'mellifluous',
+    'quintessential',
+    'ubiquitous',
+    'resilience',
+    'nostalgia',
+    'wanderlust',
+    'eloquent',
+    'ambivalent',
+    'juxtaposition',
+    'ineffable',
+    'limerence',
+  ];
 
   private buildUserPrompt(params: {
     count: number;
     targetLanguage: string;
     explanationLanguage: string;
     allowedThemeSlugs: string[];
+    excludedTerms: string[];
+    underCoveredThemes: string[];
+    brief: ExplorationBrief;
   }): string {
+    const {
+      count,
+      targetLanguage,
+      explanationLanguage,
+      allowedThemeSlugs,
+      excludedTerms,
+      underCoveredThemes,
+      brief,
+    } = params;
+    const bilingual = explanationLanguage !== targetLanguage;
+
+    // Sections and newlines rather than one joined paragraph: a wall of
+    // twenty-five sentences reads as noise to the model and is unmaintainable
+    // for us.
     return [
-      `Generate exactly ${params.count} distinct vocabulary entries.`,
-      `Target language: ${params.targetLanguage}.`,
-      `Explanation language: ${params.explanationLanguage}.`,
-      `Allowed theme slugs: ${params.allowedThemeSlugs.join(', ')}.`,
-
-      'The vocabulary must feel sophisticated, culturally relevant, emotionally nuanced, and genuinely useful in real-world communication.',
-      'Do not generate simplistic textbook vocabulary.',
-      'Do not generate children-level vocabulary.',
-      'Do not generate ultra-obscure dictionary-only jargon.',
-      'Do not generate semantically repetitive words within the same batch.',
-      'Do not generate near-synonyms unless the nuance is substantially different.',
-
-      'Prefer vocabulary that educated native speakers encounter in conversations, books, modern culture, media, psychology, philosophy, business, technology, intellectual discussions, professional environments, and emotionally meaningful situations.',
-
-      'BEGINNER words must still feel useful, modern, expressive, culturally relevant, and intellectually meaningful.',
-      'BEGINNER means easy to understand and reusable, not primitive.',
-
-      'Definitions must be concise, natural, precise, and insightful.',
-      'Definitions should clarify nuance, tone, emotional implication, or contextual usage when relevant.',
-      'Avoid mechanical dictionary phrasing.',
-
-      'Example sentences must feel realistic, emotionally believable, and naturally spoken or written by native speakers.',
-      'Avoid sterile textbook-style examples.',
-      'Examples should reflect relationships, work, ambition, emotions, social dynamics, modern life, culture, technology, personal growth, or human behavior.',
-
-      'Synonyms must be semantically close and preserve nuance where possible.',
-      'Avoid weak, generic, or loosely related synonyms.',
-
-      'Each item must include one to three themeSlugs.',
-      'themeSlugs must only contain values from the allowed theme slugs list.',
-      'Do not invent new theme slugs.',
-
-      'Each item must include at least one definition in the target language.',
-      'If explanationLanguage differs from targetLanguage, include at least one additional definition in the explanation language.',
-
-      'Each item must include at least one natural example sentence in the target language.',
-      'If explanationLanguage differs from targetLanguage, example translations must be fluent and natural.',
-      'If explanationLanguage equals targetLanguage, translation may be null.',
-
-      'Each item must include at least one synonym in the target language.',
-      'Pronunciations may use null for audioUrl and provider when unavailable.',
-    ].join(' ');
+      '# Task',
+      `Produce ${count} vocabulary entries in ${targetLanguage}, explained in ${explanationLanguage}.`,
+      '',
+      "# This batch's territory",
+      `Semantic field: ${brief.semanticField}.`,
+      `Required mix: ${brief.beginner} BEGINNER, ${brief.intermediate} INTERMEDIATE, ${brief.advanced} ADVANCED.`,
+      `At least ${brief.minExpressions} entries must have partOfSpeech EXPRESSION — idioms, set phrases and collocations a learner cannot assemble from a dictionary.`,
+      ...(underCoveredThemes.length
+        ? [
+            `The corpus is thin on these themes: ${underCoveredThemes.join(', ')}. Where the semantic field allows it, choose words that genuinely belong to them — but never tag a word with a theme it does not fit.`,
+          ]
+        : []),
+      '',
+      '# The bar',
+      // One testable question beats ten adjectives. Both halves matter:
+      // the obvious word fails the second, dictionary-only jargon the first.
+      'Every entry must pass this test: an educated native speaker would use it this month, and a fluent learner would be visibly impressed that you knew it.',
+      'BEGINNER means immediately understandable and reusable — not childish. A beginner word still has to pass the test.',
+      '',
+      '# Already covered — do not repeat these, or their close variants',
+      excludedTerms.length ? excludedTerms.join(', ') : '(the corpus is empty)',
+      '',
+      '# Banned regardless',
+      OpenAiVocabularyGenerationProvider.OVERUSED_TERMS.join(', ') + '.',
+      '',
+      '# Definitions',
+      'Write what a thoughtful friend would say, not what a dictionary prints.',
+      'Name the nuance a near-synonym would miss.',
+      'Never define a term using itself or its own root.',
+      '',
+      '# Examples',
+      'Each example must read as something a person actually said or wrote — a message, an argument, a moment of work or of intimacy.',
+      'It must contain the term verbatim.',
+      'A sentence that exists only to demonstrate the word is a failure.',
+      'Give at least one per entry.',
+      '',
+      '# Synonyms',
+      'Only words a native speaker would accept as a substitute in the example sentence you just wrote. At least one per entry.',
+      '',
+      '# Where each thing goes',
+      // A reasoning model given only quality criteria merges everything
+      // into the first field that will hold it: the whole batch came
+      // back with the example and its translation pasted inside
+      // `definitions[].text`, and `examples` empty.
+      '`definitions[].text` holds the definition and nothing else — no example sentence, no translation, no "Example:" or "Traduction:" line inside it.',
+      'The sentence goes in `examples[].sentence`, its translation in `examples[].translation`.',
+      'Nuance belongs in the definition itself, phrased as part of it, not appended as a "Nuance:" note.',
+      '',
+      '# Structure',
+      `1 to 3 themeSlugs, taken only from: ${allowedThemeSlugs.join(', ')}. Never invent one.`,
+      `At least one definition in ${targetLanguage}.`,
+      bilingual
+        ? `Plus at least one definition in ${explanationLanguage}, and a fluent translation for every example.`
+        : 'Translations may be null.',
+      'audioUrl and provider are null; give the phonetic transcription.',
+    ].join('\n');
   }
 
   private buildSchema(allowedThemeSlugs: string[]) {

@@ -7,6 +7,7 @@ import { VOCABULARY_GENERATION_PROVIDER } from './domain/providers/vocabulary-ge
 import { Module } from '@nestjs/common';
 import { VocabularyModule } from '../vocabulary/vocabulary.module';
 import { CqrsModule } from '@nestjs/cqrs';
+import { GenerateVocabularyBatchHandler } from './application/handlers/generate-vocabulary-batch.handler';
 
 @Module({
   imports: [
@@ -17,6 +18,9 @@ import { CqrsModule } from '@nestjs/cqrs';
     }),
   ],
   providers: [
+    // The processor only enqueues the command; without the handler
+    // registered here the nightly job would find no handler for it.
+    GenerateVocabularyBatchHandler,
     GenerateVocabularyBatchProcessor,
     VocabularyDailyScheduler,
     OpenAiVocabularyGenerationProvider,

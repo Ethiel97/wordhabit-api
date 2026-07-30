@@ -10,7 +10,7 @@ export enum UserWordProgressMasteryLevel {
   SEEN = 5,
   LEARNING = 10,
   MASTERED = 100,
-  SKIPPED = -1,
+  SKIPPED = 0,
 }
 
 export interface UserWordProgress {

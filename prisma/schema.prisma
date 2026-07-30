@@ -72,6 +72,15 @@ enum UserWordProgressStatus {
   SKIPPED
 }
 
+enum AccountDeletionReason {
+  TOO_MANY_NOTIFICATIONS
+  LOST_MY_STREAK
+  NOT_LEARNING_ENOUGH
+  TOO_EXPENSIVE
+  FOUND_BETTER
+  OTHER
+}
+
 model VocabularyWord {
   id             String               @id @default(cuid())
   term           String
@@ -182,13 +191,15 @@ model VocabularyWordTheme {
 }
 
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
+  id              String                 @id @default(cuid())
+  email           String                 @unique
   name            String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime               @default(now())
+  deletedAt       DateTime?
+  updatedAt       DateTime               @updatedAt
   password        String?
   emailVerifiedAt DateTime?
+  deletionReason  AccountDeletionReason?
 
   userLearningProfiles   UserLearningProfile[]
   dailyWordAssignments   DailyWordAssignment[]
@@ -198,6 +209,7 @@ model User {
   favoriteWords          FavoriteWord[]
   emailVerificationCodes EmailVerificationCode[]
 
+  @@index([deletedAt])
   @@index([email])
   @@map("users")
 }
@@ -218,12 +230,12 @@ model EmailVerificationCode {
 }
 
 model UserLearningProfile {
-  id                String       @id @default(cuid())
-  userId            String       @unique
-  isActive          Boolean      @default(true)
+  id                String          @id @default(cuid())
+  userId            String          @unique
+  isActive          Boolean         @default(true)
   interfaceLanguage LanguageCode
   targetLanguage    LanguageCode
-  difficulty WordDifficulty?
+  difficulty        WordDifficulty?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,83 +1,75 @@
 import { Processor } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
-import { Inject, Logger } from '@nestjs/common';
-import type { VocabularyGenerationProvider } from '../../../modules/vocabulary-ingestion/domain/providers/vocabulary-generation.provider';
-import { VOCABULARY_GENERATION_PROVIDER } from '../../../modules/vocabulary-ingestion/domain/providers/vocabulary-generation.provider';
+import { Job, UnrecoverableError } from 'bullmq';
+import { Logger } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { GenerateVocabularyBatchRequestDto } from '../../../modules/vocabulary-ingestion/application/dto/generate-vocabulary-batch.request.dto';
-import { CreateVocabularyWordCommand } from '../../../modules/vocabulary/application/commands/create-vocabulary-word.command';
+import {
+  GenerateVocabularyBatchCommand,
+  type GenerateVocabularyBatchResult,
+} from '../../../modules/vocabulary-ingestion/application/commands/generate-vocabulary-batch.command';
 import {
   GENERATE_VOCABULARY_BATCH_JOB,
   VOCABULARY_QUEUE,
 } from '../../../modules/vocabulary-ingestion/infrastructure/queue/vocabulary-queue.constants';
-import type { ThemeRepository } from '../../../modules/vocabulary/domain/repositories/theme.repository';
-import { THEME_REPOSITORY } from '../../../modules/vocabulary/domain/repositories/theme.repository';
 import { SentryReportingWorkerHost } from './sentry-reporting-processor';
+import { VocabularyGenerationQuotaExceededError } from '../../../modules/vocabulary-ingestion/domain/errors/vocabulary-generation-quota-exceeded.error';
 
+/**
+ * Runs the nightly vocabulary batch.
+ *
+ * Transport only: it turns a job into the command and reports the
+ * outcome. Generation itself — themes, exclusion list, exploration
+ * brief, quality gate, persistence — belongs to
+ * `GenerateVocabularyBatchHandler`, so the scheduled path and the HTTP
+ * path go through the same code. It used to be reimplemented here, which
+ * meant the handler was dead code and every improvement landed in the
+ * copy that nothing called.
+ */
 @Processor(VOCABULARY_QUEUE)
 export class GenerateVocabularyBatchProcessor extends SentryReportingWorkerHost {
   private readonly logger = new Logger(GenerateVocabularyBatchProcessor.name);
 
-  constructor(
-    @Inject(VOCABULARY_GENERATION_PROVIDER)
-    private readonly provider: VocabularyGenerationProvider,
-    private readonly commandBus: CommandBus,
-    @Inject(THEME_REPOSITORY)
-    private readonly themeRepository: ThemeRepository,
-  ) {
+  constructor(private readonly commandBus: CommandBus) {
     super();
   }
 
-  async findThemeSlugs(): Promise<string[]> {
-    return await this.themeRepository
-      .list()
-      .then((themes) => themes.map((theme) => theme.slug));
-  }
-
-  async process(job: Job<any>) {
-    this.logger.log(`Processing job ${job.id} name: ${job.name}`);
-    if (job.name !== GENERATE_VOCABULARY_BATCH_JOB) return;
-
-    this.logger.log(`Processing job ${job.id}`);
+  async process(job: Job) {
+    if (job.name !== GENERATE_VOCABULARY_BATCH_JOB) {
+      this.logger.warn(`Unknown job ${job.name} (${job.id}) — skipping`);
+      return;
+    }
 
     const { targetLanguage, explanationLanguage, count } =
       job.data as GenerateVocabularyBatchRequestDto;
 
-    const allowedThemeSlugs = await this.findThemeSlugs();
-
-    const result = await this.provider.generateVocabularyBatch({
-      targetLanguage,
-      explanationLanguage,
-      count,
-      allowedThemeSlugs,
-    });
-
-    this.logger.log('Vocabulary processor result: ', result.items);
-
-    for (const item of result.items) {
-      try {
-        await this.commandBus.execute(
-          new CreateVocabularyWordCommand({
-            term: item.term,
-            targetLanguage: item.targetLanguage,
-            difficulty: item.difficulty,
-            partOfSpeech: item.partOfSpeech,
-            definitions: item.definitions,
-            examples: item.examples,
-            pronunciations: item.pronunciations,
-            synonyms: item.synonyms,
-            themeSlugs: item.themeSlugs,
-          }),
-        );
-      } catch (error: any) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
-        if (error.message && error.message?.includes('already exists')) {
-          this.logger.warn(`Duplicate: ${item.term}`);
-          continue;
-        }
-
-        this.logger.error(`Failed for ${item.term}`, error);
+    let result: GenerateVocabularyBatchResult;
+    try {
+      result = await this.commandBus.execute(
+        new GenerateVocabularyBatchCommand(
+          targetLanguage,
+          explanationLanguage,
+          count,
+        ),
+      );
+    } catch (error) {
+      // The one failure that is certain to repeat: credit does not come
+      // back between two exponential backoffs. Retrying it three times
+      // buys nothing and raises three alerts for a single cause.
+      if (error instanceof VocabularyGenerationQuotaExceededError) {
+        throw new UnrecoverableError(error.message);
       }
+      throw error;
     }
+
+    // The yield is the number to watch: once "already known" dominates,
+    // the exclusion list is no longer buying new ground and the batch is
+    // burning budget for nothing.
+    this.logger.log(
+      `${targetLanguage}: ${result.createdCount} created, ` +
+        `${result.skippedCount} already known, ${result.failedCount} rejected ` +
+        `(of ${result.generatedCount} generated)`,
+    );
+
+    return result;
   }
 }

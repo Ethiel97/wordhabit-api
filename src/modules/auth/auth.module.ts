@@ -23,8 +23,10 @@ import { EMAIL_VERIFICATION_CODE_REPOSITORY } from './domain/repositories/email-
 import { PrismaEmailVerificationCodeRepository } from './infrastructure/persistence/prisma-email-verification-code.repository';
 import { AUTH_EMAIL_QUEUE } from './infrastructure/queue/auth-email-queue.constants';
 import { SendWelcomeEmailOnEmailVerifiedHandler } from './application/handlers/send-welcome-email-on-email-verified.handler';
+import { DeleteAccountHandler } from './application/handlers/delete-account.handler';
 
 const commandHandlers = [
+  DeleteAccountHandler,
   RegisterUserHandler,
   LoginUserHandler,
   VerifyEmailHandler,
