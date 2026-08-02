@@ -22,7 +22,7 @@ export interface UserWordProgress {
   seenAt: Date | null;
   status: UserWordProgressStatus;
   lastReviewedAt: Date | null;
-  nextReviewAt: Date | null;
+  nextReviewOn: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -19,14 +19,12 @@ export class GetReviewQueueHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetReviewQueueQuery): Promise<GetReviewQueueResult> {
-    const { userId, limit } = query;
+    const { userId, localDate, limit } = query;
 
     const items = await this.learningRepository.findReviewQueue({
       userId,
       limit,
-      // grab today's date to filter the review queue items that are due for review
-      // watch out for timezones!
-      now: new Date(),
+      localDate,
     });
 
     return {

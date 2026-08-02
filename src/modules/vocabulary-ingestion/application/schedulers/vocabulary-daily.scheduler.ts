@@ -17,7 +17,7 @@ import { LanguageCode } from '../../../../../generated/prisma/enums';
  * and at a reasoning model's price and latency (roughly three minutes
  * for ten entries) the difference is most of the bill.
  */
-const DAILY_BATCH_SIZE = 10;
+const DAILY_BATCH_SIZE = 15;
 
 export class VocabularyDailyScheduler {
   private readonly logger = new Logger(VocabularyDailyScheduler.name);
@@ -31,7 +31,7 @@ export class VocabularyDailyScheduler {
     //enable on Production, keep disabled on staging to avoid unnecessary costs
     disabled: process.env.NODE_ENV !== 'production',
   })
-  enqueueGeneration() {
+  async enqueueGeneration() {
     const payloads = [
       {
         targetLanguage: LanguageCode.EN,
@@ -56,9 +56,13 @@ export class VocabularyDailyScheduler {
     ];
 
     for (const payload of payloads) {
+      // Passed to add(), not just logged: BullMQ rejects a duplicate id,
+      // which is what keeps a second API instance from generating the
+      // same batch twice.
       const jobId = `daily:${payload.targetLanguage}:${new Date().toISOString().split('T')[0]}`;
-      this.queue
-        .add(GENERATE_VOCABULARY_BATCH_JOB, payload, {
+      try {
+        await this.queue.add(GENERATE_VOCABULARY_BATCH_JOB, payload, {
+          jobId,
           attempts: 3,
           backoff: {
             type: 'exponential',
@@ -66,17 +70,14 @@ export class VocabularyDailyScheduler {
           },
           removeOnComplete: 100,
           removeOnFail: 100,
-        })
-        .then(() => {
-          this.logger.log(
-            `Enqueued job ${jobId} for ${payload.targetLanguage}`,
-          );
-        })
-        .catch((error) => {
-          this.logger.error(
-            `Failed to enqueue job for ${payload.targetLanguage}: ${error}`,
-          );
         });
+        this.logger.log(`Enqueued job ${jobId} for ${payload.targetLanguage}`);
+      } catch (error) {
+        // One language failing to enqueue must not drop the others.
+        this.logger.error(
+          `Failed to enqueue job for ${payload.targetLanguage}: ${error}`,
+        );
+      }
     }
   }
 }

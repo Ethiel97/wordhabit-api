@@ -40,6 +40,7 @@ export class SubmitWordReviewHandler implements ICommandHandler<
       current: currentUserWordProgress,
       correct: command.correct,
       now,
+      localDate: command.localDate,
     });
 
     const updated = await this.learningRepository.updateUserWordReview({
@@ -80,7 +81,7 @@ export class SubmitWordReviewHandler implements ICommandHandler<
       masteryLevel: updated.masteryLevel,
       reviewCount: updated.reviewCount,
       lastReviewedAt: updated.lastReviewedAt!,
-      nextReviewAt: updated.nextReviewAt,
+      nextReviewOn: updated.nextReviewOn,
       updatedAt: updated.updatedAt,
     };
   }

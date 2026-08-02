@@ -56,3 +56,9 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+
+# Secrets that arrive as downloaded files. Listed before the first one
+# lands in the repo, not after.
+*service-account*.json
+*firebase-adminsdk*.json
+AuthKey_*.p8

@@ -15,6 +15,9 @@ export class GetTodayWordForUserHandler implements IQueryHandler<
   async execute(
     query: GetTodayWordForUserQuery,
   ): Promise<GetTodayWordForUserResult> {
-    return this.todayWordService.getOrAssignTodayWord(query.userId);
+    return this.todayWordService.getOrAssignTodayWord(
+      query.userId,
+      query.localDate,
+    );
   }
 }

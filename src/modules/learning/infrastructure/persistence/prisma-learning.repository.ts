@@ -34,6 +34,7 @@ import {
 import { PrismaLearningMapper } from './prisma-learning.mapper';
 import { UserLearningStreak } from '../../domain/entities/user-learning-streak';
 import { FavoriteWord } from '../../domain/entities/favorite-word';
+import { instantToLocalDate } from '../../domain/services/local-date';
 
 @Injectable()
 export class PrismaLearningRepository implements LearningRepository {
@@ -200,7 +201,7 @@ export class PrismaLearningRepository implements LearningRepository {
         masteryLevel: item.masteryLevel,
         reviewCount: item.reviewCount,
         lastReviewedAt: item.lastReviewedAt,
-        nextReviewAt: item.nextReviewAt,
+        nextReviewOn: item.nextReviewOn,
         updatedAt: item.updatedAt,
         definitions: item.word.definitions.map((definition) => ({
           id: definition.id,
@@ -431,7 +432,7 @@ export class PrismaLearningRepository implements LearningRepository {
         masteryLevel: params.masteryLevel,
         reviewCount: params.reviewCount,
         lastReviewedAt: params.lastReviewedAt,
-        nextReviewAt: params.nextReviewAt,
+        nextReviewOn: params.nextReviewOn,
       },
     });
 
@@ -446,9 +447,9 @@ export class PrismaLearningRepository implements LearningRepository {
   async findReviewQueue(
     params: FindReviewQueueParams,
   ): Promise<ReviewQueueItem[]> {
-    const { userId, now, limit } = params;
+    const { userId, localDate, limit } = params;
 
-    this.logger.log('Finding review queue', { userId, now, limit });
+    this.logger.log('Finding review queue', { userId, localDate, limit });
 
     const items = await this.prisma.userWordProgress.findMany({
       where: {
@@ -456,15 +457,15 @@ export class PrismaLearningRepository implements LearningRepository {
         // A word is due either because it has never been practised (just
         // discovered, so no review is scheduled yet) or because its
         // scheduled review has come around. MASTERED and SKIPPED are
-        // excluded by the status filter, so a null nextReviewAt here can
+        // excluded by the status filter, so a null nextReviewOn here can
         // only mean "discovered, not yet practised".
         status: {
           in: [UserWordProgressStatus.SEEN, UserWordProgressStatus.LEARNING],
         },
-        OR: [{ nextReviewAt: null }, { nextReviewAt: { lte: now } }],
+        OR: [{ nextReviewOn: null }, { nextReviewOn: { lte: localDate } }],
       },
       take: limit,
-      orderBy: [{ nextReviewAt: 'asc' }, { masteryLevel: 'asc' }],
+      orderBy: [{ nextReviewOn: 'asc' }, { masteryLevel: 'asc' }],
       include: {
         word: {
           include: {
@@ -484,7 +485,7 @@ export class PrismaLearningRepository implements LearningRepository {
       masteryLevel: item.masteryLevel,
       reviewCount: item.reviewCount,
       status: PrismaLearningMapper.toDomainUserWordProgressStatus(item.status),
-      nextReviewAt: item.nextReviewAt,
+      nextReviewOn: item.nextReviewOn,
       partOfSpeech: PrismaVocabularyMapper.toDomainPartOfSpeech(
         item.word.partOfSpeech,
       ),
@@ -533,7 +534,7 @@ export class PrismaLearningRepository implements LearningRepository {
     status: UserWordProgressStatus;
     masteryLevel: UserWordProgressMasteryLevel;
     seenAt?: Date | null;
-    nextReviewAt?: Date | null;
+    nextReviewOn?: string | null;
   }): Promise<UserWordProgress> {
     const { userId, wordId, status } = params;
     const found = await this.prisma.userWordProgress.upsert({
@@ -542,7 +543,7 @@ export class PrismaLearningRepository implements LearningRepository {
         status: PrismaLearningMapper.toPrismaUserWordProgressStatus(status),
         masteryLevel: params.masteryLevel,
         seenAt: params.seenAt,
-        nextReviewAt: params.nextReviewAt,
+        nextReviewOn: params.nextReviewOn,
       },
       create: {
         userId,
@@ -553,7 +554,7 @@ export class PrismaLearningRepository implements LearningRepository {
         // mastery 0 with no seenAt regardless of the state machine.
         masteryLevel: params.masteryLevel,
         seenAt: params.seenAt,
-        nextReviewAt: params.nextReviewAt,
+        nextReviewOn: params.nextReviewOn,
       },
     });
 
@@ -593,7 +594,7 @@ export class PrismaLearningRepository implements LearningRepository {
     });
 
     return {
-      assignedFor: created.assignedFor,
+      assignedFor: instantToLocalDate(created.assignedFor),
       assignmentId: created.id,
       ...PrismaVocabularyMapper.toDomainAggregate({
         word: created.word,
@@ -733,7 +734,7 @@ export class PrismaLearningRepository implements LearningRepository {
     }
 
     return {
-      assignedFor: found.assignedFor,
+      assignedFor: instantToLocalDate(found.assignedFor),
       assignmentId: found.id,
       ...PrismaVocabularyMapper.toDomainAggregate({
         word: found.word,

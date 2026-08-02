@@ -2,25 +2,30 @@ import {
   UserWordProgress,
   UserWordProgressStatus,
 } from '../entities/user-word-progress';
+import { shiftLocalDate } from './local-date';
 
 export type SubmitWordReviewResultState = {
   status: UserWordProgressStatus;
   masteryLevel: number;
   reviewCount: number;
   lastReviewedAt: Date;
-  nextReviewAt: Date | null;
+  nextReviewOn: string | null;
 };
 
 type ComputeWordReviewStateParams = {
   current: UserWordProgress;
   correct: boolean;
+  /** The instant of the answer — a real event, kept as one. */
   now: Date;
+  /** The learner's own day, `yyyy-MM-dd`, which intervals count from. */
+  localDate: string;
 };
 
 export function computeWordReviewState({
   current,
   correct,
   now,
+  localDate,
 }: ComputeWordReviewStateParams): SubmitWordReviewResultState {
   // A missed card costs no mastery — it only resets the interval, so the
   // word comes back tomorrow instead of in a month. Flashcard grading is
@@ -42,36 +47,26 @@ export function computeWordReviewState({
     masteryLevel: nextMasteryLevel,
     reviewCount: current.reviewCount + 1,
     lastReviewedAt: now,
-    nextReviewAt:
+    nextReviewOn:
       status === UserWordProgressStatus.MASTERED
         ? null
-        : computeNextReviewAt(nextMasteryLevel, correct, now),
+        : shiftLocalDate(localDate, intervalInDays(nextMasteryLevel, correct)),
   };
 }
 
-function computeNextReviewAt(
-  masteryLevel: number,
-  correct: boolean,
-  now: Date,
-): Date {
-  const nextReviewAt = new Date(now);
+/**
+ * Days until the word comes back.
+ *
+ * Counted from the learner's calendar day, not from the moment they
+ * answered: an interval anchored to the clock drifts later every cycle,
+ * since one always answers a little after the card falls due.
+ */
+function intervalInDays(masteryLevel: number, correct: boolean): number {
+  if (!correct) return 1;
 
-  if (!correct) {
-    nextReviewAt.setDate(nextReviewAt.getDate() + 1);
-    return nextReviewAt;
-  }
-
-  if (masteryLevel <= 20) {
-    nextReviewAt.setDate(nextReviewAt.getDate() + 1);
-  } else if (masteryLevel <= 40) {
-    nextReviewAt.setDate(nextReviewAt.getDate() + 3);
-  } else if (masteryLevel <= 60) {
-    nextReviewAt.setDate(nextReviewAt.getDate() + 7);
-  } else if (masteryLevel <= 80) {
-    nextReviewAt.setDate(nextReviewAt.getDate() + 14);
-  } else {
-    nextReviewAt.setDate(nextReviewAt.getDate() + 30);
-  }
-
-  return nextReviewAt;
+  if (masteryLevel <= 20) return 1;
+  if (masteryLevel <= 40) return 3;
+  if (masteryLevel <= 60) return 7;
+  if (masteryLevel <= 80) return 14;
+  return 30;
 }

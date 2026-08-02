@@ -20,6 +20,6 @@ export type SubmitWordReviewResult = {
   masteryLevel: number;
   reviewCount: number;
   lastReviewedAt: Date;
-  nextReviewAt: Date | null;
+  nextReviewOn: string | null;
   updatedAt: Date;
 };

@@ -52,5 +52,7 @@ const services = [TodayWordService];
     },
     ...services,
   ],
+  // The notifications worker assigns the day's word before announcing it.
+  exports: [TodayWordService],
 })
 export class LearningModule {}

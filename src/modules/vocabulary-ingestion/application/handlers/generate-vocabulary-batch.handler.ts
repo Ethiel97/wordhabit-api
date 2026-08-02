@@ -19,7 +19,10 @@ import type { ThemeRepository } from '../../../vocabulary/domain/repositories/th
 import { THEME_REPOSITORY } from '../../../vocabulary/domain/repositories/theme.repository';
 import type { VocabularyRepository } from '../../../vocabulary/domain/repositories/vocabulary.repository';
 import { VOCABULARY_REPOSITORY } from '../../../vocabulary/domain/repositories/vocabulary.repository';
-import { buildExplorationBrief, CORPUS_TARGET_PER_LANGUAGE, } from '../../domain/exploration-brief';
+import {
+  buildExplorationBrief,
+  CORPUS_TARGET_PER_LANGUAGE,
+} from '../../domain/exploration-brief';
 import { rejectLowQualityItems } from '../../domain/generated-item-quality';
 
 /**

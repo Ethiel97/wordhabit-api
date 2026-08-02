@@ -25,14 +25,9 @@ export class GetLearningDashboardHandler implements IQueryHandler<
   async execute(
     query: GetLearningDashboardQuery,
   ): Promise<GetLearningDashboardResult> {
-    const now = new Date();
-
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-
     const [todayWord, reviewQueue, streak, stats] = await Promise.all([
       this.todayWordService
-        .getOrAssignTodayWord(query.userId)
+        .getOrAssignTodayWord(query.userId, query.localDate)
         .catch((error) => {
           if (
             error instanceof UserLearningProfileNotFoundError ||
@@ -46,7 +41,7 @@ export class GetLearningDashboardHandler implements IQueryHandler<
 
       this.learningRepository.findReviewQueue({
         userId: query.userId,
-        now: today,
+        localDate: query.localDate,
         limit: 5,
       }),
 

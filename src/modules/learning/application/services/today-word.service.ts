@@ -4,6 +4,7 @@ import {
   TodayWordAssignment,
 } from '../../domain/repositories/learning.repository';
 import { Inject, Injectable } from '@nestjs/common';
+import { localDateToInstant } from '../../domain/services/local-date';
 import { UserLearningProfileNotFoundError } from '../../../user-learning/application/errors/user-learning-profile-not-found.error';
 import { CandidateWordNotFoundError } from '../errors/candidate-word-not-found.error';
 import {
@@ -21,9 +22,17 @@ export class TodayWordService {
     private readonly learningRepository: LearningRepository,
   ) {}
 
-  async getOrAssignTodayWord(userId: string): Promise<TodayWordAssignment> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  /**
+   * [localDate] is the caller's own day, `yyyy-MM-dd` — supplied, never
+   * derived. Read from the server's clock it would name a different day
+   * for anyone far from its timezone, and the notification worker would
+   * announce a word the app does not consider today's.
+   */
+  async getOrAssignTodayWord(
+    userId: string,
+    localDate: string,
+  ): Promise<TodayWordAssignment> {
+    const today = localDateToInstant(localDate);
 
     const assignment = await this.learningRepository.findTodayAssignment({
       userId,

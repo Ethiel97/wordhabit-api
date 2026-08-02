@@ -9,6 +9,7 @@ import {
 import { computeNextUserWordProgressState } from '../../domain/services/user-word-progress-state-machine';
 import { computeNextDailyStreak } from '../../domain/services/daily-streak-calculator';
 import { UserWordProgressStatus } from '../../domain/entities/user-word-progress';
+import { localDateToInstant } from '../../domain/services/local-date';
 
 @CommandHandler(SetUserWordProgressCommand)
 export class SetUserWordProgressHandler implements ICommandHandler<
@@ -25,14 +26,15 @@ export class SetUserWordProgressHandler implements ICommandHandler<
   async execute(
     command: SetUserWordProgressCommand,
   ): Promise<SetUserWordProgressStatusResult> {
-    const { userId, wordId, status } = command;
+    const { userId, wordId, status, localDate } = command;
 
     this.logger.log(
       `Setting user word progress for userId: ${userId}, wordId: ${wordId}, status: ${status}`,
     );
 
-    const date = new Date();
-    date.setHours(0, 0, 0, 0);
+    // The client's day, which the command already carries — the server's
+    // would schedule the next review against the wrong calendar.
+    const date = localDateToInstant(localDate);
 
     const current = await this.learningRepository.findUserWordProgress({
       userId,
@@ -93,7 +95,7 @@ export class SetUserWordProgressHandler implements ICommandHandler<
       wordId: updatedProgress.wordId,
       status: updatedProgress.status,
       masteryLevel: updatedProgress.masteryLevel,
-      nextReviewAt: updatedProgress.nextReviewAt,
+      nextReviewOn: updatedProgress.nextReviewOn,
       updatedAt: updatedProgress.updatedAt,
     };
   }

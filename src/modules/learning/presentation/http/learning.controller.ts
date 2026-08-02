@@ -54,6 +54,7 @@ import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
 import type { AuthenticatedUser } from '../../../auth/domain/entities/authenticated-user';
 import { Public } from '../../../auth/presentation/public.decorator';
 import { GetRandomWordDto } from '../../application/dtos/get-random-word.dto';
+import { LocalDateQueryDto } from '../../application/dtos/local-date.query.dto';
 
 @Controller(LEARNING.BASE)
 export class LearningController {
@@ -77,9 +78,12 @@ export class LearningController {
   }
 
   @Get(LEARNING.TODAY_WORD)
-  async getTodayWordForUser(@CurrentUser() user: AuthenticatedUser) {
+  async getTodayWordForUser(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: LocalDateQueryDto,
+  ) {
     const todayWord: GetTodayWordForUserResult = await this.queryBus.execute(
-      new GetTodayWordForUserQuery(user.id),
+      new GetTodayWordForUserQuery(user.id, query.localDate),
     );
 
     return ApiSuccessResponse.of(todayWord);
@@ -116,9 +120,12 @@ export class LearningController {
   }
 
   @Get(LEARNING.REVIEW_QUEUE)
-  async getReviewQueue(@CurrentUser() user: AuthenticatedUser) {
+  async getReviewQueue(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: LocalDateQueryDto,
+  ) {
     const result: GetReviewQueueResult = await this.queryBus.execute(
-      new GetReviewQueueQuery(user.id),
+      new GetReviewQueueQuery(user.id, query.localDate),
     );
 
     return ApiSuccessResponse.of(result);
@@ -143,9 +150,12 @@ export class LearningController {
   }
 
   @Get(LEARNING.DASHBOARD)
-  async getLearningDashboard(@CurrentUser() user: AuthenticatedUser) {
+  async getLearningDashboard(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: LocalDateQueryDto,
+  ) {
     const result: GetLearningDashboardResult = await this.queryBus.execute(
-      new GetLearningDashboardQuery(user.id),
+      new GetLearningDashboardQuery(user.id, query.localDate),
     );
 
     return ApiSuccessResponse.of(result);

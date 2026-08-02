@@ -13,6 +13,7 @@ import { LearningModule } from './modules/learning/learning.module';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { AuthModule } from './modules/auth/auth.module';
 import { NestLensModule } from 'nestlens';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { NestLensModule } from 'nestlens';
     NestLensModule.forRoot({
       enabled: process.env.NODE_ENV !== 'production',
     }),
+    NotificationsModule,
     HealthModule,
     DatabaseModule,
     QueueModule,

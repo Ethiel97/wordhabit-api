@@ -36,7 +36,7 @@ export class GetUserWordProgressHandler implements IQueryHandler<
         wordId,
         status: UserWordProgressStatus.NEW,
         masteryLevel: UserWordProgressMasteryLevel.SKIPPED,
-        nextReviewAt: null,
+        nextReviewOn: null,
       };
     }
 
@@ -45,7 +45,7 @@ export class GetUserWordProgressHandler implements IQueryHandler<
       wordId,
       status: progress.status,
       masteryLevel: progress.masteryLevel,
-      nextReviewAt: progress.nextReviewAt,
+      nextReviewOn: progress.nextReviewOn,
       updatedAt: progress.updatedAt,
     };
   }

@@ -1,6 +1,10 @@
 import { computeNextDailyStreak } from './daily-streak-calculator';
 
-const snapshot = (currentStreak: number, longestStreak: number, day: string) => ({
+const snapshot = (
+  currentStreak: number,
+  longestStreak: number,
+  day: string,
+) => ({
   currentStreak,
   longestStreak,
   lastActivityLocalDate: day,

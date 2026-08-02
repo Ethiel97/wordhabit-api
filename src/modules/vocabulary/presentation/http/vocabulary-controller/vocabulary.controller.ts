@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateVocabularyWordCommand } from '../../../application/commands/create-vocabulary-word.command';
 import { CreateVocabularyWordRequestDto } from '../../../application/dto/create-vocabulary-word.request.dto';

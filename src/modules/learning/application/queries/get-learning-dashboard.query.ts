@@ -6,7 +6,11 @@ import {
 } from '../../domain/repositories/learning.repository';
 
 export class GetLearningDashboardQuery extends Query<GetLearningDashboardResult> {
-  constructor(public readonly userId: string) {
+  constructor(
+    public readonly userId: string,
+    /** The caller's own day, `yyyy-MM-dd`. */
+    public readonly localDate: string,
+  ) {
     super();
   }
 }

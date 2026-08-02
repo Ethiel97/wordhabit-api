@@ -98,6 +98,9 @@ module/
 
 All HTTP routes are prefixed with `/api`.
 
+Calendar days travel as `yyyy-MM-dd` strings supplied by the caller,
+never derived from the server clock — see [docs/dates.md](docs/dates.md).
+
 Success responses use:
 
 ```json

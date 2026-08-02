@@ -16,6 +16,6 @@ export interface GetUserWordProgressStatusResult {
   wordId: string;
   status: UserWordProgressStatus;
   masteryLevel: UserWordProgressMasteryLevel;
-  nextReviewAt?: Date | null;
+  nextReviewOn?: string | null;
   updatedAt?: Date;
 }

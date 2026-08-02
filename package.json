@@ -23,6 +23,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@date-fns/tz": "^1.5.0",
     "@google/genai": "^1.50.1",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
@@ -46,6 +47,7 @@
     "compression": "^1.8.1",
     "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
+    "firebase-admin": "^14.2.0",
     "ioredis": "^5.10.1",
     "nestlens": "^0.4.2",
     "openai": "^6.34.0",

@@ -201,13 +201,16 @@ model User {
   emailVerifiedAt DateTime?
   deletionReason  AccountDeletionReason?
 
-  userLearningProfiles   UserLearningProfile[]
-  dailyWordAssignments   DailyWordAssignment[]
-  userWordProgresses     UserWordProgress[]
-  userWordReviewEvents   UserWordReviewEvent[]
-  userLearningStreaks    UserLearningStreak[]
-  favoriteWords          FavoriteWord[]
-  emailVerificationCodes EmailVerificationCode[]
+  userLearningProfiles    UserLearningProfile[]
+  dailyWordAssignments    DailyWordAssignment[]
+  userWordProgresses      UserWordProgress[]
+  userWordReviewEvents    UserWordReviewEvent[]
+  userLearningStreaks     UserLearningStreak[]
+  favoriteWords           FavoriteWord[]
+  emailVerificationCodes  EmailVerificationCode[]
+  devices                 Device[]
+  notificationPreferences NotificationPreference[]
+  notificationDeliveries  NotificationDelivery[]
 
   @@index([deletedAt])
   @@index([email])
@@ -292,7 +295,11 @@ model UserWordProgress {
 
   seenAt         DateTime?
   lastReviewedAt DateTime?
-  nextReviewAt   DateTime?
+  /// The day the word comes back, `yyyy-MM-dd`. A calendar day, not an
+  /// instant: "review in 3 days" must land at the start of the learner's
+  /// third day, wherever they are, not at the clock time they happened
+  /// to answer.
+  nextReviewOn   String?   @db.VarChar(10)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -301,7 +308,7 @@ model UserWordProgress {
 
   @@unique([userId, wordId])
   @@index([userId, status])
-  @@index([nextReviewAt])
+  @@index([nextReviewOn])
   @@map("user_word_progress")
 }
 
@@ -379,4 +386,70 @@ model FavoriteWord {
   @@index([userId])
   @@index([wordId])
   @@map("favorite_words")
+}
+
+enum NotificationChannel {
+  DAILY_WORD
+  STREAK_RISK
+}
+
+enum NotificationSlot {
+  MORNING
+  MIDDAY
+  EVENING
+}
+
+enum Platform {
+  IOS
+  ANDROID
+}
+
+model NotificationPreference {
+  id        String              @id @default(cuid())
+  userId    String
+  channel   NotificationChannel
+  slot      NotificationSlot?
+  enabled   Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel])
+  @@index([userId])
+  @@map("notification_preferences")
+}
+
+model Device {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique
+  timeZone   String
+  platform   Platform
+  lastSeenAt DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([platform])
+  @@index([timeZone])
+  @@map("devices")
+}
+
+model NotificationDelivery {
+  id        String              @id @default(cuid())
+  userId    String
+  channel   NotificationChannel
+  localDate DateTime            @db.Date
+  sentAt    DateTime            @default(now())
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, localDate])
+  @@index([userId])
+  @@index([channel])
+  @@map("notification_deliveries")
 }

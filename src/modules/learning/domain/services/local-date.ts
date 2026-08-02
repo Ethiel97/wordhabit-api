@@ -34,3 +34,24 @@ export function daysBetweenLocalDates(from: string, to: string): number {
   const end = Date.parse(`${to}T00:00:00.000Z`);
   return Math.round((end - start) / MS_PER_DAY);
 }
+
+/**
+ * The instant a `yyyy-MM-dd` day is stored at.
+ *
+ * UTC midnight, never the server's: a day is the *user's* calendar day,
+ * and anchoring it to where the process happens to run makes the same
+ * date mean different things in the API and in the worker.
+ */
+export function localDateToInstant(date: string): Date {
+  return new Date(`${date}T00:00:00.000Z`);
+}
+
+/**
+ * Reads back the day [localDateToInstant] encoded.
+ *
+ * UTC fields, matching how it was written. Rendering the instant in any
+ * local zone would name the previous day west of Greenwich.
+ */
+export function instantToLocalDate(instant: Date): string {
+  return instant.toISOString().slice(0, 10);
+}

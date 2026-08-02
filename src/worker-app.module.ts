@@ -7,6 +7,7 @@ import { VocabularyModule } from './modules/vocabulary/vocabulary.module';
 import { VocabularyIngestionWorkerModule } from './modules/vocabulary-ingestion/vocabulary-ingestion-worker.module';
 import { AuthWorkerModule } from './modules/auth/auth-worker.module';
 import { WaitlistWorkerModule } from './modules/waitlist/waitlist-worker.module';
+import { NotificationsWorkerModule } from './modules/notifications/notifications-worker.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { WaitlistWorkerModule } from './modules/waitlist/waitlist-worker.module'
     VocabularyIngestionWorkerModule,
     AuthWorkerModule,
     WaitlistWorkerModule,
+    NotificationsWorkerModule,
   ],
 })
 export class WorkerAppModule {}

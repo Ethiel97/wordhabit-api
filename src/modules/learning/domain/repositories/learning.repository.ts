@@ -42,7 +42,14 @@ export interface FindTodayAssignmentParams {
 
 export type TodayWordAssignment = VocabularyWordAggregate & {
   assignmentId: string;
-  assignedFor: Date;
+  /**
+   * The day the word belongs to, `yyyy-MM-dd`.
+   *
+   * A string, not a Date: it names a calendar day, and a Date invites a
+   * caller to render it in a timezone — which would show the previous
+   * day to anyone west of Greenwich.
+   */
+  assignedFor: string;
 };
 
 export type RandomWord = VocabularyWordAggregate;
@@ -54,7 +61,7 @@ export type ReviewQueueItem = {
   masteryLevel: number;
   reviewCount: number;
   status: UserWordProgressStatus;
-  nextReviewAt: Date | null;
+  nextReviewOn: string | null;
   // The card front needs the part of speech and, for text-to-speech, the
   // language the word is in; the back needs meaning, example and synonyms.
   // A review session preloads its whole deck, so the card never waits on
@@ -78,7 +85,7 @@ export interface SetUserWordProgressStatusParams {
   status: UserWordProgressStatus;
   masteryLevel: UserWordProgressMasteryLevel;
   seenAt?: Date | null;
-  nextReviewAt?: Date | null;
+  nextReviewOn?: string | null;
 }
 
 export interface FindRandomWordParams {
@@ -89,7 +96,8 @@ export interface FindRandomWordParams {
 
 export interface FindReviewQueueParams {
   userId: string;
-  now: Date;
+  /** The learner's own day, `yyyy-MM-dd`: due dates are days, not times. */
+  localDate: string;
   limit: number;
 }
 
@@ -100,7 +108,7 @@ export interface UpdateUserWordReviewParams {
   masteryLevel: number;
   reviewCount: number;
   lastReviewedAt: Date;
-  nextReviewAt: Date | null;
+  nextReviewOn: string | null;
 }
 
 export interface UpsertUserLearningStreakParams {
@@ -204,7 +212,7 @@ export type UserWordLibraryItem = {
   masteryLevel: number;
   reviewCount: number;
   lastReviewedAt: Date | null;
-  nextReviewAt: Date | null;
+  nextReviewOn: string | null;
   updatedAt: Date;
   pronunciations: WordPronunciation[];
   // A trimmed set of definitions (meaning text + its explanation

@@ -1,5 +1,11 @@
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
-import { IsArray, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 
 export class CreateUserLearningProfileRequestDto {
