@@ -3,7 +3,7 @@ import {
   RegisterUserResult,
 } from '../commands/register-user.command';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { ConflictException, Inject } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
 import {
   AUTH_USER_REPOSITORY,
   type AuthUserRepository,
@@ -17,6 +17,7 @@ import {
   type TokenService,
 } from '../../domain/services/token-service';
 import { EmailVerificationService } from '../services/email-verification.service';
+import { EmailAlreadyTakenError } from '../errors/auth-error';
 
 @CommandHandler(RegisterUserCommand)
 export class RegisterUserHandler implements ICommandHandler<
@@ -41,7 +42,7 @@ export class RegisterUserHandler implements ICommandHandler<
       command.email,
     );
     if (existingUser) {
-      throw new ConflictException('Email is already in use.');
+      throw new EmailAlreadyTakenError({ email: command.email });
     }
 
     const hashedPassword = await this.passwordHasher.hash(command.password);
