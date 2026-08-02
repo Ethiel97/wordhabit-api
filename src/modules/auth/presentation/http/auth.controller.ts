@@ -6,6 +6,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -22,6 +23,10 @@ import { type AuthenticatedUser } from '../../domain/entities/authenticated-user
 import { Public } from '../public.decorator';
 import { DeleteAccountRequestDto } from '../../application/dto/delete-account-request.dto';
 import { DeleteAccountCommand } from '../../application/commands/delete-account.command';
+import { UpdateMeRequestDto } from '../../application/dto/update-me-request.dto';
+import { UpdateMeCommand } from '../../application/commands/update-me.command';
+import { UpdatePasswordCommand } from '../../application/commands/update-password.command';
+import { UpdatePasswordRequestDto } from '../../application/dto/update-password.request.dto';
 
 @Controller(AUTH.BASE)
 export class AuthController {
@@ -44,6 +49,28 @@ export class AuthController {
   @Get(AUTH.ME)
   getMe(@CurrentUser() user: AuthenticatedUser) {
     return user;
+  }
+
+  @Patch(AUTH.UPDATE_ME)
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  updateMe(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: UpdateMeRequestDto,
+  ) {
+    return this.commandBus.execute(new UpdateMeCommand(user.id, body.name));
+  }
+
+  @Patch(AUTH.UPDATE_PASSWORD)
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  updatePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: UpdatePasswordRequestDto,
+  ) {
+    return this.commandBus.execute(
+      new UpdatePasswordCommand(user.id, body.oldPassword, body.newPassword),
+    );
   }
 
   @Post(AUTH.REGISTER)

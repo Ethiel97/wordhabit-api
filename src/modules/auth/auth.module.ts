@@ -24,9 +24,13 @@ import { PrismaEmailVerificationCodeRepository } from './infrastructure/persiste
 import { AUTH_EMAIL_QUEUE } from './infrastructure/queue/auth-email-queue.constants';
 import { SendWelcomeEmailOnEmailVerifiedHandler } from './application/handlers/send-welcome-email-on-email-verified.handler';
 import { DeleteAccountHandler } from './application/handlers/delete-account.handler';
+import { UpdateMeHandler } from './application/handlers/update-me.handler';
+import { UpdatePasswordHandler } from './application/handlers/update-password.handler';
 
 const commandHandlers = [
   DeleteAccountHandler,
+  UpdateMeHandler,
+  UpdatePasswordHandler,
   RegisterUserHandler,
   LoginUserHandler,
   VerifyEmailHandler,

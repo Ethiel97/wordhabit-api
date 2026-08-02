@@ -9,12 +9,21 @@ export interface CreateAuthUserParams {
   password: string;
 }
 
+export interface UpdateAuthUserParams {
+  name?: string;
+}
+
 export interface AuthUserRepository {
   findByEmail(email: string): Promise<User | null>;
 
   findById(userId: string): Promise<User | null>;
 
   create(params: CreateAuthUserParams): Promise<User>;
+
+  update(userId: string, params: UpdateAuthUserParams): Promise<User>;
+
+  /// Stores an already-hashed password; hashing belongs to the handler.
+  changePassword(userId: string, passwordHash: string): Promise<User>;
 
   markEmailVerified(userId: string): Promise<User>;
 

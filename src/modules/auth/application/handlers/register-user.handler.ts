@@ -61,6 +61,7 @@ export class RegisterUserHandler implements ICommandHandler<
     const accessToken = await this.tokenService.signAccessToken({
       sub: newUser.id,
       email: newUser.email,
+      passwordVersion: newUser.passwordVersion,
     });
 
     return {

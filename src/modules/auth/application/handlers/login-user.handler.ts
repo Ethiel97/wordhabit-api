@@ -60,6 +60,7 @@ export class LoginUserHandler implements ICommandHandler<
     const accessToken = await this.tokenService.signAccessToken({
       sub: activeUser.id,
       email: activeUser.email,
+      passwordVersion: activeUser.passwordVersion,
     });
 
     return {

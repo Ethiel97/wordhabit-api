@@ -10,6 +10,7 @@ const deletedUser = (id: string): User => ({
   email: `${id}@example.com`,
   name: id,
   password: 'hashed',
+  passwordVersion: 1,
   emailVerifiedAt: null,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),

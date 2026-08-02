@@ -11,6 +11,7 @@ const liveUser = (overrides: Partial<User> = {}): User => ({
   email: 'anwuri3@gmail.com',
   name: 'Anwuri Alabi',
   password: 'hashed',
+  passwordVersion: 1,
   emailVerifiedAt: new Date('2026-05-12T00:00:00Z'),
   createdAt: new Date('2026-05-12T00:00:00Z'),
   updatedAt: new Date('2026-05-12T00:00:00Z'),

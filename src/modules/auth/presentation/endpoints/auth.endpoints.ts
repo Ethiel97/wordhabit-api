@@ -5,6 +5,8 @@ export const AUTH = {
   REFRESH_TOKEN: 'refresh-token',
   LOGOUT: 'logout',
   ME: 'me',
+  UPDATE_ME: 'me',
+  UPDATE_PASSWORD: 'me/password',
   FORGOT_PASSWORD: 'forgot-password',
   RESET_PASSWORD: 'reset-password',
   VERIFY_EMAIL: 'verify-email',

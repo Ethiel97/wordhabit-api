@@ -11,6 +11,7 @@ export class PrismaUserMapper {
       password: prismaUser.password,
       deletedAt: prismaUser.deletedAt,
       emailVerifiedAt: prismaUser.emailVerifiedAt,
+      passwordVersion: prismaUser.passwordVersion,
       createdAt: prismaUser.createdAt,
       updatedAt: prismaUser.updatedAt,
     };
@@ -23,6 +24,7 @@ export class PrismaUserMapper {
       name: domainUser.name,
       password: domainUser.password,
       emailVerifiedAt: domainUser.emailVerifiedAt,
+      passwordVersion: domainUser.passwordVersion,
       createdAt: domainUser.createdAt,
       updatedAt: domainUser.updatedAt,
       deletedAt: domainUser.deletedAt,

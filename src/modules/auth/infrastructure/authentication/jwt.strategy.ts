@@ -31,6 +31,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException();
     }
 
+    if (payload.passwordVersion !== user.passwordVersion) {
+      throw new UnauthorizedException(
+        'Password has been changed. Please log in again.',
+      );
+    }
+
     return {
       id: user.id,
       email: user.email,

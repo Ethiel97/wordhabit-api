@@ -1,6 +1,7 @@
 import {
   AuthUserRepository,
   CreateAuthUserParams,
+  UpdateAuthUserParams,
 } from '../../domain/repositories/auth-user.repository';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
@@ -13,6 +14,16 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
   private readonly logger = new Logger(PrismaAuthUserRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async changePassword(userId: string, passwordHash: string): Promise<User> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+
+      data: { password: passwordHash, passwordVersion: { increment: 1 } },
+    });
+
+    return PrismaUserMapper.toDomain(user);
+  }
 
   async softDelete(params: {
     userId: string;
@@ -96,6 +107,16 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
         email: params.email,
         name: params.name,
         password: params.password,
+      },
+    });
+    return PrismaUserMapper.toDomain(user);
+  }
+
+  async update(userId: string, params: UpdateAuthUserParams): Promise<User> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(params.name !== undefined && { name: params.name }),
       },
     });
     return PrismaUserMapper.toDomain(user);

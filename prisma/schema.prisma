@@ -200,6 +200,7 @@ model User {
   password        String?
   emailVerifiedAt DateTime?
   deletionReason  AccountDeletionReason?
+  passwordVersion Int                    @default(1)
 
   userLearningProfiles    UserLearningProfile[]
   dailyWordAssignments    DailyWordAssignment[]
