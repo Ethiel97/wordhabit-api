@@ -18,6 +18,17 @@ export class GetLearningDashboardQuery extends Query<GetLearningDashboardResult>
 export interface GetLearningDashboardResult {
   todayWord: TodayWordAssignment | null;
 
+  /**
+   * The word assigned the day before, so the app can ask whether it
+   * stuck — a spaced-repetition product should not forget its own last
+   * word.
+   *
+   * Looked up, never created: a user who was away yesterday has no word
+   * for it, and inventing one would put a word they never met into their
+   * history.
+   */
+  yesterdayWord: TodayWordAssignment | null;
+
   reviewQueue: {
     count: number;
     preview: ReviewQueueItem[];
