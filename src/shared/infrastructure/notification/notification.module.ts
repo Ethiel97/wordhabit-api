@@ -18,9 +18,13 @@ import { LoggerPushSenderService } from './logger-push-sender.service';
       ) => {
         // Either source will do: a path locally, the JSON itself in a
         // secret where there is no filesystem to put a file on.
+        //
+        // `??` would not do here — a secret set to an empty string is
+        // present but useless, and would shadow the other source instead
+        // of falling through to it.
         const credentials =
-          configService.get<string>('FIREBASE_SERVICE_ACCOUNT')?.trim() ??
-          configService.get<string>('GOOGLE_APPLICATION_CREDENTIALS')?.trim();
+          nonEmpty(configService.get<string>('FIREBASE_SERVICE_ACCOUNT')) ??
+          nonEmpty(configService.get<string>('GOOGLE_APPLICATION_CREDENTIALS'));
         const projectId = configService
           .get<string>('FIREBASE_PROJECT_ID')
           ?.trim();
@@ -32,3 +36,8 @@ import { LoggerPushSenderService } from './logger-push-sender.service';
   exports: [PUSH_SENDER],
 })
 export class NotificationModule {}
+
+function nonEmpty(value?: string): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
