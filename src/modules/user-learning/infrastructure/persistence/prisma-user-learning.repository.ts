@@ -194,31 +194,39 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
   async createUserLearningProfile(
     params: CreateUserLearningProfileParams,
   ): Promise<UserLearningProfile> {
-    const userLearningProfile = await this.prisma.userLearningProfile.create({
-      data: {
-        userId: params.userId,
-        targetLanguage: params.targetLanguage,
-        isActive: true,
-        interfaceLanguage: params.interfaceLanguage,
-        difficulty: params.difficulty,
-        themes: {
-          create: params.themeSlugs.map((themeSlug) => ({
-            theme: {
-              connect: {
-                slug: themeSlug,
+    const userLearningProfile = await this.prisma.$transaction(async (tx) => {
+      await tx.userLearningProfile.updateMany({
+        where: { userId: params.userId, isActive: true },
+        data: { isActive: false },
+      });
+
+      return tx.userLearningProfile.create({
+        data: {
+          userId: params.userId,
+          targetLanguage: params.targetLanguage,
+          isActive: true,
+          interfaceLanguage: params.interfaceLanguage,
+          difficulty: params.difficulty,
+          themes: {
+            create: params.themeSlugs.map((themeSlug) => ({
+              theme: {
+                connect: {
+                  slug: themeSlug,
+                },
               },
-            },
-          })),
-        },
-      },
-      include: {
-        themes: {
-          include: {
-            theme: true,
+            })),
           },
         },
-      },
+        include: {
+          themes: {
+            include: {
+              theme: true,
+            },
+          },
+        },
+      });
     });
+
     return {
       id: userLearningProfile.id,
       userId: userLearningProfile.userId,

@@ -11,10 +11,10 @@ import {
   LearningRepository,
   RandomWord,
   RecordWordReviewEventParams,
+  RescheduleUserWordReviewParams,
   ReviewQueueItem,
   TodayWordAssignment,
   UpdateUserWordReviewParams,
-  RescheduleUserWordReviewParams,
   UpsertUserLearningStreakParams,
   UserActivityDetail,
   UserDailyActivity,
@@ -643,45 +643,21 @@ export class PrismaLearningRepository implements LearningRepository {
    * Split out so the daily-word search can be run twice — once at the
    * user's level, once without it — without restating the query.
    */
-  private findCandidateWordsMatching(where: Prisma.VocabularyWordWhereInput) {
-    return this.prisma.vocabularyWord.findMany({
-      where,
-      include: {
-        themes: {
-          include: {
-            theme: {
-              select: {
-                slug: true,
-              },
-            },
-          },
-        },
-      },
-    });
-  }
-
   async findCandidateWord(
     profile: UserLearningProfile,
   ): Promise<VocabularyWord | null> {
     const { themeSlugs, targetLanguage, difficulty } = profile;
 
-    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-
-    const baseWhere = {
+    const baseWhere: Prisma.VocabularyWordWhereInput = {
       themes: { some: { theme: { slug: { in: themeSlugs } } } },
-      targetLanguage: targetLanguage,
+      targetLanguage,
 
       // No status filter — same reason as findRandomWord: the corpus
       // is all DRAFT for now, so filtering would leave no daily word.
 
-      // Exclude words that have already been assigned to the user
-      // and words that were assigned less than 2 weeks ago
       dailyWordAssignments: {
         none: {
           userId: profile.userId,
-          assignedFor: {
-            gte: twoWeeksAgo,
-          },
         },
       },
     };
@@ -692,37 +668,50 @@ export class PrismaLearningRepository implements LearningRepository {
     // empty pool — and an empty pool here means the user simply has no
     // word today, which is a far worse outcome than a word one level
     // off. So try their level first, then widen.
-    const candidateWords = await this.findCandidateWordsMatching(
-      difficulty ? { ...baseWhere, difficulty } : baseWhere,
-    ).then((words) =>
-      words.length > 0 || !difficulty
-        ? words
-        : this.findCandidateWordsMatching(baseWhere),
-    );
-    if (candidateWords.length === 0) {
-      return null;
+    if (difficulty) {
+      const preferred = await this.pickRandomWord({ ...baseWhere, difficulty });
+      if (preferred) return preferred;
     }
 
-    const randomIndex = Math.floor(Math.random() * candidateWords.length);
-    const randomWord = candidateWords[randomIndex];
+    return this.pickRandomWord(baseWhere);
+  }
+
+  /**
+   * One word, chosen uniformly, without reading the pool.
+   *
+   * `count` then an offset, rather than fetching every match and picking
+   * in Node: this runs once per user per day, and the pool is every word
+   * in their language and topics. The rows were transferred only to be
+   * discarded — and with them a themes join nothing ever read.
+   */
+  private async pickRandomWord(
+    where: Prisma.VocabularyWordWhereInput,
+  ): Promise<VocabularyWord | null> {
+    const total = await this.prisma.vocabularyWord.count({ where });
+    if (total === 0) return null;
+
+    const [word] = await this.prisma.vocabularyWord.findMany({
+      where,
+      skip: Math.floor(Math.random() * total),
+      take: 1,
+    });
+
+    if (!word) return null;
 
     return {
-      id: randomWord.id,
-      term: randomWord.term,
+      id: word.id,
+      term: word.term,
+      normalizedTerm: word.normalizedTerm,
       targetLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
-        randomWord.targetLanguage,
+        word.targetLanguage,
       ),
-      normalizedTerm: randomWord.normalizedTerm,
-      createdAt: randomWord.createdAt,
-      updatedAt: randomWord.updatedAt,
-      difficulty: PrismaVocabularyMapper.toDomainDifficulty(
-        randomWord.difficulty,
-      ),
+      difficulty: PrismaVocabularyMapper.toDomainDifficulty(word.difficulty),
       partOfSpeech: PrismaVocabularyMapper.toDomainPartOfSpeech(
-        randomWord.partOfSpeech,
+        word.partOfSpeech,
       ),
-
-      status: PrismaVocabularyMapper.toDomainStatus(randomWord.status),
+      status: PrismaVocabularyMapper.toDomainStatus(word.status),
+      createdAt: word.createdAt,
+      updatedAt: word.updatedAt,
     };
   }
 

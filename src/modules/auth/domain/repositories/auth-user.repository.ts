@@ -25,6 +25,14 @@ export interface AuthUserRepository {
   /// Stores an already-hashed password; hashing belongs to the handler.
   changePassword(userId: string, passwordHash: string): Promise<User>;
 
+  /**
+   * Moves the account to a proven address.
+   *
+   * Only ever called after the new address has answered a code, so the
+   * verified flag is carried over rather than reset.
+   */
+  changeEmail(userId: string, email: string): Promise<User>;
+
   markEmailVerified(userId: string): Promise<User>;
 
   /** Marks the account deleted and starts its grace period. */

@@ -34,15 +34,15 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
         name: command.name,
       }));
 
-    // Guarded per *user*, not per (user, targetLanguage).
-    //
-    // `UserLearningProfile.userId` is `@unique`, so the database allows
-    // exactly one profile per user whatever the language. Checking the
-    // pair let a second language slip past this guard and die on the
-    // unique constraint instead — a 500 where the caller deserves a
-    // 409 it can act on.
+    // Guarded per (user, targetLanguage), which is what the database
+    // enforces: a learner may hold one profile per language, and the
+    // newest becomes the active one. Guarding per user would refuse a
+    // second language the schema now allows.
     const foundProfile =
-      await this.userLearningRepository.findActiveUserLearningProfile(user.id);
+      await this.userLearningRepository.findUserLearningProfile({
+        userId: user.id,
+        targetLanguage: command.targetLanguage,
+      });
 
     if (foundProfile) {
       throw new UserLearningProfileAlreadyExistsError(

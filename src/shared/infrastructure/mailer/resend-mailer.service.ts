@@ -7,6 +7,8 @@ export const EmailTemplates = {
   PASSWORD_RESET: 'password-reset',
   WELCOME: 'welcome',
   WAITLIST_CONFIRMATION: 'waitlist-confirmation',
+  EMAIL_CHANGE_CODE: 'email-change-code',
+  EMAIL_CHANGE_NOTICE: 'email-change-notice',
 } as const;
 
 @Injectable()

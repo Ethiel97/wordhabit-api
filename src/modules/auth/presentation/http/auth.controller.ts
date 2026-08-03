@@ -30,6 +30,10 @@ import { UpdatePasswordRequestDto } from '../../application/dto/update-password.
 import { RefreshSessionRequestDto } from '../../application/dto/refresh-session-request.dto';
 import { RefreshSessionCommand } from '../../application/commands/refresh-session.command';
 import { LogoutCommand } from '../../application/commands/logout.command';
+import { RequestEmailChangeDto } from '../../application/dto/request-email-change.dto';
+import { ConfirmEmailChangeDto } from '../../application/dto/confirm-email-change.dto';
+import { RequestEmailChangeCommand } from '../../application/commands/request-email-change.command';
+import { ConfirmEmailChangeCommand } from '../../application/commands/confirm-email-change.command';
 
 @Controller(AUTH.BASE)
 export class AuthController {
@@ -96,6 +100,34 @@ export class AuthController {
 
   // Public: the caller's access token is expected to be expired — that
   // is the whole reason it is here. The refresh token is the credential.
+  @UseGuards(JwtAuthGuard)
+  @Post(AUTH.REQUEST_EMAIL_CHANGE)
+  @HttpCode(202)
+  async requestEmailChange(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: RequestEmailChangeDto,
+  ) {
+    return this.commandBus.execute(
+      new RequestEmailChangeCommand(
+        user.id,
+        body.newEmail,
+        body.currentPassword,
+      ),
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(AUTH.CONFIRM_EMAIL_CHANGE)
+  @HttpCode(200)
+  async confirmEmailChange(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: ConfirmEmailChangeDto,
+  ) {
+    return this.commandBus.execute(
+      new ConfirmEmailChangeCommand(user.id, body.code),
+    );
+  }
+
   @Post(AUTH.REFRESH_TOKEN)
   @Public()
   @HttpCode(200)

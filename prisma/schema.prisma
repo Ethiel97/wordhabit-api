@@ -23,7 +23,6 @@ model WaitlistEntry {
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
 
-  @@index([email])
   @@index([status])
   @@map("waitlist_entries")
 }
@@ -103,7 +102,7 @@ model VocabularyWord {
   favoriteWords        FavoriteWord[]
 
   @@unique([normalizedTerm, targetLanguage])
-  @@index([targetLanguage])
+  @@index([targetLanguage, difficulty])
   @@index([normalizedTerm])
   @@map("vocabulary_words")
 }
@@ -213,6 +212,7 @@ model User {
   notificationPreferences NotificationPreference[]
   notificationDeliveries  NotificationDelivery[]
   refreshTokens           RefreshToken[]
+  emailChangeRequests     EmailChangeRequest[]
 
   @@index([deletedAt])
   @@index([email])
@@ -248,6 +248,27 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+/// An email change waiting on proof that the new address is reachable.
+///
+/// The address lives here, never on `User`, until the code sent to it
+/// comes back: a typo or a stolen session would otherwise lock the
+/// account behind an address nobody can read.
+model EmailChangeRequest {
+  id         String    @id @default(cuid())
+  userId     String
+  newEmail   String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_change_requests")
+}
+
 model EmailVerificationCode {
   id         String    @id @default(cuid())
   userId     String
@@ -265,7 +286,7 @@ model EmailVerificationCode {
 
 model UserLearningProfile {
   id                String          @id @default(cuid())
-  userId            String          @unique
+  userId            String
   isActive          Boolean         @default(true)
   interfaceLanguage LanguageCode
   targetLanguage    LanguageCode
@@ -279,9 +300,10 @@ model UserLearningProfile {
   themes               UserLearningProfileTheme[]
   dailyWordAssignments DailyWordAssignment[]
 
+  // One profile per user *per language*. Which of them is current is
+  // `isActive`, guarded by a partial unique index the migration creates
+  // by hand — Prisma has no syntax for `WHERE "isActive"`.
   @@unique([userId, targetLanguage])
-  @@index([userId])
-  @@index(id)
   @@index([targetLanguage])
   @@map("user_learning_profiles")
 }
@@ -338,8 +360,12 @@ model UserWordProgress {
   word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
 
   @@unique([userId, wordId])
-  @@index([userId, status])
-  @@index([nextReviewOn])
+  // Review queue: filters on user + status, then reads in due order.
+  // Carrying nextReviewOn lets the sort come from the index instead of
+  // a sort over every word the user owns.
+  @@index([userId, status, nextReviewOn])
+  // Library: one user's words, newest first, paginated by cursor.
+  @@index([userId, updatedAt])
   @@map("user_word_progress")
 }
 
@@ -414,7 +440,6 @@ model FavoriteWord {
   word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
 
   @@unique([userId, wordId])
-  @@index([userId])
   @@index([wordId])
   @@map("favorite_words")
 }
@@ -447,7 +472,6 @@ model NotificationPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, channel])
-  @@index([userId])
   @@map("notification_preferences")
 }
 
@@ -463,8 +487,8 @@ model Device {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([platform])
+  @@index([userId, timeZone])
+  // Standalone: the sweep starts by listing the distinct zones in use.
   @@index([timeZone])
   @@map("devices")
 }
@@ -480,7 +504,5 @@ model NotificationDelivery {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, channel, localDate])
-  @@index([userId])
-  @@index([channel])
   @@map("notification_deliveries")
 }

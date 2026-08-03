@@ -259,6 +259,11 @@ export interface LearningRepository {
     params: CreateDailyAssignmentParams,
   ): Promise<TodayWordAssignment>;
 
+  /**
+   * A word the user has not been given recently, honouring their topics
+   * and language, and their level when the pool allows.
+   *
+   */
   findCandidateWord(
     profile: UserLearningProfile,
   ): Promise<VocabularyWord | null>;

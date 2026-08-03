@@ -7,6 +7,8 @@ export const AUTH = {
   ME: 'me',
   UPDATE_ME: 'me',
   UPDATE_PASSWORD: 'me/password',
+  REQUEST_EMAIL_CHANGE: 'me/email',
+  CONFIRM_EMAIL_CHANGE: 'me/email/confirm',
   FORGOT_PASSWORD: 'forgot-password',
   RESET_PASSWORD: 'reset-password',
   VERIFY_EMAIL: 'verify-email',

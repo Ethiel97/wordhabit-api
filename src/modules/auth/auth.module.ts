@@ -28,6 +28,10 @@ import { UpdateMeHandler } from './application/handlers/update-me.handler';
 import { UpdatePasswordHandler } from './application/handlers/update-password.handler';
 import { RefreshSessionHandler } from './application/handlers/refresh-session.handler';
 import { LogoutHandler } from './application/handlers/logout.handler';
+import { RequestEmailChangeHandler } from './application/handlers/request-email-change.handler';
+import { ConfirmEmailChangeHandler } from './application/handlers/confirm-email-change.handler';
+import { EMAIL_CHANGE_REQUEST_REPOSITORY } from './domain/repositories/email-change-request.repository';
+import { PrismaEmailChangeRequestRepository } from './infrastructure/persistence/prisma-email-change-request.repository';
 import { SessionIssuer } from './application/services/session-issuer.service';
 import { REFRESH_TOKEN_SERVICE } from './domain/services/refresh-token-service';
 import { Sha256RefreshTokenService } from './infrastructure/crypto/sha256-refresh-token.service';
@@ -42,6 +46,8 @@ const commandHandlers = [
   LoginUserHandler,
   RefreshSessionHandler,
   LogoutHandler,
+  RequestEmailChangeHandler,
+  ConfirmEmailChangeHandler,
   VerifyEmailHandler,
   ResendVerificationEmailHandler,
 ];
@@ -76,6 +82,10 @@ const eventHandlers = [SendWelcomeEmailOnEmailVerifiedHandler];
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: EMAIL_CHANGE_REQUEST_REPOSITORY,
+      useClass: PrismaEmailChangeRequestRepository,
     },
     {
       provide: EMAIL_VERIFICATION_CODE_REPOSITORY,

@@ -14,7 +14,7 @@ import { LanguageCode } from '../../vocabulary/domain/entities/language-code';
  * meet the same word on the same day, and a daily learner would need
  * three years to see them all.
  */
-export const CORPUS_TARGET_PER_LANGUAGE = 1200;
+export const CORPUS_TARGET_PER_LANGUAGE = 1600;
 
 /**
  * The corner of the lexicon one batch is sent to explore.

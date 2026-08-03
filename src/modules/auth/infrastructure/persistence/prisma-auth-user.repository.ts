@@ -25,6 +25,19 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
     return PrismaUserMapper.toDomain(user);
   }
 
+  async changeEmail(userId: string, email: string): Promise<User> {
+    // `emailVerifiedAt` is left alone: the address that arrives here has
+    // just answered a code, so it is more proven than the one it
+    // replaces — clearing the flag would lock the user out of a
+    // verified account for having verified something.
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { email },
+    });
+
+    return PrismaUserMapper.toDomain(user);
+  }
+
   async softDelete(params: {
     userId: string;
     reason?: AccountDeletionReason;
