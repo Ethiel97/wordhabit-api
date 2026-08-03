@@ -1,12 +1,16 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import {
   PushMessage,
   PushSender,
   PushSendResult,
 } from '../../application/ports/push-sender.port';
+import {
+  assertProjectMatches,
+  readServiceAccount,
+} from './firebase-credentials';
 
 /** FCM's own ceiling for sendEachForMulticast. */
 const MAX_TOKENS_PER_CALL = 500;
@@ -33,12 +37,31 @@ export class FcmPushSenderService implements PushSender, OnModuleInit {
     // initializeApp rejects.
     if (getApps().length > 0) return;
 
-    initializeApp({
-      // GOOGLE_APPLICATION_CREDENTIALS holds a *path*; applicationDefault
-      // reads it. Parsing it as JSON would throw on the first byte.
-      credential: applicationDefault(),
-      projectId: this.configService.get<string>('FIREBASE_PROJECT_ID'),
+    const projectId = this.configService
+      .getOrThrow<string>('FIREBASE_PROJECT_ID')
+      .trim();
+
+    const account = readServiceAccount({
+      inline: this.configService.get<string>('FIREBASE_SERVICE_ACCOUNT'),
+      path: this.configService.get<string>('GOOGLE_APPLICATION_CREDENTIALS'),
     });
+
+    // Fails the boot rather than the delivery: pushing to the wrong
+    // project succeeds silently, one user at a time, forever.
+    assertProjectMatches(account, projectId);
+
+    initializeApp({
+      // The admin SDK wants camelCase; the file Google issues is
+      // snake_case, so the two names are spelled out rather than spread.
+      credential: cert({
+        projectId: account.project_id,
+        clientEmail: account.client_email,
+        privateKey: account.private_key,
+      }),
+      projectId,
+    });
+
+    this.logger.log(`Firebase messaging ready for project ${projectId}`);
   }
 
   async send(messages: PushMessage[]): Promise<PushSendResult> {

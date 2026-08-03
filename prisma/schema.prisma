@@ -212,10 +212,40 @@ model User {
   devices                 Device[]
   notificationPreferences NotificationPreference[]
   notificationDeliveries  NotificationDelivery[]
+  refreshTokens           RefreshToken[]
 
   @@index([deletedAt])
   @@index([email])
   @@map("users")
+}
+
+/// One issued refresh token.
+///
+/// The token itself is never stored — only its SHA-256 digest, so a
+/// dump of this table hands an attacker nothing usable. SHA-256 rather
+/// than bcrypt because the value is 256 bits of randomness, not a
+/// password: there is nothing to brute-force, and lookup has to be an
+/// indexed equality match.
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  /// Set the moment the token is used, logged out, or caught in a
+  /// replay. A revoked row is kept, not deleted: presenting it again is
+  /// exactly the signal reuse detection runs on.
+  revokedAt DateTime?
+
+  /// The token issued in its place, for walking a rotation chain.
+  replacedByTokenId String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }
 
 model EmailVerificationCode {

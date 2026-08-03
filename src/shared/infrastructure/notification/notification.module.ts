@@ -16,9 +16,11 @@ import { LoggerPushSenderService } from './logger-push-sender.service';
         fcmPushSender: FcmPushSenderService,
         loggerPushSender: LoggerPushSenderService,
       ) => {
-        const credentials = configService
-          .get<string>('GOOGLE_APPLICATION_CREDENTIALS')
-          ?.trim();
+        // Either source will do: a path locally, the JSON itself in a
+        // secret where there is no filesystem to put a file on.
+        const credentials =
+          configService.get<string>('FIREBASE_SERVICE_ACCOUNT')?.trim() ??
+          configService.get<string>('GOOGLE_APPLICATION_CREDENTIALS')?.trim();
         const projectId = configService
           .get<string>('FIREBASE_PROJECT_ID')
           ?.trim();

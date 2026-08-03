@@ -27,6 +27,9 @@ import { UpdateMeRequestDto } from '../../application/dto/update-me-request.dto'
 import { UpdateMeCommand } from '../../application/commands/update-me.command';
 import { UpdatePasswordCommand } from '../../application/commands/update-password.command';
 import { UpdatePasswordRequestDto } from '../../application/dto/update-password.request.dto';
+import { RefreshSessionRequestDto } from '../../application/dto/refresh-session-request.dto';
+import { RefreshSessionCommand } from '../../application/commands/refresh-session.command';
+import { LogoutCommand } from '../../application/commands/logout.command';
 
 @Controller(AUTH.BASE)
 export class AuthController {
@@ -89,6 +92,24 @@ export class AuthController {
     return this.commandBus.execute(
       new LoginUserCommand(body.email, body.password),
     );
+  }
+
+  // Public: the caller's access token is expected to be expired — that
+  // is the whole reason it is here. The refresh token is the credential.
+  @Post(AUTH.REFRESH_TOKEN)
+  @Public()
+  @HttpCode(200)
+  async refreshToken(@Body() body: RefreshSessionRequestDto) {
+    return this.commandBus.execute(
+      new RefreshSessionCommand(body.refreshToken),
+    );
+  }
+
+  @Post(AUTH.LOGOUT)
+  @Public()
+  @HttpCode(204)
+  async logout(@Body() body: RefreshSessionRequestDto) {
+    await this.commandBus.execute(new LogoutCommand(body.refreshToken));
   }
 
   @UseGuards(JwtAuthGuard)

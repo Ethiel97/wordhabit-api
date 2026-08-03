@@ -26,6 +26,13 @@ import { SendWelcomeEmailOnEmailVerifiedHandler } from './application/handlers/s
 import { DeleteAccountHandler } from './application/handlers/delete-account.handler';
 import { UpdateMeHandler } from './application/handlers/update-me.handler';
 import { UpdatePasswordHandler } from './application/handlers/update-password.handler';
+import { RefreshSessionHandler } from './application/handlers/refresh-session.handler';
+import { LogoutHandler } from './application/handlers/logout.handler';
+import { SessionIssuer } from './application/services/session-issuer.service';
+import { REFRESH_TOKEN_SERVICE } from './domain/services/refresh-token-service';
+import { Sha256RefreshTokenService } from './infrastructure/crypto/sha256-refresh-token.service';
+import { REFRESH_TOKEN_REPOSITORY } from './domain/repositories/refresh-token.repository';
+import { PrismaRefreshTokenRepository } from './infrastructure/persistence/prisma-refresh-token.repository';
 
 const commandHandlers = [
   DeleteAccountHandler,
@@ -33,6 +40,8 @@ const commandHandlers = [
   UpdatePasswordHandler,
   RegisterUserHandler,
   LoginUserHandler,
+  RefreshSessionHandler,
+  LogoutHandler,
   VerifyEmailHandler,
   ResendVerificationEmailHandler,
 ];
@@ -51,13 +60,16 @@ const eventHandlers = [SendWelcomeEmailOnEmailVerifiedHandler];
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '7d' },
+        // Short on purpose: this is now the disposable half of the pair,
+        // and a stolen one is worth minutes rather than a week.
+        signOptions: { expiresIn: '15m' },
       }),
     }),
   ],
   controllers: [AuthController],
   providers: [
     JwtStrategy,
+    SessionIssuer,
     ...commandHandlers,
     ...eventHandlers,
     EmailVerificationService,
@@ -76,6 +88,14 @@ const eventHandlers = [SendWelcomeEmailOnEmailVerifiedHandler];
     {
       provide: TOKEN_SERVICE,
       useClass: JwtTokenService,
+    },
+    {
+      provide: REFRESH_TOKEN_SERVICE,
+      useClass: Sha256RefreshTokenService,
+    },
+    {
+      provide: REFRESH_TOKEN_REPOSITORY,
+      useClass: PrismaRefreshTokenRepository,
     },
     {
       provide: AUTH_USER_REPOSITORY,

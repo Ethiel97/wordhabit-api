@@ -3,7 +3,7 @@ import { LoginUserHandler } from './login-user.handler';
 import { LoginUserCommand } from '../commands/login-user.command';
 import type { AuthUserRepository } from '../../domain/repositories/auth-user.repository';
 import type { PasswordService } from '../../domain/services/password-service';
-import type { TokenService } from '../../domain/services/token-service';
+import type { SessionIssuer } from '../services/session-issuer.service';
 import { User } from '../../../user-learning/domain/entities/user';
 
 const user = (overrides: Partial<User> = {}): User => ({
@@ -40,8 +40,13 @@ const handlerFor = (
   new LoginUserHandler(
     repository as unknown as AuthUserRepository,
     {
-      signAccessToken: () => Promise.resolve('token'),
-    } as unknown as TokenService,
+      issue: () =>
+        Promise.resolve({
+          accessToken: 'token',
+          refreshToken: 'refresh',
+          refreshTokenId: 'rt1',
+        }),
+    } as unknown as SessionIssuer,
     {
       verify: () => Promise.resolve(passwordMatches),
     } as unknown as PasswordService,

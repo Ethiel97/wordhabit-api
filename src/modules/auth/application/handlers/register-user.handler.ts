@@ -12,10 +12,7 @@ import {
   PASSWORD_SERVICE,
   type PasswordService,
 } from '../../domain/services/password-service';
-import {
-  TOKEN_SERVICE,
-  type TokenService,
-} from '../../domain/services/token-service';
+import { SessionIssuer } from '../services/session-issuer.service';
 import { EmailVerificationService } from '../services/email-verification.service';
 import { EmailAlreadyTakenError } from '../errors/auth-error';
 
@@ -31,8 +28,7 @@ export class RegisterUserHandler implements ICommandHandler<
     @Inject(PASSWORD_SERVICE)
     private readonly passwordHasher: PasswordService,
 
-    @Inject(TOKEN_SERVICE)
-    private readonly tokenService: TokenService,
+    private readonly sessionIssuer: SessionIssuer,
 
     private readonly emailVerificationService: EmailVerificationService,
   ) {}
@@ -59,11 +55,7 @@ export class RegisterUserHandler implements ICommandHandler<
       name: newUser.name,
     });
 
-    const accessToken = await this.tokenService.signAccessToken({
-      sub: newUser.id,
-      email: newUser.email,
-      passwordVersion: newUser.passwordVersion,
-    });
+    const session = await this.sessionIssuer.issue(newUser);
 
     return {
       user: {
@@ -72,7 +64,8 @@ export class RegisterUserHandler implements ICommandHandler<
         name: newUser.name,
         emailVerified: false,
       },
-      accessToken,
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
     };
   }
 }

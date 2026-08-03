@@ -13,9 +13,10 @@ import {
   type PasswordService,
 } from '../../domain/services/password-service';
 import {
-  TOKEN_SERVICE,
-  type TokenService,
-} from '../../domain/services/token-service';
+  REFRESH_TOKEN_REPOSITORY,
+  type RefreshTokenRepository,
+} from '../../domain/repositories/refresh-token.repository';
+import { SessionIssuer } from '../services/session-issuer.service';
 import {
   PasswordMismatchError,
   PasswordNotSetError,
@@ -34,8 +35,10 @@ export class UpdatePasswordHandler implements ICommandHandler<
     @Inject(PASSWORD_SERVICE)
     private readonly passwordService: PasswordService,
 
-    @Inject(TOKEN_SERVICE)
-    private readonly tokenService: TokenService,
+    @Inject(REFRESH_TOKEN_REPOSITORY)
+    private readonly refreshTokenRepository: RefreshTokenRepository,
+
+    private readonly sessionIssuer: SessionIssuer,
   ) {}
 
   async execute(command: UpdatePasswordCommand): Promise<UpdatePasswordResult> {
@@ -76,11 +79,12 @@ export class UpdatePasswordHandler implements ICommandHandler<
       await this.passwordService.hash(command.newPassword),
     );
 
-    const accessToken = await this.tokenService.signAccessToken({
-      sub: updatedUser.id,
-      email: updatedUser.email,
-      passwordVersion: updatedUser.passwordVersion,
-    });
+    // Every other device loses its session. The bumped password version
+    // already rejects their access tokens; without this they would just
+    // refresh their way back in, which is the hole rotation opens.
+    await this.refreshTokenRepository.revokeAllForUser(updatedUser.id);
+
+    const session = await this.sessionIssuer.issue(updatedUser);
 
     return {
       user: {
@@ -89,7 +93,8 @@ export class UpdatePasswordHandler implements ICommandHandler<
         name: updatedUser.name,
         emailVerified: !!updatedUser.emailVerifiedAt,
       },
-      accessToken,
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
     };
   }
 }

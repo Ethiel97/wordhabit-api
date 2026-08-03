@@ -8,6 +8,7 @@ export type RegisterUserResult = {
     emailVerified: boolean;
   };
   accessToken: string;
+  refreshToken: string;
 };
 
 export class RegisterUserCommand extends Command<RegisterUserResult> {

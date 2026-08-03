@@ -8,6 +8,7 @@ export type LoginUserResult = {
     emailVerified: boolean;
   };
   accessToken: string;
+  refreshToken: string;
 };
 
 export class LoginUserCommand extends Command<LoginUserResult> {

@@ -12,10 +12,7 @@ import {
   PASSWORD_SERVICE,
   type PasswordService,
 } from '../../domain/services/password-service';
-import {
-  TOKEN_SERVICE,
-  type TokenService,
-} from '../../domain/services/token-service';
+import { SessionIssuer } from '../services/session-issuer.service';
 
 @CommandHandler(LoginUserCommand)
 export class LoginUserHandler implements ICommandHandler<
@@ -26,8 +23,7 @@ export class LoginUserHandler implements ICommandHandler<
     @Inject(AUTH_USER_REPOSITORY)
     private readonly authUserRepository: AuthUserRepository,
 
-    @Inject(TOKEN_SERVICE)
-    private readonly tokenService: TokenService,
+    private readonly sessionIssuer: SessionIssuer,
 
     @Inject(PASSWORD_SERVICE)
     private readonly passwordService: PasswordService,
@@ -57,11 +53,7 @@ export class LoginUserHandler implements ICommandHandler<
       ? await this.authUserRepository.restore(user.id)
       : user;
 
-    const accessToken = await this.tokenService.signAccessToken({
-      sub: activeUser.id,
-      email: activeUser.email,
-      passwordVersion: activeUser.passwordVersion,
-    });
+    const session = await this.sessionIssuer.issue(activeUser);
 
     return {
       user: {
@@ -70,7 +62,8 @@ export class LoginUserHandler implements ICommandHandler<
         name: activeUser.name,
         emailVerified: activeUser.emailVerifiedAt !== null,
       },
-      accessToken,
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
     };
   }
 }
