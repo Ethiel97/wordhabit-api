@@ -1,4 +1,7 @@
-import { computeWordReviewState } from './user-word-review-scheduler';
+import {
+  computeWordRescheduleState,
+  computeWordReviewState,
+} from './user-word-review-scheduler';
 import {
   UserWordProgress,
   UserWordProgressStatus,
@@ -77,6 +80,80 @@ describe('computeWordReviewState', () => {
     });
 
     expect(state.status).toBe(UserWordProgressStatus.MASTERED);
+    expect(state.nextReviewOn).toBeNull();
+  });
+});
+
+describe('computeWordRescheduleState', () => {
+  it('buys delay without granting mastery', () => {
+    // The detail screen shows the definition, so "I know this" is a
+    // claim, not a recall: the interval moves as if the next tier had
+    // been earned, the stored mastery does not.
+    const state = computeWordRescheduleState({
+      current: progress({ masteryLevel: 45 }),
+      known: true,
+      localDate: '2026-07-31',
+    });
+
+    expect(state.masteryLevel).toBe(45);
+    expect(state.nextReviewOn).toBe('2026-08-07');
+  });
+
+  it('cannot be tapped to mastery', () => {
+    // Ten claims in a row leave the learner exactly where they started.
+    let current = progress({ masteryLevel: 45 });
+
+    for (let i = 0; i < 10; i++) {
+      const state = computeWordRescheduleState({
+        current,
+        known: true,
+        localDate: '2026-07-31',
+      });
+      current = progress({ ...current, ...state });
+    }
+
+    expect(current.masteryLevel).toBe(45);
+    expect(current.status).toBe(UserWordProgressStatus.LEARNING);
+  });
+
+  it('brings a hard word back tomorrow', () => {
+    const state = computeWordRescheduleState({
+      current: progress({ masteryLevel: 60 }),
+      known: false,
+      localDate: '2026-07-31',
+    });
+
+    expect(state.nextReviewOn).toBe('2026-08-01');
+    expect(state.masteryLevel).toBe(60);
+  });
+
+  it('demotes a mastered word that slipped, so it has a due date again', () => {
+    const state = computeWordRescheduleState({
+      current: progress({
+        masteryLevel: 100,
+        status: UserWordProgressStatus.MASTERED,
+      }),
+      known: false,
+      localDate: '2026-07-31',
+    });
+
+    expect(state.status).toBe(UserWordProgressStatus.LEARNING);
+    expect(state.masteryLevel).toBe(85);
+    expect(state.nextReviewOn).toBe('2026-08-01');
+  });
+
+  it('leaves a mastered word alone when the learner still knows it', () => {
+    const state = computeWordRescheduleState({
+      current: progress({
+        masteryLevel: 100,
+        status: UserWordProgressStatus.MASTERED,
+      }),
+      known: true,
+      localDate: '2026-07-31',
+    });
+
+    expect(state.status).toBe(UserWordProgressStatus.MASTERED);
+    expect(state.masteryLevel).toBe(100);
     expect(state.nextReviewOn).toBeNull();
   });
 });

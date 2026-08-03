@@ -5,6 +5,7 @@ export const LEARNING = {
   WORD_PROGRESS: 'words/:wordId/progress',
   REVIEW_QUEUE: 'review-queue',
   WORD_REVIEW: 'words/:wordId/review',
+  WORD_SCHEDULE: 'words/:wordId/schedule',
   DASHBOARD: 'dashboard',
   ACTIVITY: 'activity',
   ACTIVITY_DETAIL: 'activity/detail',

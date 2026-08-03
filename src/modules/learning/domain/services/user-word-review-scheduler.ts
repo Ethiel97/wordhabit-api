@@ -4,6 +4,20 @@ import {
 } from '../entities/user-word-progress';
 import { shiftLocalDate } from './local-date';
 
+/** Mastery earned by one correct graded review. */
+const MASTERY_STEP = 15;
+
+const MASTERY_MAX = 100;
+
+/**
+ * Where a mastered word lands when its owner says it slipped.
+ *
+ * Below the mastered threshold so the word has a due date again, but at
+ * the top of the band under it: it was mastered a moment ago, and the
+ * next interval should reflect that rather than start over.
+ */
+const DEMOTED_MASTERY_LEVEL = 85;
+
 export type SubmitWordReviewResultState = {
   status: UserWordProgressStatus;
   masteryLevel: number;
@@ -34,11 +48,11 @@ export function computeWordReviewState({
   // scheduler runs on. The interval *is* the correction. An objectively
   // scored quiz can afford to penalise, because it cannot be gamed.
   const nextMasteryLevel = correct
-    ? Math.min(current.masteryLevel + 15, 100)
+    ? Math.min(current.masteryLevel + MASTERY_STEP, MASTERY_MAX)
     : current.masteryLevel;
 
   const status =
-    nextMasteryLevel >= 100
+    nextMasteryLevel >= MASTERY_MAX
       ? UserWordProgressStatus.MASTERED
       : UserWordProgressStatus.LEARNING;
 
@@ -69,4 +83,75 @@ function intervalInDays(masteryLevel: number, correct: boolean): number {
   if (masteryLevel <= 60) return 7;
   if (masteryLevel <= 80) return 14;
   return 30;
+}
+
+export type RescheduleWordResultState = {
+  status: UserWordProgressStatus;
+  masteryLevel: number;
+  nextReviewOn: string | null;
+};
+
+type ComputeWordRescheduleStateParams = {
+  current: UserWordProgress;
+  /** The learner's own verdict, given from the word's detail screen. */
+  known: boolean;
+  /** The learner's own day, `yyyy-MM-dd`, which intervals count from. */
+  localDate: string;
+};
+
+/**
+ * Moves a word's next review from the learner's own verdict, without
+ * touching what they have earned.
+ *
+ * Deliberately not a review: the detail screen shows the definition, the
+ * example and the synonyms, so "I know this" is an assertion, not a
+ * recall. Granting it the mastery of a graded card would let anyone
+ * master a word by tapping — and every interval the scheduler computes
+ * afterwards would rest on that claim. Neither the review count, the
+ * activity log nor the streak move here for the same reason.
+ *
+ * The one exception runs downwards: a mastered word cannot carry a due
+ * date, so admitting it slipped has to demote it. Losing ground on your
+ * own word is not an exploit.
+ */
+export function computeWordRescheduleState({
+  current,
+  known,
+  localDate,
+}: ComputeWordRescheduleStateParams): RescheduleWordResultState {
+  if (!known) {
+    return {
+      status: UserWordProgressStatus.LEARNING,
+      masteryLevel: Math.min(current.masteryLevel, DEMOTED_MASTERY_LEVEL),
+      nextReviewOn: shiftLocalDate(localDate, intervalInDays(0, false)),
+    };
+  }
+
+  // A mastered word has no interval left to lengthen; saying you know it
+  // asks for nothing.
+  if (current.status === UserWordProgressStatus.MASTERED) {
+    return {
+      status: current.status,
+      masteryLevel: current.masteryLevel,
+      nextReviewOn: null,
+    };
+  }
+
+  // The delay is computed as if the next tier had been earned, while the
+  // stored mastery stays put: the learner buys time, not progress. A
+  // wrong claim costs them nothing here and everything at the next
+  // graded card, which resets the interval to a single day.
+  const projectedMasteryLevel = Math.min(
+    current.masteryLevel + MASTERY_STEP,
+    MASTERY_MAX,
+  );
+
+  return {
+    status: current.status,
+    masteryLevel: current.masteryLevel,
+    nextReviewOn: shiftLocalDate(
+      localDate,
+      intervalInDays(projectedMasteryLevel, true),
+    ),
+  };
 }

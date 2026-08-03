@@ -14,6 +14,7 @@ import {
   ReviewQueueItem,
   TodayWordAssignment,
   UpdateUserWordReviewParams,
+  RescheduleUserWordReviewParams,
   UpsertUserLearningStreakParams,
   UserActivityDetail,
   UserDailyActivity,
@@ -432,6 +433,35 @@ export class PrismaLearningRepository implements LearningRepository {
         masteryLevel: params.masteryLevel,
         reviewCount: params.reviewCount,
         lastReviewedAt: params.lastReviewedAt,
+        nextReviewOn: params.nextReviewOn,
+      },
+    });
+
+    return {
+      ...updated,
+      status: PrismaLearningMapper.toDomainUserWordProgressStatus(
+        updated.status,
+      ),
+    };
+  }
+
+  async rescheduleUserWordReview(
+    params: RescheduleUserWordReviewParams,
+  ): Promise<UserWordProgress> {
+    // `lastReviewedAt` and `reviewCount` are left alone on purpose: the
+    // learner moved a date, they did not review anything.
+    const updated = await this.prisma.userWordProgress.update({
+      where: {
+        userId_wordId: {
+          userId: params.userId,
+          wordId: params.wordId,
+        },
+      },
+      data: {
+        status: PrismaLearningMapper.toPrismaUserWordProgressStatus(
+          params.status,
+        ),
+        masteryLevel: params.masteryLevel,
         nextReviewOn: params.nextReviewOn,
       },
     });

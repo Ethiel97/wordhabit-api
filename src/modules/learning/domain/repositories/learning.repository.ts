@@ -111,6 +111,19 @@ export interface UpdateUserWordReviewParams {
   nextReviewOn: string | null;
 }
 
+/**
+ * Only the fields a reschedule may move. Review count, last review and
+ * the activity log are deliberately absent — a correction is not a
+ * review, and the type is what keeps that true.
+ */
+export interface RescheduleUserWordReviewParams {
+  userId: string;
+  wordId: string;
+  status: UserWordProgressStatus;
+  masteryLevel: number;
+  nextReviewOn: string | null;
+}
+
 export interface UpsertUserLearningStreakParams {
   userId: string;
   currentStreak: number;
@@ -264,6 +277,10 @@ export interface LearningRepository {
 
   updateUserWordReview(
     params: UpdateUserWordReviewParams,
+  ): Promise<UserWordProgress>;
+
+  rescheduleUserWordReview(
+    params: RescheduleUserWordReviewParams,
   ): Promise<UserWordProgress>;
 
   /**

@@ -10,6 +10,7 @@ import { GetUserWordProgressHandler } from './application/handlers/get-user-word
 import { GetRandomWordHandler } from './application/handlers/get-random-word.handler';
 import { SetUserWordProgressHandler } from './application/handlers/set-user-word-progress.handler';
 import { GetReviewQueueHandler } from './application/handlers/get-review-queue.handler';
+import { RescheduleWordReviewHandler } from './application/handlers/reschedule-word-review.handler';
 import { SubmitWordReviewHandler } from './application/handlers/submit-word-review.handler';
 import { GetLearningDashboardHandler } from './application/handlers/get-learning-dashboard.handler';
 import { GetUserWordLibraryHandler } from './application/handlers/get-user-word-library.handler';
@@ -23,6 +24,7 @@ import { TodayWordService } from './application/services/today-word.service';
 const commandHandlers = [
   SetUserWordProgressHandler,
   SubmitWordReviewHandler,
+  RescheduleWordReviewHandler,
   AddUserFavoriteWordHandler,
   RemoveUserFavoriteWordHandler,
 ];

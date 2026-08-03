@@ -22,6 +22,8 @@ import {
   GetReviewQueueQuery,
   GetReviewQueueResult,
 } from '../../application/queries/get-review-queue.query';
+import { RescheduleWordReviewCommand } from '../../application/commands/reschedule-word-review.command';
+import { RescheduleWordReviewRequestDto } from '../../application/dtos/reschedule-word-review-request.dto';
 import { SubmitWordReviewCommand } from '../../application/commands/submit-word-review.command';
 import { SubmitWordReviewRequestDto } from '../../application/dtos/submit-word-review-request.dto';
 import { LEARNING } from '../../../../shared/presentation/http/endpoints';
@@ -142,6 +144,24 @@ export class LearningController {
         user.id,
         wordId,
         body.correct,
+        body.localDate,
+      ),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Patch(LEARNING.WORD_SCHEDULE)
+  async rescheduleWordReview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('wordId') wordId: string,
+    @Body() body: RescheduleWordReviewRequestDto,
+  ) {
+    const result = await this.commandBus.execute(
+      new RescheduleWordReviewCommand(
+        user.id,
+        wordId,
+        body.known,
         body.localDate,
       ),
     );
