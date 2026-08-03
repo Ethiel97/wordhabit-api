@@ -30,7 +30,7 @@ export class DailyWordScheduler {
     const tickAt = new Date();
     // Truncated to the half hour so every instance computes the same id
     // for the same tick — BullMQ then rejects the duplicate.
-    const jobId = `daily-word:${floorToHalfHour(tickAt).toISOString()}`;
+    const jobId = toJobId('daily-word', floorToHalfHour(tickAt));
 
     try {
       await this.queue.add(
@@ -46,6 +46,18 @@ export class DailyWordScheduler {
       this.logger.error(`Failed to enqueue ${jobId}: ${error}`);
     }
   }
+}
+
+/**
+ * A deterministic, BullMQ-safe job id.
+ *
+ * Exported for the test that pins the shape: BullMQ rejects a custom id
+ * containing `:`, which is the separator of its own Redis keys — and an
+ * ISO timestamp is made of them. The rejection surfaces as a caught
+ * error, so the sweep simply stops happening without anything failing.
+ */
+export function toJobId(prefix: string, at: Date): string {
+  return `${prefix}-${at.toISOString().replace(/[:.]/g, '-')}`;
 }
 
 function floorToHalfHour(date: Date): Date {

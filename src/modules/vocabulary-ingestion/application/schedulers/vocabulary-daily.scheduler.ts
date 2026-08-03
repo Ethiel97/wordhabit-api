@@ -59,7 +59,9 @@ export class VocabularyDailyScheduler {
       // Passed to add(), not just logged: BullMQ rejects a duplicate id,
       // which is what keeps a second API instance from generating the
       // same batch twice.
-      const jobId = `daily:${payload.targetLanguage}:${new Date().toISOString().split('T')[0]}`;
+      // Hyphens, not colons: BullMQ reserves `:` for its own Redis keys
+      // and rejects a custom id that contains one.
+      const jobId = `daily-${payload.targetLanguage}-${new Date().toISOString().split('T')[0]}`;
       try {
         await this.queue.add(GENERATE_VOCABULARY_BATCH_JOB, payload, {
           jobId,
