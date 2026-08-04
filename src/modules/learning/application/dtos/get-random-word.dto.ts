@@ -13,13 +13,9 @@ export class GetRandomWordDto {
   difficulty?: WordDifficulty;
 
   /**
-   * Theme slugs to draw the word from.
-   *
-   * Normalised to an array because Express parses `?themes=a&themes=b`
-   * as `string[]` but `?themes=a` as a bare `string` — and a bare
-   * string reaching Prisma's `in` filter is a 500, not a 400. The
-   * comma-separated form is accepted too, since that is what a
-   * hand-built URL usually looks like.
+   * Theme slugs to draw the word from. Normalised to an array: Express
+   * parses `?themes=a` as a bare string, which reaches Prisma's `in`
+   * filter as a 500 rather than a 400. Comma-separated is accepted too.
    */
   @IsOptional()
   @Transform(({ value }: { value: unknown }) => {

@@ -10,11 +10,8 @@ const MASTERY_STEP = 15;
 const MASTERY_MAX = 100;
 
 /**
- * Where a mastered word lands when its owner says it slipped.
- *
- * Below the mastered threshold so the word has a due date again, but at
- * the top of the band under it: it was mastered a moment ago, and the
- * next interval should reflect that rather than start over.
+ * Where a mastered word lands when its owner says it slipped: under the
+ * threshold so it has a due date again, but at the top of the band.
  */
 const DEMOTED_MASTERY_LEVEL = 85;
 
@@ -29,7 +26,7 @@ export type SubmitWordReviewResultState = {
 type ComputeWordReviewStateParams = {
   current: UserWordProgress;
   correct: boolean;
-  /** The instant of the answer — a real event, kept as one. */
+  /** The instant of the answer. */
   now: Date;
   /** The learner's own day, `yyyy-MM-dd`, which intervals count from. */
   localDate: string;
@@ -41,12 +38,9 @@ export function computeWordReviewState({
   now,
   localDate,
 }: ComputeWordReviewStateParams): SubmitWordReviewResultState {
-  // A missed card costs no mastery — it only resets the interval, so the
-  // word comes back tomorrow instead of in a month. Flashcard grading is
-  // self-assessed: docking progress for admitting you forgot teaches the
-  // user to tap "Got it" instead, which corrupts the very signal the
-  // scheduler runs on. The interval *is* the correction. An objectively
-  // scored quiz can afford to penalise, because it cannot be gamed.
+  // A miss costs no mastery, only the interval. Flashcard grading is
+  // self-assessed: docking progress teaches the user to tap "Got it",
+  // which corrupts the signal the scheduler runs on.
   const nextMasteryLevel = correct
     ? Math.min(current.masteryLevel + MASTERY_STEP, MASTERY_MAX)
     : current.masteryLevel;
@@ -69,11 +63,9 @@ export function computeWordReviewState({
 }
 
 /**
- * Days until the word comes back.
- *
- * Counted from the learner's calendar day, not from the moment they
- * answered: an interval anchored to the clock drifts later every cycle,
- * since one always answers a little after the card falls due.
+ * Days until the word comes back, counted from the learner's calendar
+ * day: anchored to the clock instead, an interval drifts later every
+ * cycle.
  */
 function intervalInDays(masteryLevel: number, correct: boolean): number {
   if (!correct) return 1;
@@ -100,19 +92,13 @@ type ComputeWordRescheduleStateParams = {
 };
 
 /**
- * Moves a word's next review from the learner's own verdict, without
- * touching what they have earned.
+ * Moves a word's next review without touching what it earned.
  *
- * Deliberately not a review: the detail screen shows the definition, the
- * example and the synonyms, so "I know this" is an assertion, not a
- * recall. Granting it the mastery of a graded card would let anyone
- * master a word by tapping — and every interval the scheduler computes
- * afterwards would rest on that claim. Neither the review count, the
- * activity log nor the streak move here for the same reason.
- *
- * The one exception runs downwards: a mastered word cannot carry a due
- * date, so admitting it slipped has to demote it. Losing ground on your
- * own word is not an exploit.
+ * Not a review: the detail screen shows the definition, so "I know
+ * this" is an assertion, not a recall, and granting it mastery would
+ * let anyone master a word by tapping. Same reason no review count,
+ * activity or streak moves here. The exception runs downwards, since a
+ * mastered word cannot carry a due date.
  */
 export function computeWordRescheduleState({
   current,
@@ -127,8 +113,7 @@ export function computeWordRescheduleState({
     };
   }
 
-  // A mastered word has no interval left to lengthen; saying you know it
-  // asks for nothing.
+  // No interval left to lengthen.
   if (current.status === UserWordProgressStatus.MASTERED) {
     return {
       status: current.status,
@@ -137,10 +122,9 @@ export function computeWordRescheduleState({
     };
   }
 
-  // The delay is computed as if the next tier had been earned, while the
-  // stored mastery stays put: the learner buys time, not progress. A
-  // wrong claim costs them nothing here and everything at the next
-  // graded card, which resets the interval to a single day.
+  // Delay computed as if the next tier had been earned, mastery left
+  // alone: the learner buys time, not progress. A false claim costs
+  // nothing here and everything at the next graded card.
   const projectedMasteryLevel = Math.min(
     current.masteryLevel + MASTERY_STEP,
     MASTERY_MAX,

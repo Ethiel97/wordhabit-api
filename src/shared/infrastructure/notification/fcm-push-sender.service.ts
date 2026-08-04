@@ -16,9 +16,8 @@ import {
 const MAX_TOKENS_PER_CALL = 500;
 
 /**
- * The only error codes that mean the device is gone. Anything else —
- * quota, unavailability, a malformed payload — is a problem with this
- * send, not with the token.
+ * The only codes that mean the device is gone. Anything else is a
+ * problem with this send, not with the token.
  */
 const GONE_ERROR_CODES = new Set([
   'messaging/registration-token-not-registered',
@@ -33,8 +32,7 @@ export class FcmPushSenderService implements PushSender, OnModuleInit {
   constructor(private readonly configService: ConfigService) {}
 
   onModuleInit(): void {
-    // Hot reload re-runs this against a live default app, which
-    // initializeApp rejects.
+    // Hot reload re-runs this against a live default app.
     if (getApps().length > 0) return;
 
     const projectId = this.configService
@@ -46,13 +44,12 @@ export class FcmPushSenderService implements PushSender, OnModuleInit {
       path: this.configService.get<string>('GOOGLE_APPLICATION_CREDENTIALS'),
     });
 
-    // Fails the boot rather than the delivery: pushing to the wrong
-    // project succeeds silently, one user at a time, forever.
+    // Fails the boot rather than the delivery: a wrong project succeeds
+    // silently, forever.
     assertProjectMatches(account, projectId);
 
     initializeApp({
-      // The admin SDK wants camelCase; the file Google issues is
-      // snake_case, so the two names are spelled out rather than spread.
+      // The admin SDK wants camelCase, Google's file is snake_case.
       credential: cert({
         projectId: account.project_id,
         clientEmail: account.client_email,
@@ -97,8 +94,7 @@ export class FcmPushSenderService implements PushSender, OnModuleInit {
 
     const invalidTokens: string[] = [];
 
-    // Responses are positional, so the index is what ties a failure back
-    // to the token that caused it.
+    // Responses are positional: the index ties a failure to its token.
     response.responses.forEach((individual, index) => {
       if (individual.success) return;
 

@@ -20,14 +20,17 @@ export interface GetLearningDashboardResult {
 
   /**
    * The word assigned the day before, so the app can ask whether it
-   * stuck — a spaced-repetition product should not forget its own last
-   * word.
-   *
-   * Looked up, never created: a user who was away yesterday has no word
-   * for it, and inventing one would put a word they never met into their
-   * history.
+   * stuck. Looked up, never created: inventing one would put a word the
+   * user never met into their history.
    */
   yesterdayWord: TodayWordAssignment | null;
+
+  /**
+   * What became of yesterday's word, null while the answer is owed.
+   * Paired with [yesterdayWord]: word + null asks, word + outcome
+   * reports, no word means there was nothing yesterday.
+   */
+  yesterdayHandled: YesterdayHandled | null;
 
   reviewQueue: {
     count: number;
@@ -43,3 +46,18 @@ export interface GetLearningDashboardResult {
 
   stats: UserLearningStats;
 }
+
+/** The outcome of yesterday's recall, once it has been answered. */
+export type YesterdayHandled = {
+  /** `yyyy-MM-dd`, the day the word comes back. */
+  nextReviewOn: string;
+
+  /**
+   * Null when nobody was asked: rescheduling from the detail screen
+   * moves the due date and records no review.
+   */
+  recalled: boolean | null;
+
+  masteryBefore: number;
+  masteryAfter: number;
+};

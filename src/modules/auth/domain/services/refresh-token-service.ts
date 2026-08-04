@@ -9,12 +9,9 @@ export type IssuedRefreshToken = {
 };
 
 /**
- * Mints and recognises refresh tokens.
- *
- * Opaque random strings, not JWTs: a refresh token has to be
- * revocable, and a self-validating token cannot be taken back before it
- * expires. Since the server looks this one up anyway, signing it would
- * buy nothing and only widen what a leak exposes.
+ * Mints and recognises refresh tokens. Opaque random strings, not JWTs:
+ * a refresh token has to be revocable, and the server looks it up
+ * anyway, so signing would only widen what a leak exposes.
  */
 export interface RefreshTokenService {
   issue(): IssuedRefreshToken;

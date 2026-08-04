@@ -64,10 +64,8 @@ export class PrismaVocabularyMapper {
       case 'FR':
         return LanguageCode.FR;
       default: {
-        // Deliberately throws: this is the exhaustiveness guard. Adding a
-        // language to the Prisma enum must fail loudly here rather than
-        // silently mislabel every word as English. Nullable columns are
-        // handled at the call site, never by weakening this contract.
+        // The exhaustiveness guard: a new language in the Prisma enum
+        // must fail here rather than be mislabelled as English.
         throw new Error(`Unhandled language code: ${value}`);
       }
     }
@@ -222,7 +220,7 @@ export class PrismaVocabularyMapper {
         this.toDomainPronunciation(p),
       ),
       synonyms: data.synonyms.map((s) => this.toDomainSynonym(s)),
-      //TODO: Decide later if we want to return the slug or the name of the theme. For now, we return the slug.
+      // TODO(Ethiel97): slug or name? Slug for now.
       themes: data.themes?.map((t) => t.slug),
     };
   }

@@ -91,13 +91,9 @@ export interface VocabularyRepository {
   }): Promise<string[]>;
 
   /**
-   * Both fields required, and named for what they are.
-   *
-   * It used to take the all-optional `FindVocabularyWordParams` while
-   * the implementation read `params.term`. Method parameters are
-   * bivariant in TypeScript, so `implements` accepted the mismatch and
-   * every call passed `normalizedTerm` into a lookup reading `term` —
-   * which threw on a missing argument, every time.
+   * Both fields required, and named for what they are: method
+   * parameters are bivariant, so an all-optional param type let
+   * `implements` accept a lookup reading a field nobody passed.
    */
   findByNormalizedTerm(params: {
     normalizedTerm: string;
@@ -105,12 +101,9 @@ export interface VocabularyRepository {
   }): Promise<VocabularyWord | null>;
 
   /**
-   * A random sample of terms already held for a language.
-   *
-   * Random rather than newest: generation feeds this back to the model
-   * as "already covered", and a sample spread across the whole corpus
-   * shows it the territory taken, where the newest slice would only show
-   * it last night's corner.
+   * A random sample of terms already held for a language. Random rather
+   * than newest: generation feeds it back to the model as "already
+   * covered", and the newest slice would only show last night's corner.
    */
   sampleNormalizedTerms(params: {
     targetLanguage: LanguageCode;
@@ -121,12 +114,9 @@ export interface VocabularyRepository {
   countWords(params: { targetLanguage: LanguageCode }): Promise<number>;
 
   /**
-   * The theme slugs the corpus covers least, thinnest first.
-   *
-   * Generation feeds these back to the model so the corpus fills its own
-   * gaps: themes are what a user picks at onboarding and what the daily
-   * word is filtered by, so a theme nobody generates for is a promise
-   * the app cannot keep.
+   * The theme slugs the corpus covers least, thinnest first, so
+   * generation fills its own gaps. A theme nobody generates for is a
+   * promise onboarding made and the daily word cannot keep.
    */
   findLeastCoveredThemes(params: {
     targetLanguage: LanguageCode;

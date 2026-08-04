@@ -2,6 +2,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import {
   GetLearningDashboardQuery,
   GetLearningDashboardResult,
+  YesterdayHandled,
 } from '../queries/get-learning-dashboard.query';
 import { Inject } from '@nestjs/common';
 import type {
@@ -29,17 +30,24 @@ export class GetLearningDashboardHandler implements IQueryHandler<
     private readonly todayWordService: TodayWordService,
   ) {}
 
-  /// Yesterday's word, unless the learner has already answered for it.
+  /// Yesterday's word, and whether it is still waiting on an answer.
   ///
   /// "Answered" is read from the schedule rather than stored as a flag:
   /// a review pushes [nextReviewOn] past today, so a word still due
   /// today is precisely one nobody has answered yet. One less column,
   /// and no way for the flag and the schedule to disagree.
-  private async pendingRecall(
+  ///
+  /// Pending and handled are separate fields because the client renders
+  /// three states, and one nullable field collapsed "done" into "never
+  /// had a word".
+  private async yesterdayRecall(
     query: GetLearningDashboardQuery,
     assignment: TodayWordAssignment | null,
-  ): Promise<TodayWordAssignment | null> {
-    if (!assignment) return null;
+  ): Promise<{
+    pending: TodayWordAssignment | null;
+    handled: YesterdayHandled | null;
+  }> {
+    if (!assignment) return { pending: null, handled: null };
 
     const progress = await this.learningRepository.findUserWordProgress({
       userId: query.userId,
@@ -50,7 +58,32 @@ export class GetLearningDashboardHandler implements IQueryHandler<
     const nextReviewOn = progress?.nextReviewOn;
     const stillDue = !nextReviewOn || nextReviewOn <= query.localDate;
 
-    return stillDue ? assignment : null;
+    if (stillDue) return { pending: assignment, handled: null };
+
+    const lastReview = await this.learningRepository.findLastWordReview({
+      userId: query.userId,
+      wordId: assignment.word.id,
+    });
+
+    // Only this cycle's event counts: a reschedule clears the due date
+    // without writing one, leaving the last review weeks stale.
+    const yesterday = shiftLocalDate(query.localDate, -1);
+    const review =
+      lastReview && lastReview.localDate >= yesterday ? lastReview : null;
+
+    // No event means nothing to report, so the card shows the current
+    // level without a gain.
+    const current = progress?.masteryLevel ?? 0;
+
+    return {
+      pending: assignment,
+      handled: {
+        nextReviewOn: nextReviewOn,
+        recalled: review?.correct ?? null,
+        masteryBefore: review?.masteryBefore ?? current,
+        masteryAfter: review?.masteryAfter ?? current,
+      },
+    };
   }
 
   async execute(
@@ -87,9 +120,12 @@ export class GetLearningDashboardHandler implements IQueryHandler<
         this.learningRepository.findUserLearningStats(query.userId),
       ]);
 
+    const recall = await this.yesterdayRecall(query, yesterdayWord);
+
     return {
       todayWord,
-      yesterdayWord: await this.pendingRecall(query, yesterdayWord),
+      yesterdayWord: recall.pending,
+      yesterdayHandled: recall.handled,
 
       reviewQueue: {
         count: reviewQueue.length,

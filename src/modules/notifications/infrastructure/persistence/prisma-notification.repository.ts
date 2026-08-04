@@ -45,8 +45,8 @@ export class PrismaNotificationRepository implements NotificationRepository {
   async updateNotificationPreference(
     params: UpdateNotificationPreferenceParams,
   ): Promise<NotificationPreferencesResult> {
-    // undefined means "leave alone"; null is a caller clearing the slot,
-    // which Prisma only honours when the key is present.
+    // undefined leaves alone, null clears: Prisma only honours the
+    // clear when the key is present.
     const changes = {
       ...(params.enabled !== undefined && { enabled: params.enabled }),
       ...(params.slot !== undefined && {
@@ -79,8 +79,8 @@ export class PrismaNotificationRepository implements NotificationRepository {
   ): Promise<NotificationDevice> {
     const result = await this.prisma.device.upsert({
       where: { token: params.token },
-      // userId is reassigned on purpose: a resold or shared phone keeps
-      // its FCM token, and the previous owner must stop receiving.
+      // Reassigned: a resold phone keeps its token, and the previous
+      // owner must stop receiving.
       update: {
         userId: params.userId,
         platform: params.platform,
@@ -141,8 +141,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
             slot: params.slot,
           },
         },
-        // Already served today — the ledger, not a flag, so a restart
-        // cannot lose the fact.
+        // The ledger, not a flag, so a restart cannot lose the fact.
         notificationDeliveries: {
           none: {
             channel: params.channel,
@@ -173,8 +172,8 @@ export class PrismaNotificationRepository implements NotificationRepository {
   }
 
   async recordDelivery(params: RecordDeliveryParams): Promise<boolean> {
-    // createMany + skipDuplicates rather than catching P2002: the
-    // conflict is an ordinary outcome here, not an exception.
+    // skipDuplicates rather than catching P2002: the conflict is an
+    // ordinary outcome here.
     const result = await this.prisma.notificationDelivery.createMany({
       data: {
         userId: params.userId,
@@ -198,9 +197,8 @@ export class PrismaNotificationRepository implements NotificationRepository {
   }
 
   /**
-   * Only supported channels are seeded. A row for a channel the sender
-   * cannot deliver would surface in the app as a switch that does
-   * nothing.
+   * Only supported channels are seeded: a row the sender cannot deliver
+   * shows up in the app as a switch that does nothing.
    */
   private async ensureDefaultPreferences(userId: string): Promise<void> {
     await Promise.all(

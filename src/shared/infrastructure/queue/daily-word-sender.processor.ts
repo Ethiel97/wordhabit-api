@@ -47,8 +47,8 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
       return { notified: 0 };
     }
 
-    // The tick's own instant, not the clock: a job that waited in the
-    // queue must still sweep the window it was created for.
+    // The tick's instant, not the clock: a queued job must still sweep
+    // the window it was created for.
     const timeZones = await this.notifications.findActiveTimeZones();
     const due = findDueSlots(new Date(job.data.tickAt), timeZones);
 
@@ -79,8 +79,8 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
 
     const result = await this.pushSender.send(messages);
 
-    // Devices the platform reports as gone. Left in place they grow every
-    // batch and make the success rate unreadable.
+    // Devices the platform reports as gone: left in place they grow
+    // every batch.
     if (result.invalidTokens.length > 0) {
       const removed = await this.notifications.deleteDevicesByTokens(
         result.invalidTokens,
@@ -92,17 +92,13 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
   }
 
   /**
-   * Assigns the day's word, then reserves the delivery.
+   * Assigns the day's word, then reserves the delivery. That order twice
+   * over: the push carries a wordId, and a user with no candidate must
+   * not be marked as served or tomorrow's sweep skips them.
    *
-   * That order matters twice over. The push carries a wordId, so the
-   * assignment has to exist before the message is composed — and a user
-   * with no candidate word must not be marked as served, or tomorrow's
-   * sweep would skip them.
-   *
-   * The unique index on the reservation is what stops a second worker,
-   * or a replayed job, from notifying the same user twice. The cost is
-   * symmetric: a send that fails after the claim is a missed day, which
-   * beats a double notification under a one-per-day budget.
+   * The reservation's unique index is what stops a second worker from
+   * notifying twice. A send failing after the claim costs a missed day,
+   * which beats a double notification.
    */
   private async claim(
     recipients: DueRecipient[],
@@ -121,8 +117,7 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
         );
         word = { id: assignment.word.id, term: assignment.word.term };
       } catch (error) {
-        // No profile, or the corpus ran dry for their language. Neither
-        // is worth abandoning the rest of the batch for.
+        // No profile, or a dry corpus: not worth abandoning the batch.
         this.logger.warn(
           `No word for user ${recipient.userId}: ${String(error)}`,
         );

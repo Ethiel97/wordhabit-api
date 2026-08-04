@@ -7,10 +7,8 @@ export class RescheduleWordReviewRequestDto {
   known!: boolean;
 
   /**
-   * The calendar day the correction was made on, `yyyy-MM-dd`.
-   *
-   * Intervals count from the learner's own day, never the server's — see
-   * `SubmitWordReviewRequestDto`.
+   * The calendar day the correction was made on, `yyyy-MM-dd`. Intervals
+   * count from the learner's day, never the server's.
    */
   @Matches(LOCAL_DATE_PATTERN, {
     message: 'localDate must be a yyyy-MM-dd date',

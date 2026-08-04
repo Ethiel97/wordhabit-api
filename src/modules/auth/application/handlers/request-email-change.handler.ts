@@ -34,12 +34,10 @@ import { EmailUnchangedError } from '../errors/email-change-errors';
 import { PasswordMismatchError } from '../errors/password-errors';
 
 /**
- * Starts an email change; changes nothing yet.
- *
- * Two messages go out. The code goes to the address being claimed —
- * that is what proves it is reachable, and reachable by this person.
- * A notice goes to the address being left, because it is the only
- * moment a hijacked account can still warn its owner.
+ * Starts an email change; changes nothing yet. The code goes to the
+ * address being claimed, which proves it is reachable. A notice goes to
+ * the one being left: the last moment a hijacked account can warn its
+ * owner.
  */
 @CommandHandler(RequestEmailChangeCommand)
 export class RequestEmailChangeHandler implements ICommandHandler<
@@ -69,9 +67,8 @@ export class RequestEmailChangeHandler implements ICommandHandler<
       throw new NotFoundException('User not found.');
     }
 
-    // Re-authentication, not authorisation: the session already proves
-    // who they are. This proves they are still at the keyboard, which
-    // is what stops a borrowed phone from moving the account.
+    // Re-authentication, not authorisation: the session proves who they
+    // are, this proves they are still at the keyboard.
     if (
       !user.password ||
       !(await this.passwordService.verify(
@@ -88,8 +85,7 @@ export class RequestEmailChangeHandler implements ICommandHandler<
       throw new EmailUnchangedError({ userId: user.id });
     }
 
-    // Checked again at confirmation: between the two, someone else may
-    // register it.
+    // Checked again at confirmation: someone may register it between.
     if (await this.authUserRepository.findByEmail(newEmail)) {
       throw new EmailAlreadyTakenError({ userId: user.id });
     }
@@ -97,8 +93,7 @@ export class RequestEmailChangeHandler implements ICommandHandler<
     const code = this.generateCode();
     const expiresAt = addMinutes(new Date(), EMAIL_CHANGE_CODE_TTL_MINUTES);
 
-    // A pending code for an address the user has thought better of must
-    // not survive the new request.
+    // A pending code for an abandoned address must not survive.
     await this.emailChangeRequestRepository.invalidateAllForUser(user.id);
 
     await this.emailChangeRequestRepository.create({

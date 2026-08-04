@@ -8,11 +8,9 @@ import {
 } from '../../infrastructure/queue/notifications-queue.constants';
 
 /**
- * Wakes the sweep every half hour; the processor decides who is due.
- *
- * No `timeZone`: the reminder slot is local to each user, so the tick
- * runs in UTC and the processor converts. Pinning a zone here would tie
- * every user's schedule to that one.
+ * Wakes the sweep every half hour; the processor decides who is due. No
+ * `timeZone`: the slot is local to each user, and pinning one here would
+ * tie every schedule to it.
  */
 @Injectable()
 export class DailyWordScheduler {
@@ -28,18 +26,18 @@ export class DailyWordScheduler {
   })
   async enqueueDailyWordJob() {
     const tickAt = new Date();
-    // Truncated to the half hour so every instance computes the same id
-    // for the same tick — BullMQ then rejects the duplicate.
+    // Truncated to the half hour, so every instance computes the same
+    // id and BullMQ rejects the duplicate.
     const jobId = toJobId('daily-word', floorToHalfHour(tickAt));
 
     try {
       await this.queue.add(
         SEND_DAILY_WORD_NOTIFICATION_JOB,
-        // The tick's own instant, not the processor's clock: a job that
-        // waits in the queue must still sweep the window it was made for.
+        // The tick's instant, not the processor's clock: a queued job
+        // must still sweep the window it was made for.
         { tickAt: tickAt.toISOString() },
-        // attempts: 1 — a partly-done sweep replayed sends twice, and
-        // the next tick picks up whatever was missed anyway.
+        // attempts: 1. A replayed half-done sweep sends twice, and the
+        // next tick picks up whatever was missed.
         { jobId, attempts: 1, removeOnComplete: 100, removeOnFail: 500 },
       );
     } catch (error) {
@@ -49,12 +47,10 @@ export class DailyWordScheduler {
 }
 
 /**
- * A deterministic, BullMQ-safe job id.
- *
- * Exported for the test that pins the shape: BullMQ rejects a custom id
- * containing `:`, which is the separator of its own Redis keys — and an
- * ISO timestamp is made of them. The rejection surfaces as a caught
- * error, so the sweep simply stops happening without anything failing.
+ * A deterministic, BullMQ-safe job id. BullMQ rejects a custom id
+ * containing `:`, the separator of its own Redis keys, and an ISO
+ * timestamp is full of them. The rejection is caught, so the sweep just
+ * stops happening.
  */
 export function toJobId(prefix: string, at: Date): string {
   return `${prefix}-${at.toISOString().replace(/[:.]/g, '-')}`;

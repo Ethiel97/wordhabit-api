@@ -43,11 +43,9 @@ export interface FindTodayAssignmentParams {
 export type TodayWordAssignment = VocabularyWordAggregate & {
   assignmentId: string;
   /**
-   * The day the word belongs to, `yyyy-MM-dd`.
-   *
-   * A string, not a Date: it names a calendar day, and a Date invites a
-   * caller to render it in a timezone — which would show the previous
-   * day to anyone west of Greenwich.
+   * The day the word belongs to, `yyyy-MM-dd`. A string, not a Date: a
+   * Date invites rendering in a timezone, which names the previous day
+   * west of Greenwich.
    */
   assignedFor: string;
 };
@@ -62,10 +60,9 @@ export type ReviewQueueItem = {
   reviewCount: number;
   status: UserWordProgressStatus;
   nextReviewOn: string | null;
-  // The card front needs the part of speech and, for text-to-speech, the
-  // language the word is in; the back needs meaning, example and synonyms.
-  // A review session preloads its whole deck, so the card never waits on
-  // a fetch mid-flip.
+  // A session preloads its whole deck, so the card never waits on a
+  // fetch mid-flip: front (part of speech, language) and back (meaning,
+  // example, synonyms) both ship here.
   partOfSpeech: PartOfSpeech;
   targetLanguage: LanguageCode;
   definitions: WordDefinition[];
@@ -113,8 +110,8 @@ export interface UpdateUserWordReviewParams {
 
 /**
  * Only the fields a reschedule may move. Review count, last review and
- * the activity log are deliberately absent — a correction is not a
- * review, and the type is what keeps that true.
+ * the activity log are absent by design: the type is what keeps a
+ * correction from becoming a review.
  */
 export interface RescheduleUserWordReviewParams {
   userId: string;
@@ -136,13 +133,23 @@ export interface RecordWordReviewEventParams {
   userId: string;
   wordId: string;
   correct: boolean;
+  masteryBefore: number;
+  masteryAfter: number;
   /** The client's own calendar day, `yyyy-MM-dd`. */
   localDate: string;
 }
 
+/** The last review of one word, whenever it happened. */
+export type LastWordReview = {
+  correct: boolean;
+  masteryBefore: number;
+  masteryAfter: number;
+  localDate: string;
+};
+
 export interface FindUserDailyActivityParams {
   userId: string;
-  /** Inclusive `yyyy-MM-dd`. Compared as text — ISO dates sort by date. */
+  /** Inclusive `yyyy-MM-dd`, compared as text. */
   from: string;
   /** Inclusive `yyyy-MM-dd`. */
   to: string;
@@ -176,23 +183,17 @@ export type ActivityDetailWord = {
 };
 
 /**
- * What happened across a range — the payload behind tapping a heatmap day
- * or a chart bar.
- *
- * Kept apart from [UserDailyActivity] on purpose: the activity series spans
- * a year, and attaching word lists to every day of it would bloat a
- * response whose whole job is to be small.
+ * What happened across a range, behind tapping a heatmap day or a chart
+ * bar. Kept apart from [UserDailyActivity], which spans a year and has
+ * to stay small.
  */
 export type UserActivityDetail = {
   reviewCount: number;
   correctCount: number;
   /**
-   * Distinct words reviewed in the range — a count of [words] before the
-   * limit trims it.
-   *
-   * This replaces a "new words" figure, which would have to come from
-   * `UserWordProgress.seenAt`: an instant, and therefore exactly the
-   * timezone arithmetic this design removes.
+   * Distinct words reviewed in the range, counted before [words] is
+   * trimmed. Stands in for a "new words" figure, which would need
+   * `seenAt` and therefore timezone arithmetic.
    */
   distinctWordCount: number;
   /** Distinct words reviewed, busiest first, capped by the request. */
@@ -228,16 +229,13 @@ export type UserWordLibraryItem = {
   nextReviewOn: string | null;
   updatedAt: Date;
   pronunciations: WordPronunciation[];
-  // A trimmed set of definitions (meaning text + its explanation
-  // language) — enough for the list's short meaning preview and to
-  // let the client pick the right language. The full word (examples,
-  // synonyms) loads on the detail screen.
+  // Trimmed definitions: enough for the list preview and to pick the
+  // right language. The full word loads on the detail screen.
   definitions: UserWordLibraryDefinition[];
   // The row shows the IPA next to the term.
 };
 
-// Whole-library aggregates (never affected by the active filter or
-// search): the header line and the filter chips' counts.
+// Whole-library aggregates, never affected by the active filter.
 export type UserWordLibrarySummary = {
   total: number;
   averageMastery: number;
@@ -262,7 +260,6 @@ export interface LearningRepository {
   /**
    * A word the user has not been given recently, honouring their topics
    * and language, and their level when the pool allows.
-   *
    */
   findCandidateWord(
     profile: UserLearningProfile,
@@ -289,15 +286,19 @@ export interface LearningRepository {
   ): Promise<UserWordProgress>;
 
   /**
-   * Appends one review to the activity log. Never updates: the log is what
-   * makes per-day history recoverable, unlike `lastReviewedAt`.
+   * Appends one review to the activity log. Never updates: unlike
+   * `lastReviewedAt`, the log is what makes per-day history recoverable.
    */
   recordWordReviewEvent(params: RecordWordReviewEventParams): Promise<void>;
 
+  findLastWordReview(params: {
+    userId: string;
+    wordId: string;
+  }): Promise<LastWordReview | null>;
+
   /**
-   * Review counts per local day across the range, sparse: days with no
-   * reviews are absent. The client already generates the day list it wants
-   * to render, so it fills the gaps.
+   * Review counts per local day, sparse: the client generates its own
+   * day list and fills the gaps.
    */
   findUserDailyActivity(
     params: FindUserDailyActivityParams,

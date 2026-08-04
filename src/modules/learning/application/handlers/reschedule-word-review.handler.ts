@@ -9,11 +9,9 @@ import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.reposito
 import { computeWordRescheduleState } from '../../domain/services/user-word-review-scheduler';
 
 /**
- * Writes the new due date and nothing else.
- *
- * No review event, no streak update, no review count: this is the
- * learner correcting the scheduler, not doing the work. Recording it as
- * activity would let the heatmap and the streak be filled by tapping.
+ * Writes the new due date and nothing else: no event, no streak, no
+ * review count. Recording a correction as activity would let the heatmap
+ * be filled by tapping.
  */
 @CommandHandler(RescheduleWordReviewCommand)
 export class RescheduleWordReviewHandler implements ICommandHandler<

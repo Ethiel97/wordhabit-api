@@ -2,13 +2,11 @@
  * The notification's wording, composed here because a killed app cannot
  * be asked what language it speaks.
  *
- * The term itself carries the message. "Your word is ready" asks for
- * trust; *liminal* creates a gap — the reader knows the word exists and
- * not what it means, and only the app closes that. The meaning is
- * deliberately withheld.
+ * The term carries the message and the meaning is withheld: "Your word
+ * is ready" asks for trust, *liminal* creates a gap only the app closes.
  *
- * Kept out of the i18n stack on purpose: two strings in three languages
- * do not justify wiring a translation runtime into a worker.
+ * Out of the i18n stack: six strings do not justify a translation
+ * runtime in a worker.
  */
 const COPY: Record<string, (term: string) => { title: string; body: string }> =
   {

@@ -32,8 +32,8 @@ export class SetUserWordProgressHandler implements ICommandHandler<
       `Setting user word progress for userId: ${userId}, wordId: ${wordId}, status: ${status}`,
     );
 
-    // The client's day, which the command already carries — the server's
-    // would schedule the next review against the wrong calendar.
+    // The client's day: the server's would schedule against the wrong
+    // calendar.
     const date = localDateToInstant(localDate);
 
     const current = await this.learningRepository.findUserWordProgress({
@@ -60,15 +60,11 @@ export class SetUserWordProgressHandler implements ICommandHandler<
         ...nextState,
       });
 
-    // Discovering today's word is daily learning activity, so the
-    // first NEW→SEEN transition feeds the streak — otherwise a brand
-    // new user could never start one (the review queue is empty on
-    // day one, and reviews were the only streak source).
-    //
-    // The guard keeps every other call out on purpose: SKIPPED is
-    // opting out, not learning; idempotent SEEN re-sends are not a
-    // second discovery; LEARNING/MASTERED are earned through reviews,
-    // which maintain the streak in their own handler.
+    // Only the first NEW→SEEN feeds the streak. Without it a new user
+    // could never start one, since the review queue is empty on day one.
+    // Everything else is excluded: SKIPPED is opting out, a repeated
+    // SEEN is not a second discovery, and LEARNING/MASTERED come from
+    // reviews, which keep the streak in their own handler.
     const isFirstDiscovery =
       status === UserWordProgressStatus.SEEN &&
       (!current || current.status === UserWordProgressStatus.NEW);

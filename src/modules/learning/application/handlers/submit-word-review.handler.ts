@@ -56,6 +56,8 @@ export class SubmitWordReviewHandler implements ICommandHandler<
       userId: command.userId,
       wordId: command.wordId,
       correct: command.correct,
+      masteryBefore: currentUserWordProgress.masteryLevel,
+      masteryAfter: nextState.masteryLevel,
       localDate: command.localDate,
     });
 

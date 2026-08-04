@@ -26,10 +26,8 @@ export interface AuthUserRepository {
   changePassword(userId: string, passwordHash: string): Promise<User>;
 
   /**
-   * Moves the account to a proven address.
-   *
-   * Only ever called after the new address has answered a code, so the
-   * verified flag is carried over rather than reset.
+   * Moves the account to a proven address. Called only after the new one
+   * has answered a code, so the verified flag carries over.
    */
   changeEmail(userId: string, email: string): Promise<User>;
 
@@ -45,12 +43,9 @@ export interface AuthUserRepository {
   restore(userId: string): Promise<User>;
 
   /**
-   * Accounts whose grace period has run out, oldest first, capped at
-   * [limit].
-   *
-   * Takes the *deletion* date to stay behind, not a purge date: nothing
-   * stores when an account is due, so the caller walks the cutoff back
-   * from now instead — see `purgeCutoff`.
+   * Accounts whose grace period has run out, oldest first. Takes a
+   * *deletion* cutoff, not a purge date: nothing stores when an account
+   * is due, so the caller walks it back from now.
    */
   findPurgeable(deletedBefore: Date, limit?: number): Promise<User[]>;
 

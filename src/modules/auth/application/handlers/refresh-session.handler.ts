@@ -19,11 +19,9 @@ import {
 import { SessionIssuer } from '../services/session-issuer.service';
 
 /**
- * Trades a refresh token for a fresh pair, and burns the old one.
- *
- * Rotation is what makes a long-lived credential tolerable: a stolen
- * token is only good until its owner next refreshes. That in turn is
- * what makes replay detectable — see below.
+ * Trades a refresh token for a fresh pair and burns the old one.
+ * Rotation is what makes a long-lived credential tolerable, and what
+ * makes replay detectable.
  */
 @CommandHandler(RefreshSessionCommand)
 export class RefreshSessionHandler implements ICommandHandler<
@@ -49,17 +47,15 @@ export class RefreshSessionHandler implements ICommandHandler<
     const tokenHash = this.refreshTokenService.hash(command.refreshToken);
     const stored = await this.refreshTokenRepository.findByHash(tokenHash);
 
-    // One message for every rejection: an attacker must not learn
-    // whether a token was unknown, spent or merely expired.
+    // One message for every rejection: unknown, spent and expired must
+    // be indistinguishable.
     if (!stored) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     if (stored.revokedAt) {
-      // A spent token came back. Either it was stolen and replayed, or
-      // the legitimate client kept a copy — and neither can be told
-      // apart from here, so every session of this user ends. The victim
-      // signs in again; the thief gets nothing.
+      // A spent token came back: replay or a client that kept a copy,
+      // indistinguishable from here, so every session ends.
       this.logger.warn(
         `Refresh token reuse detected for user ${stored.userId} — revoking all sessions`,
       );
@@ -73,8 +69,8 @@ export class RefreshSessionHandler implements ICommandHandler<
 
     const user = await this.authUserRepository.findById(stored.userId);
 
-    // A deleted account keeps its rows through the grace period, so the
-    // token outlives the right to use it.
+    // Rows survive the grace period, so the token outlives the right to
+    // use it.
     if (!user || user.deletedAt) {
       await this.refreshTokenRepository.revokeAllForUser(stored.userId);
       throw new UnauthorizedException('Invalid refresh token');

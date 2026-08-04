@@ -13,13 +13,9 @@ import { purgeCutoff } from '../../domain/account-deletion.policy';
 import { SentryReportingWorkerHost } from '../../../../shared/infrastructure/queue/sentry-reporting-processor';
 
 /**
- * Erases accounts whose 30-day grace period has run out.
- *
- * A periodic sweep rather than a job delayed by 30 days at deletion
- * time: a delayed job is a single point of failure — flush Redis, or
- * re-provision it, and the account is stranded in limbo forever. A sweep
- * reads the truth out of the database every hour, so it catches whatever
- * was missed, however it was missed.
+ * Erases accounts whose grace period has run out. A sweep rather than a
+ * job delayed 30 days: flush Redis and a delayed job strands its account
+ * in limbo forever, while a sweep re-reads the truth every hour.
  */
 @Processor(ACCOUNT_PURGE_QUEUE)
 export class AccountPurgeProcessor extends SentryReportingWorkerHost {
@@ -38,9 +34,9 @@ export class AccountPurgeProcessor extends SentryReportingWorkerHost {
       return;
     }
 
-    // An account is due when `now >= deletedAt + grace`, which is the
-    // same as `deletedAt <= now - grace`. The second form is the one we
-    // can query: it leaves `deletedAt` bare, so the index does the work.
+    // `deletedAt <= now - grace` rather than `now >= deletedAt +
+    // grace`: the same test, but it leaves the column bare for the
+    // index.
     const deletedBefore = purgeCutoff(new Date());
     const due = await this.authUserRepository.findPurgeable(deletedBefore);
 
@@ -54,9 +50,7 @@ export class AccountPurgeProcessor extends SentryReportingWorkerHost {
         await this.authUserRepository.purge(user.id);
         purged++;
       } catch (error) {
-        // One bad row must not abandon the rest of the batch, and the
-        // next sweep will retry it — so this is logged and stepped over
-        // rather than thrown.
+        // Stepped over rather than thrown: the next sweep retries it.
         this.logger.error(
           `Failed to purge account ${user.id}`,
           error instanceof Error ? error.stack : String(error),

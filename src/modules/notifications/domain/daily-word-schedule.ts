@@ -20,13 +20,9 @@ export type DueSlot = {
 };
 
 /**
- * Which (zone, slot) pairs fall inside the window opening at [tickAt].
- *
- * A window rather than an exact match: a sweep that starts at 7:30:02,
- * or waits in the queue, must still fire the 7:30 slot.
- *
- * Pure, so it is tested without a database — including across DST and
- * half-hour offsets.
+ * Which (zone, slot) pairs fall inside the window opening at [tickAt]. A
+ * window rather than an exact match: a sweep starting at 7:30:02, or
+ * queued, must still fire the 7:30 slot.
  */
 export function findDueSlots(
   tickAt: Date,
@@ -58,10 +54,7 @@ export function findDueSlots(
 
 type LocalTime = { date: string; hour: number; minute: number };
 
-/**
- * Returns null for a zone the runtime does not know: a device can send
- * any string, and one bad row must not abort the whole sweep.
- */
+/** Null for an unknown zone: one bad row must not abort the sweep. */
 function readLocalTime(instant: Date, timeZone: string): LocalTime | null {
   try {
     const local = new TZDate(instant, timeZone);

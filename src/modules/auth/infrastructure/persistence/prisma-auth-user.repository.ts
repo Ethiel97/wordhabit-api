@@ -26,10 +26,9 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
   }
 
   async changeEmail(userId: string, email: string): Promise<User> {
-    // `emailVerifiedAt` is left alone: the address that arrives here has
-    // just answered a code, so it is more proven than the one it
-    // replaces — clearing the flag would lock the user out of a
-    // verified account for having verified something.
+    // `emailVerifiedAt` is left alone: the incoming address just
+    // answered a code, so clearing the flag would lock the user out for
+    // having verified something.
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { email },
@@ -57,9 +56,8 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
   async restore(userId: string): Promise<User> {
     const restored = await this.prisma.user.update({
       where: { id: userId },
-      // The reason goes with the deletion it belonged to. Keeping it
-      // would make a restored account look like it is still on its way
-      // out, and the next deletion carries its own answer.
+      // Cleared with the deletion it belonged to, or a restored account
+      // still looks like it is on its way out.
       data: { deletedAt: null, deletionReason: null },
     });
 
@@ -68,13 +66,10 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
 
   async findPurgeable(deletedBefore: Date, limit = 100): Promise<User[]> {
     const purgeable = await this.prisma.user.findMany({
-      // The column is compared bare so the index on `deletedAt` is a
-      // range scan. Writing `deletedAt + 30 days < now()` instead would
-      // wrap the column in an expression and force a full table scan.
+      // Compared bare so the index is a range scan: `deletedAt + 30
+      // days < now()` wraps the column and forces a full scan.
       where: { deletedAt: { lt: deletedBefore } },
-      // Bounded on purpose: the sweep runs on a schedule, so a backlog
-      // drains over several passes instead of loading every due
-      // account into memory at once.
+      // Bounded: a backlog drains over several scheduled passes.
       orderBy: { deletedAt: 'asc' },
       take: limit,
     });
@@ -84,8 +79,7 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
 
   async purge(userId: string): Promise<void> {
     // One statement erases everything: every relation on `User` is
-    // declared `onDelete: Cascade`, from learning profiles down to
-    // review events and verification codes.
+    // declared `onDelete: Cascade`.
     await this.prisma.user.delete({ where: { id: userId } });
   }
 

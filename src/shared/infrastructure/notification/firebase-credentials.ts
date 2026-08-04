@@ -7,15 +7,12 @@ export type FirebaseServiceAccount = {
 };
 
 /**
- * The service account, from wherever this environment keeps it.
+ * The service account, from wherever this environment keeps it: a path
+ * locally, the JSON itself in a secret on Fly, which has no filesystem
+ * to put a file on.
  *
- * Two shapes on purpose. Locally it is a path, because that is what the
- * Firebase console hands you. In production it is the JSON itself in a
- * secret — Fly has no filesystem to put a file on, and the image must
- * not carry one.
- *
- * [inline] accepts raw JSON or base64: `fly secrets set` mangles
- * newlines, and a private key is nothing but newlines.
+ * [inline] accepts raw JSON or base64, because `fly secrets set` mangles
+ * the newlines a private key is made of.
  */
 export function readServiceAccount(params: {
   inline?: string;
@@ -35,12 +32,9 @@ export function readServiceAccount(params: {
 }
 
 /**
- * Refuses a service account that belongs to another project.
- *
- * The failure this prevents is silent: a production API left with the
- * development credentials pushes to a project where none of its users
- * have a device, and every send succeeds. Nothing is logged, nothing
- * retries, and no notification ever arrives.
+ * Refuses a service account belonging to another project. The failure is
+ * silent otherwise: production pushing with dev credentials reaches a
+ * project where nobody has a device, and every send succeeds.
  */
 export function assertProjectMatches(
   account: FirebaseServiceAccount,

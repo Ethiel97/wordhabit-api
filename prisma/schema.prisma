@@ -381,6 +381,15 @@ model UserWordReviewEvent {
   wordId  String
   correct Boolean
 
+  /// Mastery before and after this review.
+  ///
+  /// Stored rather than re-derived: the interval table is the only thing
+  /// that knows what a correct answer was worth on the day, and it will
+  /// change. A card that says "60 → 75%" has to be reading history, not
+  /// replaying today's rules against yesterday's answer.
+  masteryBefore Int @default(0)
+  masteryAfter  Int @default(0)
+
   /// The calendar day the user experienced, `yyyy-MM-dd`, supplied by the
   /// client that submitted the review.
   ///

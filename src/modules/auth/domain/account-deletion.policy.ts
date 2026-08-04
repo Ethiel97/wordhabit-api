@@ -1,9 +1,7 @@
 /**
- * How long a deleted account is recoverable before it is erased.
- *
- * One number, one place. The date the user is shown, the window in
- * which logging back in restores the account, and the cutoff the purge
- * job sweeps on are all derived from it — so they can never disagree.
+ * How long a deleted account is recoverable. The date shown to the user,
+ * the restore window and the purge cutoff all derive from it, so they
+ * cannot disagree.
  */
 export const ACCOUNT_PURGE_GRACE_DAYS = 30;
 
@@ -18,10 +16,8 @@ export function purgeAtFor(deletedAt: Date): Date {
 
 /**
  * Accounts deleted before this instant have served their grace period.
- *
- * The purge job sweeps on this rather than on a stored `purgeAt`: a
- * second timestamp in the table would drift the day the grace period
- * changes, and would need backfilling.
+ * Derived rather than stored: a `purgeAt` column would need backfilling
+ * the day the grace period changes.
  */
 export function purgeCutoff(now: Date): Date {
   return new Date(

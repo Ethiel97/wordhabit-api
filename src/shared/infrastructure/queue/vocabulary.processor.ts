@@ -15,15 +15,10 @@ import { SentryReportingWorkerHost } from './sentry-reporting-processor';
 import { VocabularyGenerationQuotaExceededError } from '../../../modules/vocabulary-ingestion/domain/errors/vocabulary-generation-quota-exceeded.error';
 
 /**
- * Runs the nightly vocabulary batch.
- *
- * Transport only: it turns a job into the command and reports the
- * outcome. Generation itself — themes, exclusion list, exploration
- * brief, quality gate, persistence — belongs to
- * `GenerateVocabularyBatchHandler`, so the scheduled path and the HTTP
- * path go through the same code. It used to be reimplemented here, which
- * meant the handler was dead code and every improvement landed in the
- * copy that nothing called.
+ * Runs the nightly vocabulary batch. Transport only: generation belongs
+ * to `GenerateVocabularyBatchHandler`, so the scheduled and HTTP paths
+ * share one implementation. It was reimplemented here once, which left
+ * the handler dead and every improvement in the copy nothing called.
  */
 @Processor(VOCABULARY_QUEUE)
 export class GenerateVocabularyBatchProcessor extends SentryReportingWorkerHost {
@@ -52,18 +47,16 @@ export class GenerateVocabularyBatchProcessor extends SentryReportingWorkerHost 
         ),
       );
     } catch (error) {
-      // The one failure that is certain to repeat: credit does not come
-      // back between two exponential backoffs. Retrying it three times
-      // buys nothing and raises three alerts for a single cause.
+      // Certain to repeat: credit does not come back between two
+      // backoffs, so retrying raises three alerts for one cause.
       if (error instanceof VocabularyGenerationQuotaExceededError) {
         throw new UnrecoverableError(error.message);
       }
       throw error;
     }
 
-    // The yield is the number to watch: once "already known" dominates,
-    // the exclusion list is no longer buying new ground and the batch is
-    // burning budget for nothing.
+    // The number to watch: once "already known" dominates, the batch is
+    // burning budget for no new ground.
     this.logger.log(
       `${targetLanguage}: ${result.createdCount} created, ` +
         `${result.skippedCount} already known, ${result.failedCount} rejected ` +

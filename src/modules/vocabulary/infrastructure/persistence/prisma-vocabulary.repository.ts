@@ -33,11 +33,8 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
     targetLanguage: LanguageCode;
     limit: number;
   }): Promise<string[]> {
-    // Raw SQL for the random draw: Prisma has no ORDER BY RANDOM(), and
-    // the alternatives are worse — counting then offsetting costs two
-    // round trips and skews as rows are added, while sampling in the
-    // application would pull the whole corpus into memory to throw most
-    // of it away.
+    // Raw SQL: Prisma has no ORDER BY RANDOM(). Counting then
+    // offsetting costs two round trips and skews as rows are added.
     const rows = await this.prisma.$queryRaw<{ normalizedTerm: string }[]>`
       SELECT "normalizedTerm"
       FROM "vocabulary_words"
@@ -50,11 +47,8 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
   }
 
   /**
-   * Catch-all buckets, excluded from the "generate more of this" list.
-   *
-   * They are pickable at onboarding, but steering a batch towards
-   * "general" or "other" asks for nothing in particular — and "general"
-   * is already the tag the model reaches for when it has no better idea.
+   * Catch-all buckets, excluded from the "generate more of this" list:
+   * steering a batch towards them asks for nothing in particular.
    */
   private static readonly CATCH_ALL_THEME_SLUGS = ['general', 'other'];
 
@@ -62,10 +56,9 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
     targetLanguage: LanguageCode;
     limit: number;
   }): Promise<string[]> {
-    // LEFT JOIN, so a theme with no word at all counts zero and comes
-    // first — which is exactly the theme that most needs a batch. The
-    // language filter sits in the join condition rather than in WHERE,
-    // or it would turn the outer join back into an inner one.
+    // LEFT JOIN so an empty theme counts zero and comes first. The
+    // language filter sits in the join condition: in WHERE it would turn
+    // the outer join back into an inner one.
     const rows = await this.prisma.$queryRaw<{ slug: string }[]>`
       SELECT t."slug", COUNT(w."id") AS word_count
       FROM "themes" t
@@ -346,7 +339,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
       pronunciations: created.pronunciations,
       synonyms: created.synonyms,
       word: created,
-      //TODO: map to PrismaTheme
+      // TODO(Ethiel97): map to PrismaTheme.
       // themes: created.themes,
     });
   }
@@ -393,7 +386,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
     };
   }
 
-  // TODO: Make this configurable
+  // TODO(Ethiel97): make this configurable.
   private getDefaultLanguage(): LanguageCode {
     return LanguageCode.EN;
   }

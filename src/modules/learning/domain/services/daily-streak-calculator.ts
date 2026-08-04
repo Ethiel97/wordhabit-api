@@ -20,13 +20,10 @@ type ComputeNextDailyStreakParams = {
 };
 
 /**
- * Advances a daily streak.
- *
- * Works on calendar days the client reported, never on instants. Deriving
- * the day from a timestamp used the server's timezone, which meant a review
- * at 9pm in a UTC-5 zone landed on the following day: two reviews in one
- * local evening looked like two consecutive days (inflating the streak),
- * and a genuine two-day run could collapse into one.
+ * Advances a daily streak on the calendar days the client reported,
+ * never on instants: derived from a timestamp in the server's timezone,
+ * a review at 9pm UTC-5 lands on the following day and inflates the
+ * streak.
  */
 export function computeNextDailyStreak({
   current,
@@ -45,7 +42,7 @@ export function computeNextDailyStreak({
     activityLocalDate,
   );
 
-  // Same day: already counted, nothing changes but the record of it.
+  // Same day: already counted.
   if (daysSince === 0) {
     return {
       currentStreak: current.currentStreak,
@@ -64,8 +61,7 @@ export function computeNextDailyStreak({
     };
   }
 
-  // A gap, or a clock that moved backwards: start again at one, and never
-  // lower the best ever.
+  // A gap, or a clock that moved backwards. The best ever never drops.
   return {
     currentStreak: 1,
     longestStreak: current.longestStreak,
