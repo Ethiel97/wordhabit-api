@@ -56,7 +56,6 @@ export function initializeSentry(serviceName: string): void {
 
   Sentry.init({
     dsn,
-    enableLogs: true,
     environment: resolveSentryEnvironment(),
     release: process.env.SENTRY_RELEASE,
     integrations: [nodeProfilingIntegration()],

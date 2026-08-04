@@ -16,14 +16,12 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import * as Sentry from '@sentry/nestjs';
-import { SentryExceptionCaptured } from '@sentry/nestjs';
 import { ApiErrorResponse } from './api-error-response';
 import { AppError } from '../../application/errors/app-error';
 import type { Request, Response } from 'express';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
-  @SentryExceptionCaptured()
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -87,7 +85,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    console.error(exception);
+    // Nothing recognised it, so nothing is known about it — the one
+    // case that is always worth reporting.
+    Sentry.captureException(exception);
 
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
       ApiErrorResponse.of({
