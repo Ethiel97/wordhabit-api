@@ -300,6 +300,16 @@ export interface LearningRepository {
    * Review counts per local day, sparse: the client generates its own
    * day list and fills the gaps.
    */
+  /**
+   * Correct reviews, optionally inside an inclusive local-day range.
+   * The only fact XP is derived from today.
+   */
+  countCorrectReviews(params: {
+    userId: string;
+    from?: string;
+    to?: string;
+  }): Promise<number>;
+
   findUserDailyActivity(
     params: FindUserDailyActivityParams,
   ): Promise<UserDailyActivity[]>;

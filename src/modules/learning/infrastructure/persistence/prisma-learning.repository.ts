@@ -276,6 +276,25 @@ export class PrismaLearningRepository implements LearningRepository {
     });
   }
 
+  async countCorrectReviews(params: {
+    userId: string;
+    from?: string;
+    to?: string;
+  }): Promise<number> {
+    // A count, not a groupBy: the total is all XP needs, and the
+    // (userId, localDate) index answers both the lifetime and the window
+    // form of this query.
+    return this.prisma.userWordReviewEvent.count({
+      where: {
+        userId: params.userId,
+        correct: true,
+        ...(params.from || params.to
+          ? { localDate: { gte: params.from, lte: params.to } }
+          : {}),
+      },
+    });
+  }
+
   async findUserDailyActivity(
     params: FindUserDailyActivityParams,
   ): Promise<UserDailyActivity[]> {

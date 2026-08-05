@@ -9,6 +9,7 @@ export const LEARNING = {
   DASHBOARD: 'dashboard',
   ACTIVITY: 'activity',
   ACTIVITY_DETAIL: 'activity/detail',
+  LEARNER_XP: 'learner/xp',
   LIBRARY: 'library',
   FAVORITE_WORDS: 'favorite-words',
   FAVORITE_WORD: 'favorite-words/:wordId',

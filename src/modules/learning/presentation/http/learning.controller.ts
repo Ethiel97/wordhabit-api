@@ -41,6 +41,11 @@ import {
   GetUserActivityResult,
 } from '../../application/queries/get-user-activity.query';
 import { GetUserActivityRequestDto } from '../../application/dtos/get-user-activity-request.dto';
+import { GetLearnerXpRequestDto } from '../../application/dtos/get-learner-xp-request.dto';
+import {
+  GetLearnerXpQuery,
+  GetLearnerXpResult,
+} from '../../application/queries/get-learner-xp.query';
 import {
   GetUserActivityDetailQuery,
   GetUserActivityDetailResult,
@@ -223,6 +228,18 @@ export class LearningController {
   ) {
     const result: GetUserActivityResult = await this.queryBus.execute(
       new GetUserActivityQuery(user.id, request.to, request.days),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Get(LEARNING.LEARNER_XP)
+  async getLearnerXp(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() request: GetLearnerXpRequestDto,
+  ) {
+    const result: GetLearnerXpResult = await this.queryBus.execute(
+      new GetLearnerXpQuery(user.id, request.to),
     );
 
     return ApiSuccessResponse.of(result);
