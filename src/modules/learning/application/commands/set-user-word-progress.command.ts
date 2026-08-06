@@ -3,6 +3,7 @@ import {
   UserWordProgressMasteryLevel,
   UserWordProgressStatus,
 } from '../../domain/entities/user-word-progress';
+import { BadgeCode } from '../../domain/entities/badge';
 
 export class SetUserWordProgressCommand extends Command<SetUserWordProgressStatusResult> {
   constructor(
@@ -27,4 +28,6 @@ export type SetUserWordProgressStatusResult = {
   masteryLevel: UserWordProgressMasteryLevel;
   nextReviewOn: string | null;
   updatedAt: Date;
+  /** Badges this discovery just won. See `SubmitWordReviewResult`. */
+  newBadges: BadgeCode[];
 };

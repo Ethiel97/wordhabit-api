@@ -90,7 +90,7 @@ export class SetUserWordProgressHandler implements ICommandHandler<
 
     // A discovery grows the library and may reach into a new theme, so
     // it can unlock a collector badge even when no streak moved.
-    await this.badgeAwarder.awardQuietly(userId);
+    const newBadges = await this.badgeAwarder.awardQuietly(userId);
 
     return {
       userId: updatedProgress.userId,
@@ -99,6 +99,7 @@ export class SetUserWordProgressHandler implements ICommandHandler<
       masteryLevel: updatedProgress.masteryLevel,
       nextReviewOn: updatedProgress.nextReviewOn,
       updatedAt: updatedProgress.updatedAt,
+      newBadges,
     };
   }
 }

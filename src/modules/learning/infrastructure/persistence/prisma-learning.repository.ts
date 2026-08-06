@@ -307,7 +307,8 @@ export class PrismaLearningRepository implements LearningRepository {
           SELECT COUNT(DISTINCT vwt."themeId")::bigint AS count
           FROM user_word_progress uwp
           JOIN vocabulary_word_themes vwt ON vwt."wordId" = uwp."wordId"
-          WHERE uwp."userId" = ${userId}
+          JOIN vocabulary_words vw ON vw.id = vwt."wordId"
+          WHERE uwp."userId" = ${userId} AND uwp.status NOT IN ('SKIPPED', 'NEW')
         `,
       ]);
 

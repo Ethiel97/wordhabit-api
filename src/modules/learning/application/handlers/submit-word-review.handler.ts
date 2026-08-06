@@ -80,7 +80,7 @@ export class SubmitWordReviewHandler implements ICommandHandler<
 
     // Last, and never able to fail the review: the streak and the
     // mastery it just moved are two of the figures badges are won on.
-    await this.badgeAwarder.awardQuietly(command.userId);
+    const newBadges = await this.badgeAwarder.awardQuietly(command.userId);
 
     return {
       userId: updated.userId,
@@ -91,6 +91,7 @@ export class SubmitWordReviewHandler implements ICommandHandler<
       lastReviewedAt: updated.lastReviewedAt!,
       nextReviewOn: updated.nextReviewOn,
       updatedAt: updated.updatedAt,
+      newBadges,
     };
   }
 }
