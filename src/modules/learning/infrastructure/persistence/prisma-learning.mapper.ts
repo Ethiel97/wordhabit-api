@@ -1,7 +1,17 @@
 import type { UserWordProgressStatus as PrismaUserWordProgressStatus } from 'generated/prisma/enums';
 import { UserWordProgressStatus } from '../../domain/entities/user-word-progress';
+import { BadgeCode as PrismaBadgeCode } from '../../../../../generated/prisma/enums';
+import { BadgeCode } from '../../domain/entities/badge';
 
 export class PrismaLearningMapper {
+  static toDomainBadgeCode(value: PrismaBadgeCode): BadgeCode {
+    return BadgeCode[value];
+  }
+
+  static toPrismaBadgeCode(value: BadgeCode): PrismaBadgeCode {
+    return PrismaBadgeCode[value];
+  }
+
   static toDomainUserWordProgressStatus(
     value: PrismaUserWordProgressStatus,
   ): UserWordProgressStatus {

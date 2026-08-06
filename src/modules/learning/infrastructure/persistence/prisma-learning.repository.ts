@@ -37,6 +37,12 @@ import { PrismaLearningMapper } from './prisma-learning.mapper';
 import { UserLearningStreak } from '../../domain/entities/user-learning-streak';
 import { FavoriteWord } from '../../domain/entities/favorite-word';
 import { instantToLocalDate } from '../../domain/services/local-date';
+import { BadgeCode } from '../../domain/entities/badge';
+import {
+  BadgeSnapshot,
+  FLUENT_MASTERY_LEVEL,
+} from '../../domain/services/badge-catalog';
+import { EarnedBadge } from '../../domain/repositories/learning.repository';
 
 @Injectable()
 export class PrismaLearningRepository implements LearningRepository {
@@ -195,7 +201,9 @@ export class PrismaLearningRepository implements LearningRepository {
         wordId: item.wordId,
         term: item.word.term,
         normalizedTerm: item.word.normalizedTerm,
-        targetLanguage: item.word.targetLanguage,
+        targetLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
+          item.word.targetLanguage,
+        ),
         status: PrismaLearningMapper.toDomainUserWordProgressStatus(
           item.status,
         ),
@@ -207,7 +215,9 @@ export class PrismaLearningRepository implements LearningRepository {
         definitions: item.word.definitions.map((definition) => ({
           id: definition.id,
           text: definition.text,
-          explanationLanguage: definition.explanationLanguage,
+          explanationLanguage: PrismaVocabularyMapper.toDomainLanguageCode(
+            definition.explanationLanguage,
+          ),
         })),
         pronunciations: item.word.pronunciations.map((pronunciation) => ({
           id: pronunciation.id,
@@ -274,6 +284,76 @@ export class PrismaLearningRepository implements LearningRepository {
         masteryAfter: params.masteryAfter,
       },
     });
+  }
+
+  async findBadgeSnapshot(userId: string): Promise<BadgeSnapshot> {
+    // Four independent reads, so they go together. Themes needs a
+    // distinct over a join and has no aggregate form in Prisma, hence
+    // the raw query.
+    const [streak, wordsCollected, wordsNearMastery, themes] =
+      await Promise.all([
+        this.prisma.userLearningStreak.findFirst({
+          where: { userId },
+          select: { longestStreak: true },
+        }),
+        // Every row, matching the count the library header shows: a
+        // badge that disagrees with the number on screen is worse than
+        // one that counts a skipped word.
+        this.prisma.userWordProgress.count({ where: { userId } }),
+        this.prisma.userWordProgress.count({
+          where: { userId, masteryLevel: { gte: FLUENT_MASTERY_LEVEL } },
+        }),
+        this.prisma.$queryRaw<{ count: bigint }[]>`
+          SELECT COUNT(DISTINCT vwt."themeId")::bigint AS count
+          FROM user_word_progress uwp
+          JOIN vocabulary_word_themes vwt ON vwt."wordId" = uwp."wordId"
+          WHERE uwp."userId" = ${userId}
+        `,
+      ]);
+
+    return {
+      longestStreak: streak?.longestStreak ?? 0,
+      wordsCollected,
+      wordsNearMastery,
+      themesExplored: Number(themes[0]?.count ?? 0),
+    };
+  }
+
+  async awardBadges(params: {
+    userId: string;
+    codes: BadgeCode[];
+  }): Promise<BadgeCode[]> {
+    if (params.codes.length === 0) return [];
+
+    // `createManyAndReturn` with `skipDuplicates` reports the rows this
+    // call actually inserted, which is the whole point: the caller fires
+    // a notification per badge, and a count would leave two racing
+    // writers both claiming the same one.
+    const inserted = await this.prisma.userBadge.createManyAndReturn({
+      data: params.codes.map((code) => ({
+        userId: params.userId,
+        code: PrismaLearningMapper.toPrismaBadgeCode(code),
+      })),
+      skipDuplicates: true,
+      select: { code: true },
+    });
+
+    return inserted.map((badge) =>
+      PrismaLearningMapper.toDomainBadgeCode(badge.code),
+    );
+  }
+
+  async findUserBadges(userId: string): Promise<EarnedBadge[]> {
+    const rows = await this.prisma.userBadge.findMany({
+      where: { userId },
+      select: { code: true, earnedAt: true },
+      orderBy: { earnedAt: 'desc' },
+    });
+
+    return rows.map((row) => ({
+      code: PrismaLearningMapper.toDomainBadgeCode(row.code),
+      earnedAt: row.earnedAt,
+    }));
   }
 
   async countCorrectReviews(params: {

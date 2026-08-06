@@ -8,6 +8,7 @@ import type { LearningRepository } from '../../domain/repositories/learning.repo
 import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
 import { computeWordReviewState } from '../../domain/services/user-word-review-scheduler';
 import { computeNextDailyStreak } from '../../domain/services/daily-streak-calculator';
+import { BadgeAwarderService } from '../services/badge-awarder.service';
 
 @CommandHandler(SubmitWordReviewCommand)
 export class SubmitWordReviewHandler implements ICommandHandler<
@@ -17,6 +18,7 @@ export class SubmitWordReviewHandler implements ICommandHandler<
   constructor(
     @Inject(LEARNING_REPOSITORY)
     private readonly learningRepository: LearningRepository,
+    private readonly badgeAwarder: BadgeAwarderService,
   ) {}
 
   async execute(
@@ -75,6 +77,10 @@ export class SubmitWordReviewHandler implements ICommandHandler<
       longestStreak: nextLearningStreak.longestStreak,
       lastActivityLocalDate: nextLearningStreak.lastActivityLocalDate,
     });
+
+    // Last, and never able to fail the review: the streak and the
+    // mastery it just moved are two of the figures badges are won on.
+    await this.badgeAwarder.awardQuietly(command.userId);
 
     return {
       userId: updated.userId,

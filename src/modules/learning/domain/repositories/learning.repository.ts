@@ -6,10 +6,8 @@ import {
   UserWordProgressMasteryLevel,
   UserWordProgressStatus,
 } from '../entities/user-word-progress';
-import {
-  LanguageCode,
-  WordDifficulty,
-} from '../../../../../generated/prisma/enums';
+import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
+import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 import { UserLearningStreak } from '../entities/user-learning-streak';
 import { FavoriteWord } from '../entities/favorite-word';
 import { WordDefinition } from '../../../vocabulary/domain/entities/word-definition';
@@ -17,6 +15,8 @@ import { WordExample } from '../../../vocabulary/domain/entities/word-example';
 import { WordPronunciation } from '../../../vocabulary/domain/entities/word-pronounciation';
 import { WordSynonym } from '../../../vocabulary/domain/entities/word-synonym';
 import { PartOfSpeech } from '../../../vocabulary/domain/entities/part-of-speech';
+import { BadgeCode } from '../entities/badge';
+import { BadgeSnapshot } from '../services/badge-catalog';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 
@@ -248,6 +248,12 @@ export type UserWordLibraryResult = {
   summary: UserWordLibrarySummary;
 };
 
+/** A badge a user holds, and the day they won it. */
+export type EarnedBadge = {
+  code: BadgeCode;
+  earnedAt: Date;
+};
+
 export interface LearningRepository {
   findTodayAssignment(
     params: FindTodayAssignmentParams,
@@ -297,10 +303,6 @@ export interface LearningRepository {
   }): Promise<LastWordReview | null>;
 
   /**
-   * Review counts per local day, sparse: the client generates its own
-   * day list and fills the gaps.
-   */
-  /**
    * Correct reviews, optionally inside an inclusive local-day range.
    * The only fact XP is derived from today.
    */
@@ -310,6 +312,28 @@ export interface LearningRepository {
     to?: string;
   }): Promise<number>;
 
+  /** Every figure the badge rules are measured against, in one read. */
+  findBadgeSnapshot(userId: string): Promise<BadgeSnapshot>;
+
+  /**
+   * Records the codes the user does not already hold, and returns those
+   * it actually added.
+   *
+   * The caller passes everything currently earned rather than a diff:
+   * the unique index decides what is new, so a race between two writes
+   * cannot award the same badge twice.
+   */
+  awardBadges(params: {
+    userId: string;
+    codes: BadgeCode[];
+  }): Promise<BadgeCode[]>;
+
+  findUserBadges(userId: string): Promise<EarnedBadge[]>;
+
+  /**
+   * Review counts per local day, sparse: the client generates its own
+   * day list and fills the gaps.
+   */
   findUserDailyActivity(
     params: FindUserDailyActivityParams,
   ): Promise<UserDailyActivity[]>;

@@ -213,6 +213,7 @@ model User {
   notificationDeliveries  NotificationDelivery[]
   refreshTokens           RefreshToken[]
   emailChangeRequests     EmailChangeRequest[]
+  badges                  UserBadge[]
 
   @@index([deletedAt])
   @@index([email])
@@ -451,6 +452,49 @@ model FavoriteWord {
   @@unique([userId, wordId])
   @@index([wordId])
   @@map("favorite_words")
+}
+
+/// Every badge the app can award.
+///
+/// A closed enum rather than free text: the app draws each badge with
+/// its own shape, colour and copy, so a code it does not know is a blank
+/// tile. Adding one is a migration on purpose.
+enum BadgeCode {
+  STREAK_30
+  STREAK_50
+  STREAK_150
+  STREAK_200
+  HABIT_MASTER
+  COLLECTOR_50
+  COLLECTOR_100
+  COLLECTOR_150
+  COLLECTOR_200
+  WORD_EXPLORER
+  FLUENT_LEARNER
+  BILINGUAL_PRO
+  QUIZ_CHAMPION
+}
+
+/// One badge a user has earned, and when.
+///
+/// Stored rather than derived, unlike XP. A badge is an event, not a
+/// sum: it has to survive the condition that produced it — a 150-day
+/// badge outlives the streak that broke — and the date it was won is
+/// not recoverable from today's data.
+model UserBadge {
+  id       String    @id @default(cuid())
+  userId   String
+  code     BadgeCode
+  earnedAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Awarding is idempotent: the evaluator runs after every write that
+  /// could unlock something, and leans on this to stay a no-op.
+  @@unique([userId, code])
+  /// The badges screen reads one user's, newest first.
+  @@index([userId, earnedAt])
+  @@map("user_badges")
 }
 
 enum NotificationChannel {

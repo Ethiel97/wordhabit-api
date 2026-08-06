@@ -10,6 +10,7 @@ import { computeNextUserWordProgressState } from '../../domain/services/user-wor
 import { computeNextDailyStreak } from '../../domain/services/daily-streak-calculator';
 import { UserWordProgressStatus } from '../../domain/entities/user-word-progress';
 import { localDateToInstant } from '../../domain/services/local-date';
+import { BadgeAwarderService } from '../services/badge-awarder.service';
 
 @CommandHandler(SetUserWordProgressCommand)
 export class SetUserWordProgressHandler implements ICommandHandler<
@@ -21,6 +22,7 @@ export class SetUserWordProgressHandler implements ICommandHandler<
   constructor(
     @Inject(LEARNING_REPOSITORY)
     private readonly learningRepository: LearningRepository,
+    private readonly badgeAwarder: BadgeAwarderService,
   ) {}
 
   async execute(
@@ -85,6 +87,10 @@ export class SetUserWordProgressHandler implements ICommandHandler<
         lastActivityLocalDate: nextStreak.lastActivityLocalDate,
       });
     }
+
+    // A discovery grows the library and may reach into a new theme, so
+    // it can unlock a collector badge even when no streak moved.
+    await this.badgeAwarder.awardQuietly(userId);
 
     return {
       userId: updatedProgress.userId,

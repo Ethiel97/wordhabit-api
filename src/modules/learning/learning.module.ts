@@ -16,6 +16,8 @@ import { GetLearningDashboardHandler } from './application/handlers/get-learning
 import { GetUserWordLibraryHandler } from './application/handlers/get-user-word-library.handler';
 import { GetUserActivityHandler } from './application/handlers/get-user-activity.handler';
 import { GetLearnerXpHandler } from './application/handlers/get-learner-xp.handler';
+import { GetUserBadgesHandler } from './application/handlers/get-user-badges.handler';
+import { BadgeAwarderService } from './application/services/badge-awarder.service';
 import { GetUserActivityDetailHandler } from './application/handlers/get-user-activity-detail.handler';
 import { GetUserFavoriteWordsHandler } from './application/handlers/get-user-favorite-words.handler';
 import { AddUserFavoriteWordHandler } from './application/handlers/add-user-favorite-word.handler';
@@ -38,11 +40,12 @@ const queryHandlers = [
   GetUserWordLibraryHandler,
   GetUserActivityHandler,
   GetLearnerXpHandler,
+  GetUserBadgesHandler,
   GetUserActivityDetailHandler,
   GetUserFavoriteWordsHandler,
 ];
 
-const services = [TodayWordService];
+const services = [TodayWordService, BadgeAwarderService];
 
 @Module({
   imports: [VocabularyModule, UserLearningModule, CqrsModule],

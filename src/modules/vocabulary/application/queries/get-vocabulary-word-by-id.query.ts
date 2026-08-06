@@ -1,9 +1,9 @@
 import { WordDifficulty } from '../../domain/entities/word-difficulty';
 import { PartOfSpeech } from '../../domain/entities/part-of-speech';
-import { VocabularyWordStatus } from '../../../../../generated/prisma/enums';
+import { VocabularyWordStatus } from '../../domain/entities/vocabulary-word-status';
 import { WordDefinition } from '../../domain/entities/word-definition';
 import { WordExample } from '../../domain/entities/word-example';
-import { WordPronunciation } from '../../../../../generated/prisma/client';
+import { WordPronunciation } from '../../domain/entities/word-pronounciation';
 import { WordSynonym } from '../../domain/entities/word-synonym';
 import { Query } from '@nestjs/cqrs';
 

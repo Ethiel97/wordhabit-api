@@ -62,6 +62,10 @@ import type { AuthenticatedUser } from '../../../auth/domain/entities/authentica
 import { Public } from '../../../auth/presentation/public.decorator';
 import { GetRandomWordDto } from '../../application/dtos/get-random-word.dto';
 import { LocalDateQueryDto } from '../../application/dtos/local-date.query.dto';
+import {
+  GetUserBadgesQuery,
+  GetUserBadgesResult,
+} from '../../application/queries/get-user-badges.query';
 
 @Controller(LEARNING.BASE)
 export class LearningController {
@@ -273,6 +277,15 @@ export class LearningController {
   ) {
     const result = await this.commandBus.execute(
       new RemoveUserFavoriteWordCommand(user.id, wordId),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Get(LEARNING.BADGES)
+  async getUserBadges(@CurrentUser() user: AuthenticatedUser) {
+    const result: GetUserBadgesResult = await this.queryBus.execute(
+      new GetUserBadgesQuery(user.id),
     );
 
     return ApiSuccessResponse.of(result);

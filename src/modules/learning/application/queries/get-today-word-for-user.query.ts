@@ -1,5 +1,5 @@
 import { Query } from '@nestjs/cqrs';
-import { VocabularyWord } from '../../../../../generated/prisma/client';
+import { VocabularyWord } from '../../../vocabulary/domain/entities/vocabulary-word';
 
 export class GetTodayWordForUserQuery extends Query<GetTodayWordForUserResult> {
   constructor(

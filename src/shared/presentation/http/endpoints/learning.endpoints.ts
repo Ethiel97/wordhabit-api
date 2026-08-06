@@ -13,4 +13,5 @@ export const LEARNING = {
   LIBRARY: 'library',
   FAVORITE_WORDS: 'favorite-words',
   FAVORITE_WORD: 'favorite-words/:wordId',
+  BADGES: 'user/badges',
 } as const;

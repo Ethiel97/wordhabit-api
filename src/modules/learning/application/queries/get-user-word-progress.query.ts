@@ -1,6 +1,8 @@
 import { Query } from '@nestjs/cqrs';
-import { UserWordProgressStatus } from '../../../../../generated/prisma/enums';
-import { UserWordProgressMasteryLevel } from '../../domain/entities/user-word-progress';
+import {
+  UserWordProgressMasteryLevel,
+  UserWordProgressStatus,
+} from '../../domain/entities/user-word-progress';
 
 export class GetUserWordProgressQuery extends Query<GetUserWordProgressStatusResult> {
   constructor(

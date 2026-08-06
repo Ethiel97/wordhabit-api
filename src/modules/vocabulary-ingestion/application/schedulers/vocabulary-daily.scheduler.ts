@@ -6,7 +6,7 @@ import {
 } from '../../infrastructure/queue/vocabulary-queue.constants';
 import { Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { LanguageCode } from '../../../../../generated/prisma/enums';
+import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 
 /**
  * Words generated per language, per night.
