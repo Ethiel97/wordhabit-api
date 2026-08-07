@@ -1,6 +1,7 @@
 export const AUTH = {
   BASE: 'auth',
   LOGIN: 'login',
+  SOCIAL: 'social',
   REGISTER: 'register',
   REFRESH_TOKEN: 'refresh-token',
   LOGOUT: 'logout',

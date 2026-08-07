@@ -214,6 +214,7 @@ model User {
   refreshTokens           RefreshToken[]
   emailChangeRequests     EmailChangeRequest[]
   badges                  UserBadge[]
+  identities              UserIdentity[]
 
   @@index([deletedAt])
   @@index([email])
@@ -558,4 +559,29 @@ model NotificationDelivery {
 
   @@unique([userId, channel, localDate])
   @@map("notification_deliveries")
+}
+
+/// One sign-in method belonging to an account.
+///
+/// A row per provider rather than columns on User: an account may carry
+/// Apple, Google and a password at once, and a third provider costs a
+/// row instead of a migration.
+model UserIdentity {
+  id             String       @id @default(cuid())
+  userId         String
+  provider       AuthProvider
+  /// The provider's own subject id. Stable for the life of the account,
+  /// and the only thing that survives a user changing their email.
+  providerUserId String
+  createdAt      DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+}
+
+enum AuthProvider {
+  APPLE
+  GOOGLE
 }

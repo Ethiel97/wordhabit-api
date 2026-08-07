@@ -1,6 +1,7 @@
 import {
   AuthUserRepository,
   CreateAuthUserParams,
+  LinkIdentityParams,
   UpdateAuthUserParams,
 } from '../../domain/repositories/auth-user.repository';
 import { Injectable, Logger } from '@nestjs/common';
@@ -8,6 +9,8 @@ import { PrismaService } from '../../../../shared/infrastructure/database/prisma
 import { User } from '../../../user-learning/domain/entities/user';
 import { PrismaUserMapper } from './prisma-user.mapper';
 import { AccountDeletionReason } from '../../domain/entities/account-deletion-reason';
+import { AuthProvider } from '../../domain/entities/auth-provider';
+import type { AuthProvider as PrismaAuthProvider } from 'generated/prisma/enums';
 
 @Injectable()
 export class PrismaAuthUserRepository implements AuthUserRepository {
@@ -117,6 +120,38 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
       },
     });
     return PrismaUserMapper.toDomain(user);
+  }
+
+  async findByIdentity(
+    provider: AuthProvider,
+    providerUserId: string,
+  ): Promise<User | null> {
+    const identity = await this.prisma.userIdentity.findUnique({
+      where: {
+        provider_providerUserId: {
+          provider: provider as PrismaAuthProvider,
+          providerUserId,
+        },
+      },
+      include: { user: true },
+    });
+
+    return identity ? PrismaUserMapper.toDomain(identity.user) : null;
+  }
+
+  async linkIdentity(params: LinkIdentityParams): Promise<void> {
+    // Signing in from a second device replays the same pair, so the
+    // insert has to be a no-op rather than a unique-constraint failure.
+    await this.prisma.userIdentity.createMany({
+      data: [
+        {
+          userId: params.userId,
+          provider: params.provider as PrismaAuthProvider,
+          providerUserId: params.providerUserId,
+        },
+      ],
+      skipDuplicates: true,
+    });
   }
 
   async update(userId: string, params: UpdateAuthUserParams): Promise<User> {

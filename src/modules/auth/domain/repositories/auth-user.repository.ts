@@ -1,12 +1,20 @@
 import { User } from '../../../user-learning/domain/entities/user';
 import { AccountDeletionReason } from '../entities/account-deletion-reason';
+import { AuthProvider } from '../entities/auth-provider';
 
 export const AUTH_USER_REPOSITORY = Symbol('AUTH_USER_REPOSITORY');
 
 export interface CreateAuthUserParams {
   email: string;
   name: string;
-  password: string;
+  /** Absent for accounts born from a provider: they never have one. */
+  password?: string;
+}
+
+export interface LinkIdentityParams {
+  userId: string;
+  provider: AuthProvider;
+  providerUserId: string;
 }
 
 export interface UpdateAuthUserParams {
@@ -17,6 +25,23 @@ export interface AuthUserRepository {
   findByEmail(email: string): Promise<User | null>;
 
   findById(userId: string): Promise<User | null>;
+
+  /**
+   * The account a provider's subject id belongs to, if we have seen it.
+   *
+   * Keyed on the id rather than the email: the id is what survives a
+   * user changing their address at the provider.
+   */
+  findByIdentity(
+    provider: AuthProvider,
+    providerUserId: string,
+  ): Promise<User | null>;
+
+  /**
+   * Attaches a provider to an account. Idempotent — signing in twice
+   * from the same device must not fail on the unique index.
+   */
+  linkIdentity(params: LinkIdentityParams): Promise<void>;
 
   create(params: CreateAuthUserParams): Promise<User>;
 

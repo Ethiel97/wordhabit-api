@@ -14,6 +14,8 @@ import { RegisterUserCommand } from '../../application/commands/register-user.co
 import { AUTH } from '../endpoints/auth.endpoints';
 import { LoginUserRequestDto } from '../../application/dto/login-user-request.dto';
 import { LoginUserCommand } from '../../application/commands/login-user.command';
+import { AuthenticateWithProviderCommand } from '../../application/commands/authenticate-with-provider.command';
+import { AuthenticateWithProviderRequestDto } from '../../application/dto/authenticate-with-provider-request.dto';
 import { VerifyEmailRequestDto } from '../../application/dto/verify-email-request.dto';
 import { VerifyEmailCommand } from '../../application/commands/verify-email.command';
 import { ResendVerificationEmailCommand } from '../../application/commands/resend-verification-email.command';
@@ -95,6 +97,20 @@ export class AuthController {
   async login(@Body() body: LoginUserRequestDto) {
     return this.commandBus.execute(
       new LoginUserCommand(body.email, body.password),
+    );
+  }
+
+  // One endpoint for both providers, and one for signing up as well as
+  // signing in: from the provider's answer we cannot tell them apart,
+  // and the client should not have to either.
+  @Post(AUTH.SOCIAL)
+  @Public()
+  @HttpCode(200)
+  async authenticateWithProvider(
+    @Body() body: AuthenticateWithProviderRequestDto,
+  ) {
+    return this.commandBus.execute(
+      new AuthenticateWithProviderCommand(body.provider, body.idToken, body.name),
     );
   }
 

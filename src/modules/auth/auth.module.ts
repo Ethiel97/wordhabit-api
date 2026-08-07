@@ -37,6 +37,9 @@ import { REFRESH_TOKEN_SERVICE } from './domain/services/refresh-token-service';
 import { Sha256RefreshTokenService } from './infrastructure/crypto/sha256-refresh-token.service';
 import { REFRESH_TOKEN_REPOSITORY } from './domain/repositories/refresh-token.repository';
 import { PrismaRefreshTokenRepository } from './infrastructure/persistence/prisma-refresh-token.repository';
+import { AuthenticateWithProviderHandler } from './application/handlers/authenticate-with-provider.handler';
+import { SOCIAL_IDENTITY_VERIFIER } from './domain/services/social-identity-verifier';
+import { JwksSocialIdentityVerifier } from './infrastructure/social/jwks-social-identity.verifier';
 
 const commandHandlers = [
   DeleteAccountHandler,
@@ -44,6 +47,7 @@ const commandHandlers = [
   UpdatePasswordHandler,
   RegisterUserHandler,
   LoginUserHandler,
+  AuthenticateWithProviderHandler,
   RefreshSessionHandler,
   LogoutHandler,
   RequestEmailChangeHandler,
@@ -82,6 +86,10 @@ const eventHandlers = [SendWelcomeEmailOnEmailVerifiedHandler];
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: SOCIAL_IDENTITY_VERIFIER,
+      useClass: JwksSocialIdentityVerifier,
     },
     {
       provide: EMAIL_CHANGE_REQUEST_REPOSITORY,
