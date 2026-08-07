@@ -18,7 +18,21 @@ export interface CreateVocabularyWordInput {
   examples: CreateVocabularyWordExampleInput[];
   pronunciations: CreateVocabularyWordPronunciationInput[];
   synonyms: CreateVocabularyWordSynonymInput[];
+  antonyms: CreateVocabularyWordAntonymInput[];
+  quizScenarios: CreateVocabularyWordQuizScenarioInput[];
   themeSlugs: string[];
+}
+
+export interface CreateVocabularyWordAntonymInput {
+  value: string;
+}
+
+export interface CreateVocabularyWordQuizScenarioInput {
+  language: LanguageCode;
+  situation: string;
+  question: string;
+  correct: string;
+  distractors: string[];
 }
 
 export interface CreateVocabularyWordDefinitionInput {

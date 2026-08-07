@@ -162,6 +162,8 @@ export class GenerateVocabularyBatchHandler implements ICommandHandler<
               examples: item.examples ?? [],
               pronunciations: item.pronunciations ?? [],
               synonyms: item.synonyms ?? [],
+              antonyms: item.antonyms ?? [],
+              quizScenarios: item.quizScenarios ?? [],
               themeSlugs: item.themeSlugs ?? [],
             }),
           );

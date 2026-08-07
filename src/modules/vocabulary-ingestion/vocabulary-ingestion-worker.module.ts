@@ -8,6 +8,7 @@ import { Module } from '@nestjs/common';
 import { VocabularyModule } from '../vocabulary/vocabulary.module';
 import { CqrsModule } from '@nestjs/cqrs';
 import { GenerateVocabularyBatchHandler } from './application/handlers/generate-vocabulary-batch.handler';
+import { BackfillQuizMaterialHandler } from './application/handlers/backfill-quiz-material.handler';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { GenerateVocabularyBatchHandler } from './application/handlers/generate-
     // The processor only enqueues the command; without the handler
     // registered here the nightly job would find no handler for it.
     GenerateVocabularyBatchHandler,
+    BackfillQuizMaterialHandler,
     GenerateVocabularyBatchProcessor,
     VocabularyDailyScheduler,
     OpenAiVocabularyGenerationProvider,

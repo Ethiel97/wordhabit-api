@@ -95,11 +95,14 @@ model VocabularyWord {
   examples             WordExample[]
   pronunciations       WordPronunciation[]
   synonyms             WordSynonym[]
+  antonyms             WordAntonym[]
+  quizScenarios        WordQuizScenario[]
   themes               VocabularyWordTheme[]
   dailyWordAssignments DailyWordAssignment[]
   userWordProgresses   UserWordProgress[]
   userWordReviewEvents UserWordReviewEvent[]
   favoriteWords        FavoriteWord[]
+  quizResults          QuizResult[]
 
   @@unique([normalizedTerm, targetLanguage])
   @@index([targetLanguage, difficulty])
@@ -162,6 +165,50 @@ model WordSynonym {
   @@map("word_synonyms")
 }
 
+/// Mirrors WordSynonym: the speed round asks for an opposite, and a
+/// distractor drawn from the corpus beats one invented at question time.
+model WordAntonym {
+  id        String   @id @default(cuid())
+  wordId    String
+  value     String
+  createdAt DateTime @default(now())
+
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@index([wordId])
+  @@map("word_antonyms")
+}
+
+/// One Real-World Situations question, written at ingestion.
+///
+/// The only quiz mode that cannot be built from a query: its wrong
+/// answers are plausible *misuses of the word itself* — "I need to
+/// serendipity this room" — not other words' definitions. That is what
+/// the mode teaches, and what makes it worth generating ahead of time
+/// rather than paying for on every session.
+model WordQuizScenario {
+  id          String       @id @default(cuid())
+  wordId      String
+  /// The language the scenario is written in. Like WordDefinition, a
+  /// French learner must not be handed English situations.
+  language    LanguageCode
+  /// The everyday moment the question is set in.
+  situation   String
+  question    String
+  /// Stored apart from the distractors rather than by index: an index
+  /// survives a reordering and quietly starts pointing at a wrong
+  /// answer.
+  correct     String
+  /// Wrong answers, ordered as written. The client shuffles.
+  distractors String[]
+  createdAt   DateTime     @default(now())
+
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@index([wordId, language])
+  @@map("word_quiz_scenarios")
+}
+
 model Theme {
   id          String   @id @default(cuid())
   name        String   @unique
@@ -215,6 +262,7 @@ model User {
   emailChangeRequests     EmailChangeRequest[]
   badges                  UserBadge[]
   identities              UserIdentity[]
+  quizResults             QuizResult[]
 
   @@index([deletedAt])
   @@index([email])
@@ -579,6 +627,38 @@ model UserIdentity {
 
   @@unique([provider, providerUserId])
   @@index([userId])
+}
+
+/// One finished quiz round.
+///
+/// The durable record XP and QUIZ_CHAMPION derive from — the same
+/// pattern as UserWordReviewEvent for recalls. "Perfect" is computed
+/// (correctCount = questionCount), never stored: a flag could disagree
+/// with the counts it summarises.
+model QuizResult {
+  id            String   @id @default(cuid())
+  userId        String
+  wordId        String
+  mode          QuizMode
+  correctCount  Int
+  questionCount Int
+  /// The calendar day the user experienced, `yyyy-MM-dd`, supplied by
+  /// the client — the same convention as review events.
+  localDate     String
+  createdAt     DateTime @default(now())
+
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  word VocabularyWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@index([userId, localDate])
+  @@index([userId, mode])
+  @@map("quiz_results")
+}
+
+enum QuizMode {
+  MASTERY
+  REALWORLD
+  SPEED
 }
 
 enum AuthProvider {

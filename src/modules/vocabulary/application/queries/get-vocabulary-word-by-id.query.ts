@@ -4,7 +4,7 @@ import { VocabularyWordStatus } from '../../domain/entities/vocabulary-word-stat
 import { WordDefinition } from '../../domain/entities/word-definition';
 import { WordExample } from '../../domain/entities/word-example';
 import { WordPronunciation } from '../../domain/entities/word-pronounciation';
-import { WordSynonym } from '../../domain/entities/word-synonym';
+import { WordAntonym, WordSynonym } from '../../domain/entities/word-synonym';
 import { Query } from '@nestjs/cqrs';
 
 export interface GetVocabularyWordByIdResult {
@@ -21,6 +21,7 @@ export interface GetVocabularyWordByIdResult {
   examples: WordExample[];
   pronunciations: WordPronunciation[];
   synonyms: WordSynonym[];
+  antonyms: WordAntonym[];
 }
 
 export class GetVocabularyWordByIdQuery extends Query<GetVocabularyWordByIdResult> {

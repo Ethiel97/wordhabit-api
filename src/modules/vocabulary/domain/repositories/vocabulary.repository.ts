@@ -5,7 +5,7 @@ import { VocabularyWord } from '../entities/vocabulary-word';
 import { WordDefinition } from '../entities/word-definition';
 import { WordExample } from '../entities/word-example';
 import { WordPronunciation } from '../entities/word-pronounciation';
-import { WordSynonym } from '../entities/word-synonym';
+import { WordAntonym, WordSynonym } from '../entities/word-synonym';
 import { VocabularyWordStatus } from '../entities/vocabulary-word-status';
 import { PaginatedResult } from '../../../../shared/application/pagination/paginated-result';
 
@@ -51,6 +51,7 @@ export interface VocabularyWordAggregate {
   examples: WordExample[];
   pronunciations: WordPronunciation[];
   synonyms: WordSynonym[];
+  antonyms: WordAntonym[];
   themes?: string[];
 }
 
@@ -74,6 +75,17 @@ export interface VocabularyWordListItemProjection {
   status: VocabularyWordStatus;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** What the backfill needs to prompt with — see QuizMaterialWordContext. */
+export interface QuizBackfillWord {
+  wordId: string;
+  term: string;
+  targetLanguage: LanguageCode;
+  partOfSpeech: PartOfSpeech;
+  difficulty: WordDifficulty;
+  definitions: { explanationLanguage: LanguageCode; text: string }[];
+  examples: { sentence: string }[];
 }
 
 export interface VocabularyRepository {
@@ -123,6 +135,32 @@ export interface VocabularyRepository {
     limit: number;
   }): Promise<string[]>;
 
+  /**
+   * Words that still have no quiz scenarios, oldest first. No status
+   * filter on purpose: the corpus is all DRAFT today, and the learning
+   * queries already serve it that way.
+   *
+   * Keyed on scenarios rather than antonyms: an empty antonym list is a
+   * legitimate outcome — many words have no true opposite — so it
+   * cannot mark a word as unprocessed.
+   */
+  findWordsMissingQuizScenarios(params: {
+    limit: number;
+  }): Promise<QuizBackfillWord[]>;
+
+  /** Attaches backfilled quiz material to an existing word. */
+  attachQuizMaterial(params: {
+    wordId: string;
+    antonyms: { value: string }[];
+    quizScenarios: {
+      language: LanguageCode;
+      situation: string;
+      question: string;
+      correct: string;
+      distractors: string[];
+    }[];
+  }): Promise<void>;
+
   createWord(params: {
     term: string;
     normalizedTerm: string;
@@ -145,6 +183,14 @@ export interface VocabularyRepository {
       provider: string | null;
     }[];
     synonyms: { value: string }[];
+    antonyms: { value: string }[];
+    quizScenarios: {
+      language: LanguageCode;
+      situation: string;
+      question: string;
+      correct: string;
+      distractors: string[];
+    }[];
     themeSlugs: string[];
   }): Promise<VocabularyWordAggregate>;
 }

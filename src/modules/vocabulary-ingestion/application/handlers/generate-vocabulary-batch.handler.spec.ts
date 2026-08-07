@@ -13,6 +13,8 @@ class SpyGenerationProvider {
     this.calls++;
     return Promise.resolve({ items: [] });
   };
+
+  generateQuizMaterial = () => Promise.resolve({ items: [] });
 }
 
 const handlerFor = (corpusSize: number, provider: SpyGenerationProvider) =>

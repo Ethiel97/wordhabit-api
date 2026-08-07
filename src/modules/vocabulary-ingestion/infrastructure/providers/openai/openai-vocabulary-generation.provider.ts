@@ -8,8 +8,13 @@ import type {
   GeneratedVocabularyBatch,
   GenerateVocabularyBatchInput,
   VocabularyGenerationProvider,
+  GenerateQuizMaterialInput,
+  GeneratedQuizMaterialBatch,
 } from '../../../domain/providers/vocabulary-generation.provider';
-import { MAX_VOCABULARY_BATCH_SIZE } from '../../../domain/providers/vocabulary-generation.provider';
+import {
+  MAX_QUIZ_MATERIAL_BATCH_SIZE,
+  MAX_VOCABULARY_BATCH_SIZE,
+} from '../../../domain/providers/vocabulary-generation.provider';
 import {
   buildExplorationBrief,
   type ExplorationBrief,
@@ -17,6 +22,44 @@ import {
 import { VocabularyGenerationQuotaExceededError } from '../../../domain/errors/vocabulary-generation-quota-exceeded.error';
 
 const LANGUAGE_CODES = ['EN', 'FR', 'ES'] as const;
+
+/**
+ * Whether a provider error means the account is out of credit — the one
+ * failure retrying cannot fix, which the queue must see as unrecoverable.
+ *
+ * Not every 429: a rate limit is also 429 and *should* back off and
+ * retry. OpenAI marks a spent balance with `insufficient_quota`, except
+ * the "no credits remaining" billing refusal observed in production,
+ * which arrives as a bare 429 with only the message to go on.
+ */
+function isSpentQuota(error: InstanceType<typeof OpenAI.APIError>): boolean {
+  if (error.code === 'insufficient_quota') return true;
+  return (
+    error.status === 429 &&
+    /no credits|insufficient.credit|billing/i.test(error.message)
+  );
+}
+
+/**
+ * The rules of the Real-World mode, stated once.
+ *
+ * Both the nightly batch and the backfill prompt from this list: two
+ * copies would drift, and a learner would meet two different games
+ * under one name.
+ */
+const QUIZ_MATERIAL_RULES = [
+  '# Antonyms',
+  'Only a word a native speaker would accept as the opposite in the example sentence — not merely a word of contrary flavour.',
+  'Leave the list empty rather than force one: plenty of terms have no true opposite, and a bad antonym makes a quiz question unanswerable.',
+  '',
+  '# Quiz scenarios',
+  'Two to four per entry. Each sets an everyday moment — a message, a meeting, a mistake — in which someone might reach for the term.',
+  '`correct` is what a native speaker would naturally say in that moment, using the term.',
+  'Every distractor uses the term *incorrectly*, in a way a learner might plausibly produce: wrong part of speech, wrong register, or a sense the word does not carry.',
+  'Three distractors where the misuse is clear, two where it is subtle.',
+  'A distractor that simply omits the term teaches nothing — the mistake must be *in* how the term is used.',
+  'Never repeat an example sentence in a scenario: a sentence the learner already read is a memory test, not a usage test.',
+];
 
 @Injectable()
 export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationProvider {
@@ -130,6 +173,129 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
     };
   }
 
+  async generateQuizMaterial(
+    input: GenerateQuizMaterialInput,
+  ): Promise<GeneratedQuizMaterialBatch> {
+    const words = input.words.slice(0, MAX_QUIZ_MATERIAL_BATCH_SIZE);
+    if (words.length === 0) return { items: [] };
+
+    const response = await this.createResponse({
+      model: process.env.OPENAI_VOCABULARY_MODEL ?? 'gpt-5.2-pro',
+      // Scenarios are short but the reasoning budget is not: half the
+      // batch ceiling, since each entry carries its context in.
+      max_output_tokens: 16000,
+      input: [
+        {
+          role: 'system',
+          content: this.buildSystemPrompt(),
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: [
+                'These words are already in our corpus. Write quiz material for each — nothing else about them changes.',
+                '',
+                ...QUIZ_MATERIAL_RULES,
+                '',
+                '# Consistency',
+                'Write scenarios against the senses defined below, not against other meanings the term may carry.',
+                'Scenarios are written in the language of the definitions shown for each word.',
+                'Echo each `term` exactly as given.',
+                '',
+                '# Words',
+                JSON.stringify(
+                  words.map((word) => ({
+                    term: word.term,
+                    partOfSpeech: word.partOfSpeech,
+                    definitions: word.definitions,
+                    examples: word.examples.map((ex) => ex.sentence),
+                  })),
+                ),
+              ].join('\n'),
+            },
+          ],
+        },
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'generated_quiz_material',
+          strict: true,
+          schema: this.buildQuizMaterialSchema(),
+        },
+      },
+    });
+
+    this.logger.log(
+      `usage ${JSON.stringify(response.usage)} for quiz material on ${words.length} words`,
+    );
+
+    const jsonText = response.output_text;
+    if (!jsonText) {
+      throw new InternalServerErrorException(
+        'OpenAI returned an empty structured response.',
+      );
+    }
+
+    return JSON.parse(jsonText) as GeneratedQuizMaterialBatch;
+  }
+
+  private buildQuizMaterialSchema() {
+    return {
+      type: 'object',
+      additionalProperties: false,
+      required: ['items'],
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['term', 'antonyms', 'quizScenarios'],
+            properties: {
+              term: { type: 'string' },
+              antonyms: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['value'],
+                  properties: { value: { type: 'string' } },
+                },
+              },
+              quizScenarios: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: [
+                    'language',
+                    'situation',
+                    'question',
+                    'correct',
+                    'distractors',
+                  ],
+                  properties: {
+                    language: { type: 'string', enum: LANGUAGE_CODES },
+                    situation: { type: 'string' },
+                    question: { type: 'string' },
+                    correct: { type: 'string' },
+                    distractors: {
+                      type: 'array',
+                      items: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+  }
+
   /**
    * Wraps the API call so a spent quota becomes a domain error.
    *
@@ -143,10 +309,7 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
     try {
       return await this.client.responses.create(body);
     } catch (error) {
-      if (
-        error instanceof OpenAI.APIError &&
-        error.code === 'insufficient_quota'
-      ) {
+      if (error instanceof OpenAI.APIError && isSpentQuota(error)) {
         throw new VocabularyGenerationQuotaExceededError(error);
       }
       throw error;
@@ -252,6 +415,8 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
       '# Synonyms',
       'Only words a native speaker would accept as a substitute in the example sentence you just wrote. At least one per entry.',
       '',
+      ...QUIZ_MATERIAL_RULES,
+      '',
       '# Where each thing goes',
       // A reasoning model given only quality criteria merges everything
       // into the first field that will hold it: the whole batch came
@@ -291,6 +456,8 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
               'examples',
               'pronunciations',
               'synonyms',
+              'antonyms',
+              'quizScenarios',
               'themeSlugs',
             ],
             properties: {
@@ -367,6 +534,41 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
                   required: ['value'],
                   properties: {
                     value: { type: 'string' },
+                  },
+                },
+              },
+              antonyms: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['value'],
+                  properties: {
+                    value: { type: 'string' },
+                  },
+                },
+              },
+              quizScenarios: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: [
+                    'language',
+                    'situation',
+                    'question',
+                    'correct',
+                    'distractors',
+                  ],
+                  properties: {
+                    language: { type: 'string', enum: LANGUAGE_CODES },
+                    situation: { type: 'string' },
+                    question: { type: 'string' },
+                    correct: { type: 'string' },
+                    distractors: {
+                      type: 'array',
+                      items: { type: 'string' },
+                    },
                   },
                 },
               },

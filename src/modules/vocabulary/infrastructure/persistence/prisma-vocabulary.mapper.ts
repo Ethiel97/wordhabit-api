@@ -8,6 +8,7 @@ import type {
 import type {
   ThemeModel as PrismaWordTheme,
   VocabularyWordModel as PrismaVocabularyWord,
+  WordAntonymModel as PrismaWordAntonym,
   WordDefinitionModel as PrismaWordDefinition,
   WordExampleModel as PrismaWordExample,
   WordPronunciationModel as PrismaWordPronunciation,
@@ -15,7 +16,7 @@ import type {
 } from 'generated/prisma/models';
 import { PartOfSpeech } from '../../domain/entities/part-of-speech';
 import { WordDifficulty } from '../../domain/entities/word-difficulty';
-import { WordSynonym } from '../../domain/entities/word-synonym';
+import { WordAntonym, WordSynonym } from '../../domain/entities/word-synonym';
 import { VocabularyWordStatus } from '../../domain/entities/vocabulary-word-status';
 import { VocabularyWord } from '../../domain/entities/vocabulary-word';
 import { WordDefinition } from '../../domain/entities/word-definition';
@@ -204,12 +205,22 @@ export class PrismaVocabularyMapper {
     };
   }
 
+  static toDomainAntonym(antonym: PrismaWordAntonym): WordAntonym {
+    return {
+      id: antonym.id,
+      wordId: antonym.wordId,
+      value: antonym.value,
+      createdAt: antonym.createdAt,
+    };
+  }
+
   static toDomainAggregate(data: {
     word: PrismaVocabularyWord;
     definitions: PrismaWordDefinition[];
     examples: PrismaWordExample[];
     pronunciations: PrismaWordPronunciation[];
     synonyms: PrismaWordSynonym[];
+    antonyms: PrismaWordAntonym[];
     themes?: PrismaWordTheme[];
   }): VocabularyWordAggregate {
     return {
@@ -220,6 +231,7 @@ export class PrismaVocabularyMapper {
         this.toDomainPronunciation(p),
       ),
       synonyms: data.synonyms.map((s) => this.toDomainSynonym(s)),
+      antonyms: data.antonyms.map((a) => this.toDomainAntonym(a)),
       // TODO(Ethiel97): slug or name? Slug for now.
       themes: data.themes?.map((t) => t.slug),
     };

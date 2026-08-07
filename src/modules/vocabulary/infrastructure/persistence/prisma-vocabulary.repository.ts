@@ -1,6 +1,7 @@
 import {
   FindVocabularyWordParams,
   ListVocabularyWordsParams,
+  QuizBackfillWord,
   VocabularyRepository,
   VocabularyWordAggregate,
   VocabularyWordListItemProjection,
@@ -189,6 +190,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         examples: true,
         pronunciations: true,
         synonyms: true,
+        antonyms: true,
         themes: {
           include: {
             theme: true,
@@ -208,6 +210,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         examples: word.examples,
         pronunciations: word.pronunciations,
         synonyms: word.synonyms,
+        antonyms: word.antonyms,
         themes: word.themes.map((t) => t.theme),
       }),
     );
@@ -222,6 +225,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         examples: true,
         pronunciations: true,
         synonyms: true,
+        antonyms: true,
         themes: {
           include: {
             theme: true,
@@ -241,9 +245,73 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         examples: aggregate.examples,
         pronunciations: aggregate.pronunciations,
         synonyms: aggregate.synonyms,
+        antonyms: aggregate.antonyms,
       }),
       themes: aggregate.themes.map((t) => t.theme.slug),
     };
+  }
+
+  async findWordsMissingQuizScenarios(params: {
+    limit: number;
+  }): Promise<QuizBackfillWord[]> {
+    const words = await this.prisma.vocabularyWord.findMany({
+      where: { quizScenarios: { none: {} } },
+      orderBy: { createdAt: 'asc' },
+      take: params.limit,
+      include: {
+        definitions: {
+          select: { explanationLanguage: true, text: true },
+        },
+        examples: { select: { sentence: true } },
+      },
+    });
+
+    return words.map((word) => ({
+      wordId: word.id,
+      term: word.term,
+      targetLanguage: word.targetLanguage as LanguageCode,
+      partOfSpeech: word.partOfSpeech as PartOfSpeech,
+      difficulty: word.difficulty as WordDifficulty,
+      definitions: word.definitions.map((def) => ({
+        explanationLanguage: def.explanationLanguage as LanguageCode,
+        text: def.text,
+      })),
+      examples: word.examples.map((ex) => ({ sentence: ex.sentence })),
+    }));
+  }
+
+  async attachQuizMaterial(params: {
+    wordId: string;
+    antonyms: { value: string }[];
+    quizScenarios: {
+      language: LanguageCode;
+      situation: string;
+      question: string;
+      correct: string;
+      distractors: string[];
+    }[];
+  }): Promise<void> {
+    await this.prisma.vocabularyWord.update({
+      where: { id: params.wordId },
+      data: {
+        antonyms: {
+          createMany: {
+            data: params.antonyms.map((ant) => ({ value: ant.value })),
+          },
+        },
+        quizScenarios: {
+          createMany: {
+            data: params.quizScenarios.map((scenario) => ({
+              language: scenario.language,
+              situation: scenario.situation,
+              question: scenario.question,
+              correct: scenario.correct,
+              distractors: scenario.distractors,
+            })),
+          },
+        },
+      },
+    });
   }
 
   async createWord(params: {
@@ -268,6 +336,14 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
       provider: string | null;
     }[];
     synonyms: { value: string }[];
+    antonyms: { value: string }[];
+    quizScenarios: {
+      language: LanguageCode;
+      situation: string;
+      question: string;
+      correct: string;
+      distractors: string[];
+    }[];
     themeSlugs: string[];
   }): Promise<VocabularyWordAggregate> {
     const created = await this.prisma.vocabularyWord.create({
@@ -312,6 +388,24 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
             })),
           },
         },
+        antonyms: {
+          createMany: {
+            data: params.antonyms.map((ant) => ({
+              value: ant.value,
+            })),
+          },
+        },
+        quizScenarios: {
+          createMany: {
+            data: params.quizScenarios.map((scenario) => ({
+              language: scenario.language,
+              situation: scenario.situation,
+              question: scenario.question,
+              correct: scenario.correct,
+              distractors: scenario.distractors,
+            })),
+          },
+        },
         themes: {
           create: params.themeSlugs.map((slug) => ({
             theme: {
@@ -325,6 +419,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         examples: true,
         pronunciations: true,
         synonyms: true,
+        antonyms: true,
         themes: {
           include: {
             theme: true,
@@ -338,6 +433,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
       examples: created.examples,
       pronunciations: created.pronunciations,
       synonyms: created.synonyms,
+      antonyms: created.antonyms,
       word: created,
       // TODO(Ethiel97): map to PrismaTheme.
       // themes: created.themes,
@@ -362,6 +458,7 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
         examples: true,
         pronunciations: true,
         synonyms: true,
+        antonyms: true,
       },
     });
 

@@ -25,6 +25,27 @@ export interface GeneratedVocabularySynonym {
   value: string;
 }
 
+export interface GeneratedVocabularyAntonym {
+  value: string;
+}
+
+/**
+ * One Real-World Situations question.
+ *
+ * The only quiz material a query cannot build: its wrong answers are
+ * plausible *misuses of the term itself*, not other words' definitions.
+ * Written here, once, rather than paid for on every Pro session.
+ */
+export interface GeneratedQuizScenario {
+  /** The language the situation and options are written in. */
+  language: LanguageCode;
+  /** The everyday moment the question is set in. */
+  situation: string;
+  question: string;
+  correct: string;
+  distractors: string[];
+}
+
 export interface GeneratedVocabularyWord {
   term: string;
   targetLanguage: LanguageCode;
@@ -34,6 +55,8 @@ export interface GeneratedVocabularyWord {
   examples: GeneratedVocabularyExample[];
   pronunciations: GeneratedVocabularyPronunciation[];
   synonyms: GeneratedVocabularySynonym[];
+  antonyms: GeneratedVocabularyAntonym[];
+  quizScenarios: GeneratedQuizScenario[];
   themeSlugs: string[];
 }
 
@@ -80,8 +103,58 @@ export const VOCABULARY_GENERATION_PROVIDER = Symbol(
   'VOCABULARY_GENERATION_PROVIDER',
 );
 
+/**
+ * An existing corpus entry, handed to the model as context.
+ *
+ * Definitions and examples ride along on purpose: scenarios written
+ * against the word's *actual* senses stay consistent with what the
+ * learner was taught, where a bare term invites the model to pick a
+ * meaning of its own.
+ */
+export interface QuizMaterialWordContext {
+  wordId: string;
+  term: string;
+  targetLanguage: LanguageCode;
+  partOfSpeech: PartOfSpeech;
+  difficulty: WordDifficulty;
+  definitions: { explanationLanguage: LanguageCode; text: string }[];
+  examples: { sentence: string }[];
+}
+
+export interface GeneratedQuizMaterialItem {
+  /** Echo of the term, so results survive reordering. */
+  term: string;
+  antonyms: GeneratedVocabularyAntonym[];
+  quizScenarios: GeneratedQuizScenario[];
+}
+
+export interface GenerateQuizMaterialInput {
+  words: QuizMaterialWordContext[];
+}
+
+export interface GeneratedQuizMaterialBatch {
+  items: GeneratedQuizMaterialItem[];
+}
+
+/**
+ * Words enriched per provider call.
+ *
+ * Smaller than MAX_VOCABULARY_BATCH_SIZE: each entry carries its
+ * definitions and examples *into* the prompt, so ten words of context
+ * cost what thirty bare terms would.
+ */
+export const MAX_QUIZ_MATERIAL_BATCH_SIZE = 10;
+
 export interface VocabularyGenerationProvider {
   generateVocabularyBatch(
     input: GenerateVocabularyBatchInput,
   ): Promise<GeneratedVocabularyBatch>;
+
+  /**
+   * Writes quiz material for words the corpus already holds — the
+   * backfill path. New words get theirs at ingestion.
+   */
+  generateQuizMaterial(
+    input: GenerateQuizMaterialInput,
+  ): Promise<GeneratedQuizMaterialBatch>;
 }

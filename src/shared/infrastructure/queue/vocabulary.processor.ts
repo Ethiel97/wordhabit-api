@@ -8,11 +8,17 @@ import {
   type GenerateVocabularyBatchResult,
 } from '../../../modules/vocabulary-ingestion/application/commands/generate-vocabulary-batch.command';
 import {
+  BACKFILL_QUIZ_MATERIAL_JOB,
   GENERATE_VOCABULARY_BATCH_JOB,
   VOCABULARY_QUEUE,
 } from '../../../modules/vocabulary-ingestion/infrastructure/queue/vocabulary-queue.constants';
 import { SentryReportingWorkerHost } from './sentry-reporting-processor';
 import { VocabularyGenerationQuotaExceededError } from '../../../modules/vocabulary-ingestion/domain/errors/vocabulary-generation-quota-exceeded.error';
+import {
+  BackfillQuizMaterialCommand,
+  type BackfillQuizMaterialResult,
+} from '../../../modules/vocabulary-ingestion/application/commands/backfill-quiz-material.command';
+import { BackfillQuizMaterialRequestDto } from '../../../modules/vocabulary-ingestion/application/dto/backfill-quiz-material.request.dto';
 
 /**
  * Runs the nightly vocabulary batch. Transport only: generation belongs
@@ -29,6 +35,10 @@ export class GenerateVocabularyBatchProcessor extends SentryReportingWorkerHost 
   }
 
   async process(job: Job) {
+    if (job.name === BACKFILL_QUIZ_MATERIAL_JOB) {
+      return this.processBackfill(job);
+    }
+
     if (job.name !== GENERATE_VOCABULARY_BATCH_JOB) {
       this.logger.warn(`Unknown job ${job.name} (${job.id}) — skipping`);
       return;
@@ -61,6 +71,29 @@ export class GenerateVocabularyBatchProcessor extends SentryReportingWorkerHost 
       `${targetLanguage}: ${result.createdCount} created, ` +
         `${result.skippedCount} already known, ${result.failedCount} rejected ` +
         `(of ${result.generatedCount} generated)`,
+    );
+
+    return result;
+  }
+
+  private async processBackfill(job: Job) {
+    const { count } = job.data as BackfillQuizMaterialRequestDto;
+
+    let result: BackfillQuizMaterialResult;
+    try {
+      result = await this.commandBus.execute(
+        new BackfillQuizMaterialCommand(count),
+      );
+    } catch (error) {
+      if (error instanceof VocabularyGenerationQuotaExceededError) {
+        throw new UnrecoverableError(error.message);
+      }
+      throw error;
+    }
+
+    this.logger.log(
+      `Backfill: ${result.enrichedCount} enriched, ${result.skippedCount} skipped, ` +
+        `${result.failedCount} failed — ${result.remaining - result.enrichedCount} words still without scenarios`,
     );
 
     return result;

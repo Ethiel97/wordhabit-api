@@ -22,6 +22,8 @@ const item = (
   ],
   pronunciations: [],
   synonyms: [{ value: 'aloof' }],
+  antonyms: [],
+  quizScenarios: [],
   themeSlugs: ['general'],
   ...overrides,
 });

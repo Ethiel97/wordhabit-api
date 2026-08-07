@@ -29,6 +29,8 @@ export class VocabularyController {
         examples: body.examples ?? [],
         pronunciations: body.pronunciations ?? [],
         synonyms: body.synonyms ?? [],
+        antonyms: body.antonyms ?? [],
+        quizScenarios: body.quizScenarios ?? [],
         themeSlugs: body.themeSlugs ?? [],
       }),
     );

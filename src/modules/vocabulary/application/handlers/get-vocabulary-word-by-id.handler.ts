@@ -68,6 +68,12 @@ export class GetVocabularyWordByIdHandler implements IQueryHandler<
         createdAt: synonym.createdAt,
         wordId: synonym.wordId,
       })),
+      antonyms: aggregate.antonyms.map((antonym) => ({
+        id: antonym.id,
+        value: antonym.value,
+        createdAt: antonym.createdAt,
+        wordId: antonym.wordId,
+      })),
     };
   }
 }

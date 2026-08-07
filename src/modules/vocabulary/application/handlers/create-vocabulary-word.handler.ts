@@ -60,6 +60,16 @@ export class CreateVocabularyWordHandler implements ICommandHandler<
       synonyms: command.word.synonyms.map((syn) => ({
         value: syn.value.trim(),
       })),
+      antonyms: command.word.antonyms.map((ant) => ({
+        value: ant.value.trim(),
+      })),
+      quizScenarios: command.word.quizScenarios.map((scenario) => ({
+        language: scenario.language,
+        situation: scenario.situation.trim(),
+        question: scenario.question.trim(),
+        correct: scenario.correct.trim(),
+        distractors: scenario.distractors.map((option) => option.trim()),
+      })),
       themeSlugs: command.word.themeSlugs,
     });
 

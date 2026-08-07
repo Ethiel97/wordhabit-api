@@ -61,6 +61,36 @@ class CreateWordSynonymDto {
   value!: string;
 }
 
+class CreateWordAntonymDto {
+  @IsString()
+  @IsNotEmpty()
+  value!: string;
+}
+
+class CreateWordQuizScenarioDto {
+  @IsIn(Object.values(LanguageCode))
+  language!: LanguageCode;
+
+  @IsString()
+  @IsNotEmpty()
+  situation!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  question!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  correct!: string;
+
+  // At least two, or the question answers itself.
+  @IsArray()
+  @ArrayMinSize(2)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  distractors!: string[];
+}
+
 export class CreateVocabularyWordRequestDto {
   @IsString()
   @IsNotEmpty()
@@ -98,6 +128,18 @@ export class CreateVocabularyWordRequestDto {
   @ValidateNested({ each: true })
   @Type(() => CreateWordSynonymDto)
   synonyms?: CreateWordSynonymDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateWordAntonymDto)
+  antonyms?: CreateWordAntonymDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateWordQuizScenarioDto)
+  quizScenarios?: CreateWordQuizScenarioDto[];
 
   @IsOptional()
   @IsArray()
