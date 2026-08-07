@@ -123,9 +123,7 @@ export class AuthenticateWithProviderHandler implements ICommandHandler<
       // first. A returning user is caught by findByIdentity above, so
       // reaching here means a first sign-in we cannot name an account
       // for — better a clear failure than an account with no address.
-      throw new UnauthorizedException(
-        'The provider returned no email address',
-      );
+      throw new UnauthorizedException('The provider returned no email address');
     }
 
     // The address is ours already, but the provider would not vouch for

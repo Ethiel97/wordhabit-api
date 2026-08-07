@@ -110,7 +110,11 @@ export class AuthController {
     @Body() body: AuthenticateWithProviderRequestDto,
   ) {
     return this.commandBus.execute(
-      new AuthenticateWithProviderCommand(body.provider, body.idToken, body.name),
+      new AuthenticateWithProviderCommand(
+        body.provider,
+        body.idToken,
+        body.name,
+      ),
     );
   }
 

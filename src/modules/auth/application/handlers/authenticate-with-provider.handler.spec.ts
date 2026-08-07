@@ -93,7 +93,7 @@ const handlerFor = (
 ) =>
   new AuthenticateWithProviderHandler(
     repository as unknown as AuthUserRepository,
-    { verify: () => Promise.resolve(asserted) } as SocialIdentityVerifier,
+    { verify: () => Promise.resolve(asserted) },
     {
       issue: () =>
         Promise.resolve({ accessToken: 'access', refreshToken: 'refresh' }),
@@ -115,7 +115,11 @@ describe('AuthenticateWithProviderHandler', () => {
     expect(repository.markedVerified).toHaveLength(0);
     // Replayed on every sign-in: the repository swallows the duplicate.
     expect(repository.links).toEqual([
-      { userId: 'u1', provider: AuthProvider.GOOGLE, providerUserId: 'google-sub-1' },
+      {
+        userId: 'u1',
+        provider: AuthProvider.GOOGLE,
+        providerUserId: 'google-sub-1',
+      },
     ]);
   });
 
