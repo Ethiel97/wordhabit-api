@@ -9,6 +9,12 @@ export interface CreateAuthUserParams {
   name: string;
   /** Absent for accounts born from a provider: they never have one. */
   password?: string;
+
+  /**
+   * Born already proven. Only a provider that vouched for the address
+   * may ask for this — a password signup still has to answer a code.
+   */
+  emailVerified?: boolean;
 }
 
 export interface LinkIdentityParams {

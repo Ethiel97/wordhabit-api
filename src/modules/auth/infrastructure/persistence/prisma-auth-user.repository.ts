@@ -10,7 +10,6 @@ import { User } from '../../../user-learning/domain/entities/user';
 import { PrismaUserMapper } from './prisma-user.mapper';
 import { AccountDeletionReason } from '../../domain/entities/account-deletion-reason';
 import { AuthProvider } from '../../domain/entities/auth-provider';
-import type { AuthProvider as PrismaAuthProvider } from 'generated/prisma/enums';
 
 @Injectable()
 export class PrismaAuthUserRepository implements AuthUserRepository {
@@ -117,6 +116,7 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
         email: params.email,
         name: params.name,
         password: params.password,
+        emailVerifiedAt: params.emailVerified ? new Date() : null,
       },
     });
     return PrismaUserMapper.toDomain(user);
@@ -129,7 +129,7 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
     const identity = await this.prisma.userIdentity.findUnique({
       where: {
         provider_providerUserId: {
-          provider: provider as PrismaAuthProvider,
+          provider: provider,
           providerUserId,
         },
       },
@@ -146,7 +146,7 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
       data: [
         {
           userId: params.userId,
-          provider: params.provider as PrismaAuthProvider,
+          provider: params.provider,
           providerUserId: params.providerUserId,
         },
       ],

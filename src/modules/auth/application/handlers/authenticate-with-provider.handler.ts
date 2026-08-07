@@ -148,6 +148,10 @@ export class AuthenticateWithProviderHandler implements ICommandHandler<
       // Google puts it in the token. Falling back to the local part
       // beats an empty greeting on the home screen.
       name: this.pickName(identity, forwardedName),
+      // The provider already proved the address, so asking the user to
+      // answer a code would be asking them to prove it twice — and for
+      // an Apple relay address, to a mailbox they may never read.
+      emailVerified: identity.emailVerified,
       // No password on purpose: this account has no other way in until
       // its owner sets one.
     });

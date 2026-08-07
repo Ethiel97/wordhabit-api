@@ -37,7 +37,12 @@ class FakeAuthUserRepository implements Partial<AuthUserRepository> {
   ) {}
 
   links: Array<{ userId: string; providerUserId: string }> = [];
-  created: Array<{ email: string; name: string; password?: string }> = [];
+  created: Array<{
+    email: string;
+    name: string;
+    password?: string;
+    emailVerified?: boolean;
+  }> = [];
   markedVerified: string[] = [];
   restored: string[] = [];
 
@@ -57,10 +62,16 @@ class FakeAuthUserRepository implements Partial<AuthUserRepository> {
     email: string;
     name: string;
     password?: string;
+    emailVerified?: boolean;
   }): Promise<User> => {
     this.created.push(params);
     return Promise.resolve(
-      user({ id: 'new', ...params, emailVerifiedAt: null }),
+      user({
+        id: 'new',
+        email: params.email,
+        name: params.name,
+        emailVerifiedAt: params.emailVerified ? new Date() : null,
+      }),
     );
   };
 
@@ -147,7 +158,7 @@ describe('AuthenticateWithProviderHandler', () => {
 
     expect(result.user.id).toBe('new');
     expect(repository.created).toEqual([
-      { email: 'new@example.com', name: 'Anwuri Alabi' },
+      { email: 'new@example.com', name: 'Anwuri Alabi', emailVerified: true },
     ]);
     expect(repository.created[0].password).toBeUndefined();
   });
@@ -161,6 +172,20 @@ describe('AuthenticateWithProviderHandler', () => {
     ).execute(command);
 
     expect(repository.created[0].name).toBe('ada');
+  });
+
+  it('is born verified when the provider vouched for the address', async () => {
+    // Apple and Google both check the address before issuing a token.
+    // Asking for a code afterwards proves nothing, and for an Apple
+    // relay address it asks the user to read a mailbox they may not.
+    const repository = new FakeAuthUserRepository(null, null);
+
+    const result = await handlerFor(
+      repository,
+      identity({ email: 'new@example.com' }),
+    ).execute(command);
+
+    expect(result.user.emailVerified).toBe(true);
   });
 
   it('prefers the name the client forwarded, which is all Apple ever gives', async () => {
