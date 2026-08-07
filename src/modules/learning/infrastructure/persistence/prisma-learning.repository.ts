@@ -37,9 +37,12 @@ import { PrismaLearningMapper } from './prisma-learning.mapper';
 import { UserLearningStreak } from '../../domain/entities/user-learning-streak';
 import { FavoriteWord } from '../../domain/entities/favorite-word';
 import { instantToLocalDate } from '../../domain/services/local-date';
+import { PartOfSpeech } from '../../../vocabulary/domain/entities/part-of-speech';
+import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
+import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 import { BadgeCode } from '../../domain/entities/badge';
 import {
-  BadgeSnapshot,
+  LearningBadgeFigures,
   FLUENT_MASTERY_LEVEL,
 } from '../../domain/services/badge-catalog';
 import { EarnedBadge } from '../../domain/repositories/learning.repository';
@@ -286,7 +289,7 @@ export class PrismaLearningRepository implements LearningRepository {
     });
   }
 
-  async findBadgeSnapshot(userId: string): Promise<BadgeSnapshot> {
+  async findBadgeSnapshot(userId: string): Promise<LearningBadgeFigures> {
     // Four independent reads, so they go together. Themes needs a
     // distinct over a join and has no aggregate form in Prisma, hence
     // the raw query.
@@ -616,6 +619,7 @@ export class PrismaLearningRepository implements LearningRepository {
             definitions: true,
             pronunciations: true,
             synonyms: true,
+            antonyms: true,
           },
         },
       },
@@ -650,6 +654,10 @@ export class PrismaLearningRepository implements LearningRepository {
       synonyms: item.word.synonyms.map(
         // eslint-disable-next-line @typescript-eslint/unbound-method
         PrismaVocabularyMapper.toDomainSynonym,
+      ),
+      antonyms: item.word.antonyms.map(
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        PrismaVocabularyMapper.toDomainAntonym,
       ),
     }));
   }
@@ -725,6 +733,7 @@ export class PrismaLearningRepository implements LearningRepository {
             definitions: true,
             pronunciations: true,
             synonyms: true,
+            antonyms: true,
             themes: {
               include: {
                 theme: true,
@@ -744,6 +753,7 @@ export class PrismaLearningRepository implements LearningRepository {
         examples: created.word.examples,
         pronunciations: created.word.pronunciations,
         synonyms: created.word.synonyms,
+        antonyms: created.word.antonyms,
         themes: created.word.themes.map((t) => t.theme),
       }),
     };
@@ -841,6 +851,7 @@ export class PrismaLearningRepository implements LearningRepository {
             examples: true,
             pronunciations: true,
             synonyms: true,
+            antonyms: true,
             themes: {
               include: {
                 theme: true,
@@ -863,6 +874,7 @@ export class PrismaLearningRepository implements LearningRepository {
         definitions: found.word.definitions,
         examples: found.word.examples,
         pronunciations: found.word.pronunciations,
+        antonyms: found.word.antonyms,
         synonyms: found.word.synonyms,
         themes: found.word.themes.map((t) => t.theme),
       }),
@@ -904,6 +916,7 @@ export class PrismaLearningRepository implements LearningRepository {
         examples: true,
         pronunciations: true,
         synonyms: true,
+        antonyms: true,
         themes: {
           include: {
             theme: true,
@@ -922,6 +935,7 @@ export class PrismaLearningRepository implements LearningRepository {
         definitions: randomWord.definitions,
         examples: randomWord.examples,
         pronunciations: randomWord.pronunciations,
+        antonyms: randomWord.antonyms,
         synonyms: randomWord.synonyms,
         themes: randomWord.themes.map((t) => t.theme),
       }),

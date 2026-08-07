@@ -13,6 +13,7 @@ const nothing: BadgeSnapshot = {
   wordsCollected: 0,
   themesExplored: 0,
   wordsNearMastery: 0,
+  quizPerfectModes: 0,
 };
 
 describe('earnedBadgeCodes', () => {
@@ -43,6 +44,7 @@ describe('earnedBadgeCodes', () => {
       wordsCollected: 100,
       themesExplored: 5,
       wordsNearMastery: 0,
+      quizPerfectModes: 0,
     });
 
     expect(earned).toEqual([
@@ -58,12 +60,13 @@ describe('earnedBadgeCodes', () => {
       wordsCollected: 99999,
       themesExplored: 99999,
       wordsNearMastery: 99999,
+      quizPerfectModes: 0,
     };
 
     // They need a second learning profile and the quiz. Absent from the
     // catalogue means locked, not broken.
     expect(earnedBadgeCodes(everything)).not.toContain(BadgeCode.BILINGUAL_PRO);
-    expect(earnedBadgeCodes(everything)).not.toContain(BadgeCode.QUIZ_CHAMPION);
+    expect(earnedBadgeCodes(everything)).not.toContain(BadgeCode.BILINGUAL_PRO);
   });
 });
 
@@ -82,7 +85,7 @@ describe('badgeProgress', () => {
   });
 
   it('has nothing to say about a badge outside the catalogue', () => {
-    expect(badgeProgress(BadgeCode.QUIZ_CHAMPION, nothing)).toBeNull();
+    expect(badgeProgress(BadgeCode.BILINGUAL_PRO, nothing)).toBeNull();
   });
 });
 
@@ -137,7 +140,7 @@ describe('badgeStandings', () => {
     const standings = badgeStandings({ earned: [], snapshot: nothing });
 
     expect(
-      standings.find((s) => s.code === BadgeCode.QUIZ_CHAMPION)!.progress,
+      standings.find((s) => s.code === BadgeCode.BILINGUAL_PRO)!.progress,
     ).toBeNull();
   });
 

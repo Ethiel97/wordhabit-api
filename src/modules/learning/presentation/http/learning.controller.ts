@@ -25,6 +25,10 @@ import {
 import { RescheduleWordReviewCommand } from '../../application/commands/reschedule-word-review.command';
 import { RescheduleWordReviewRequestDto } from '../../application/dtos/reschedule-word-review-request.dto';
 import { SubmitWordReviewCommand } from '../../application/commands/submit-word-review.command';
+import { SubmitQuizResultCommand } from '../../application/commands/submit-quiz-result.command';
+import { GetWordQuizQuery } from '../../application/queries/get-word-quiz.query';
+import { SubmitQuizResultRequestDto } from '../../application/dtos/submit-quiz-result-request.dto';
+import { GetWordQuizRequestDto } from '../../application/dtos/get-word-quiz-request.dto';
 import { SubmitWordReviewRequestDto } from '../../application/dtos/submit-word-review-request.dto';
 import { LEARNING } from '../../../../shared/presentation/http/endpoints';
 import {
@@ -157,6 +161,35 @@ export class LearningController {
       ),
     );
 
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Get(LEARNING.WORD_QUIZ)
+  async getWordQuiz(
+    @Param('wordId') wordId: string,
+    @Query() query: GetWordQuizRequestDto,
+  ) {
+    const quiz = await this.queryBus.execute(
+      new GetWordQuizQuery(wordId, query.mode),
+    );
+    return ApiSuccessResponse.of(quiz);
+  }
+
+  @Post(LEARNING.QUIZ_RESULTS)
+  async submitQuizResult(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: SubmitQuizResultRequestDto,
+  ) {
+    const result = await this.commandBus.execute(
+      new SubmitQuizResultCommand(
+        user.id,
+        body.wordId,
+        body.mode,
+        body.correctCount,
+        body.questionCount,
+        body.localDate,
+      ),
+    );
     return ApiSuccessResponse.of(result);
   }
 

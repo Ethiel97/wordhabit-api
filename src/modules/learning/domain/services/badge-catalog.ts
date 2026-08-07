@@ -22,7 +22,17 @@ export type BadgeSnapshot = {
 
   /** Words held at [FLUENT_MASTERY_LEVEL] or above. */
   wordsNearMastery: number;
+
+  /** Distinct quiz modes with at least one perfect round. */
+  quizPerfectModes: number;
 };
+
+/**
+ * The snapshot's learning-side figures — what [LearningRepository] can
+ * answer alone. The quiz repository contributes the rest, and
+ * `BadgeAwarderService` composes the two.
+ */
+export type LearningBadgeFigures = Omit<BadgeSnapshot, 'quizPerfectModes'>;
 
 /** What "fluent" means for a single word, as a mastery percentage. */
 export const FLUENT_MASTERY_LEVEL = 90;
@@ -42,10 +52,9 @@ type BadgeRule = {
  * what lets the evaluator and the "closest to unlocking" hint both read
  * from here instead of restating the thresholds.
  *
- * BILINGUAL_PRO and QUIZ_CHAMPION are deliberately absent: one needs a
- * second active learning profile and the other needs the quiz. They stay
- * locked, which reads as a distant goal rather than a defect, and adding
- * them later is a row each.
+ * BILINGUAL_PRO is deliberately absent: it needs a second active
+ * learning profile. It stays locked, which reads as a distant goal
+ * rather than a defect, and adding it later is a row.
  */
 export const BADGE_RULES: readonly BadgeRule[] = [
   { code: BadgeCode.STREAK_30, target: 30, progress: (s) => s.longestStreak },
@@ -86,6 +95,13 @@ export const BADGE_RULES: readonly BadgeRule[] = [
     code: BadgeCode.FLUENT_LEARNER,
     target: 50,
     progress: (s) => s.wordsNearMastery,
+  },
+  {
+    // A perfect round in each of the three modes — mastery is free,
+    // the other two are Pro, so the badge is structurally a Pro badge.
+    code: BadgeCode.QUIZ_CHAMPION,
+    target: 3,
+    progress: (s) => s.quizPerfectModes,
   },
 ];
 

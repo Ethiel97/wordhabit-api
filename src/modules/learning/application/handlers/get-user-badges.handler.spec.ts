@@ -8,6 +8,7 @@ const snapshot: BadgeSnapshot = {
   wordsCollected: 0,
   themesExplored: 0,
   wordsNearMastery: 0,
+  quizPerfectModes: 0,
 };
 
 function makeHandler(earnedNow: BadgeCode[]) {
@@ -15,11 +16,13 @@ function makeHandler(earnedNow: BadgeCode[]) {
   const rows = earnedNow.map((code) => ({ code, earnedAt: new Date() }));
 
   const repository = {
-    findBadgeSnapshot: () => Promise.resolve(snapshot),
     // Read *after* awarding, so it must reflect whatever was inserted.
     findUserBadges: () => Promise.resolve(rows),
   };
   const awarder = {
+    // The snapshot comes through the awarder since the repository
+    // split: it composes the learning figures with the quiz's.
+    readSnapshot: () => Promise.resolve(snapshot),
     awardQuietly: (userId: string) => {
       awarded.push(userId);
       return Promise.resolve([]);

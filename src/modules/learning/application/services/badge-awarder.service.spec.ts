@@ -16,6 +16,7 @@ const nothing: BadgeSnapshot = {
   wordsCollected: 0,
   themesExplored: 0,
   wordsNearMastery: 0,
+  quizPerfectModes: 0,
 };
 
 function makeService(snapshot: BadgeSnapshot, held: BadgeCode[] = []) {
@@ -27,7 +28,14 @@ function makeService(snapshot: BadgeSnapshot, held: BadgeCode[] = []) {
   };
   return {
     repo,
-    service: new BadgeAwarderService(repo as never),
+    service: new BadgeAwarderService(
+      repo as never,
+      {
+        // The quiz side of the snapshot; the composed figure under test
+        // already carries it, so the split must contribute nothing here.
+        countPerfectQuizModes: () => Promise.resolve(snapshot.quizPerfectModes),
+      } as never,
+    ),
   };
 }
 

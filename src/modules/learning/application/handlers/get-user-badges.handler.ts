@@ -21,9 +21,7 @@ export class GetUserBadgesHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetUserBadgesQuery): Promise<GetUserBadgesResult> {
-    const snapshot = await this.learningRepository.findBadgeSnapshot(
-      query.userId,
-    );
+    const snapshot = await this.badgeAwarder.readSnapshot(query.userId);
 
     // A read that writes, deliberately. Awarding otherwise only happens
     // on the write paths, so anything that became true in between — a

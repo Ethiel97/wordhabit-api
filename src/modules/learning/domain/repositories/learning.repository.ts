@@ -13,10 +13,13 @@ import { FavoriteWord } from '../entities/favorite-word';
 import { WordDefinition } from '../../../vocabulary/domain/entities/word-definition';
 import { WordExample } from '../../../vocabulary/domain/entities/word-example';
 import { WordPronunciation } from '../../../vocabulary/domain/entities/word-pronounciation';
-import { WordSynonym } from '../../../vocabulary/domain/entities/word-synonym';
+import {
+  WordAntonym,
+  WordSynonym,
+} from '../../../vocabulary/domain/entities/word-synonym';
 import { PartOfSpeech } from '../../../vocabulary/domain/entities/part-of-speech';
 import { BadgeCode } from '../entities/badge';
-import { BadgeSnapshot } from '../services/badge-catalog';
+import { LearningBadgeFigures } from '../services/badge-catalog';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 
@@ -68,6 +71,7 @@ export type ReviewQueueItem = {
   definitions: WordDefinition[];
   examples: WordExample[];
   pronunciations: WordPronunciation[];
+  antonyms: WordAntonym[];
   synonyms: WordSynonym[];
 };
 
@@ -313,7 +317,7 @@ export interface LearningRepository {
   }): Promise<number>;
 
   /** Every figure the badge rules are measured against, in one read. */
-  findBadgeSnapshot(userId: string): Promise<BadgeSnapshot>;
+  findBadgeSnapshot(userId: string): Promise<LearningBadgeFigures>;
 
   /**
    * Records the codes the user does not already hold, and returns those

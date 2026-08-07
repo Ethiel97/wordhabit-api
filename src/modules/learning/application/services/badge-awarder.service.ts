@@ -1,6 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { LearningRepository } from '../../domain/repositories/learning.repository';
 import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { QuizRepository } from '../../domain/repositories/quiz.repository';
+import { QUIZ_REPOSITORY } from '../../domain/repositories/quiz.repository';
 import { BadgeCode } from '../../domain/entities/badge';
 import {
   BadgeSnapshot,
@@ -25,7 +27,26 @@ export class BadgeAwarderService {
   constructor(
     @Inject(LEARNING_REPOSITORY)
     private readonly learningRepository: LearningRepository,
+
+    @Inject(QUIZ_REPOSITORY)
+    private readonly quizRepository: QuizRepository,
   ) {}
+
+  /**
+   * The full standing badges are judged on.
+   *
+   * Composed here because the snapshot now spans two repositories — the
+   * learning figures and the quiz's perfect modes. This service owns
+   * the evaluation, so it owns the assembly; a repository injecting
+   * another repository would be the layering running backwards.
+   */
+  async readSnapshot(userId: string): Promise<BadgeSnapshot> {
+    const [figures, quizPerfectModes] = await Promise.all([
+      this.learningRepository.findBadgeSnapshot(userId),
+      this.quizRepository.countPerfectQuizModes({ userId }),
+    ]);
+    return { ...figures, quizPerfectModes };
+  }
 
   /**
    * The codes this call won.
@@ -34,8 +55,7 @@ export class BadgeAwarderService {
    * standing hand it over instead of paying for it twice.
    */
   async award(userId: string, snapshot?: BadgeSnapshot): Promise<BadgeCode[]> {
-    const standing =
-      snapshot ?? (await this.learningRepository.findBadgeSnapshot(userId));
+    const standing = snapshot ?? (await this.readSnapshot(userId));
     const eligible = earnedBadgeCodes(standing);
 
     const awarded = await this.learningRepository.awardBadges({

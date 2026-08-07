@@ -4,7 +4,10 @@ import { VocabularyWord } from '../../../vocabulary/domain/entities/vocabulary-w
 import { WordDefinition } from '../../../vocabulary/domain/entities/word-definition';
 import { WordExample } from '../../../vocabulary/domain/entities/word-example';
 import { WordPronunciation } from '../../../vocabulary/domain/entities/word-pronounciation';
-import { WordSynonym } from '../../../vocabulary/domain/entities/word-synonym';
+import {
+  WordAntonym,
+  WordSynonym,
+} from '../../../vocabulary/domain/entities/word-synonym';
 import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 
 export class GetRandomWordQuery extends Query<GetRandomWordResult> {
@@ -23,5 +26,6 @@ export interface GetRandomWordResult {
   examples: WordExample[];
   pronunciations: WordPronunciation[];
   synonyms: WordSynonym[];
+  antonyms: WordAntonym[];
   themes?: string[];
 }
