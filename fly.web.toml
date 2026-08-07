@@ -8,6 +8,14 @@ primary_region = "yyz"
   NODE_ENV = "production"
   PORT = "3000"
 
+  # Public client identifiers, not secrets: they are the audience an
+  # identity token must be addressed to, and they already sit in clear
+  # text inside the versioned google-services.json. Keeping them here
+  # rather than in `fly secrets` makes the deployment reproducible from
+  # the repository alone, and reviewable in a diff.
+  GOOGLE_CLIENT_IDS = "606640392514-7busd50589763ba56avor7ibj7hp5nh9.apps.googleusercontent.com"
+  APPLE_CLIENT_IDS = "com.enthusiastdev.wordhabit"
+
 [processes]
   web = "pnpm run start:prod"
 
