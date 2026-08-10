@@ -18,9 +18,9 @@ describe('toSubscriptionState', () => {
   it('grants Pro for a live entitlement', () => {
     const state = toSubscriptionState(event(), now);
 
-    expect(state.tier).toBe(SubscriptionTier.PRO);
-    expect(state.expiresAt?.getTime()).toBe(tomorrow);
-    expect(state.store).toBe('APP_STORE');
+    expect(state?.tier).toBe(SubscriptionTier.PRO);
+    expect(state?.expiresAt?.getTime()).toBe(tomorrow);
+    expect(state?.store).toBe('APP_STORE');
   });
 
   it('keeps Pro through a billing issue, because the store still has time to retry', () => {
@@ -32,7 +32,7 @@ describe('toSubscriptionState', () => {
       now,
     );
 
-    expect(state.tier).toBe(SubscriptionTier.PRO);
+    expect(state?.tier).toBe(SubscriptionTier.PRO);
   });
 
   it('revokes once the expiry is behind us, whatever the event says', () => {
@@ -41,7 +41,7 @@ describe('toSubscriptionState', () => {
       now,
     );
 
-    expect(state.tier).toBe(SubscriptionTier.FREE);
+    expect(state?.tier).toBe(SubscriptionTier.FREE);
   });
 
   it('revokes on transfer: the subscription is now someone else’s', () => {
@@ -50,12 +50,12 @@ describe('toSubscriptionState', () => {
       now,
     );
 
-    expect(state.tier).toBe(SubscriptionTier.FREE);
+    expect(state?.tier).toBe(SubscriptionTier.FREE);
   });
 
   it('revokes on expiration and on pause', () => {
     for (const type of ['EXPIRATION', 'SUBSCRIPTION_PAUSED']) {
-      expect(toSubscriptionState(event({ type }), now).tier).toBe(
+      expect(toSubscriptionState(event({ type }), now)?.tier).toBe(
         SubscriptionTier.FREE,
       );
     }
@@ -67,20 +67,31 @@ describe('toSubscriptionState', () => {
       now,
     );
 
-    expect(state.tier).toBe(SubscriptionTier.FREE);
+    expect(state?.tier).toBe(SubscriptionTier.FREE);
   });
 
   it('treats a missing entitlement list as no entitlement', () => {
     expect(
-      toSubscriptionState(event({ entitlement_ids: null }), now).tier,
+      toSubscriptionState(event({ entitlement_ids: null }), now)?.tier,
     ).toBe(SubscriptionTier.FREE);
   });
 
   it('grants Pro without an expiry, which is how lifetime arrives', () => {
     const state = toSubscriptionState(event({ expiration_at_ms: null }), now);
 
-    expect(state.tier).toBe(SubscriptionTier.PRO);
-    expect(state.expiresAt).toBeNull();
+    expect(state?.tier).toBe(SubscriptionTier.PRO);
+    expect(state?.expiresAt).toBeNull();
+  });
+
+  it('changes nothing on a paywall event, which lists no entitlements', () => {
+    // The trap this closes: read as a subscription event, a
+    // PAYWALL_IMPRESSION means "no entitlements" means revoke, so a
+    // paying learner merely opening the paywall would be downgraded.
+    for (const type of ['PAYWALL_IMPRESSION', 'PAYWALL_CLOSE', 'TEST']) {
+      expect(
+        toSubscriptionState(event({ type, entitlement_ids: [] }), now),
+      ).toBeNull();
+    }
   });
 
   it('reads an unknown event type by its payload rather than falling through', () => {
@@ -91,6 +102,6 @@ describe('toSubscriptionState', () => {
       now,
     );
 
-    expect(state.tier).toBe(SubscriptionTier.PRO);
+    expect(state?.tier).toBe(SubscriptionTier.PRO);
   });
 });

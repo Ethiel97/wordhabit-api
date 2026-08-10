@@ -4,11 +4,9 @@ export enum SubscriptionTier {
 }
 
 /**
- * What the store says about one learner, right now.
- *
- * [expiresAt] is kept even when the tier is PRO and the subscription has
- * been cancelled: the entitlement runs to the end of the paid period,
- * and "is Pro" and "will still be Pro tomorrow" are different questions.
+ * [expiresAt] is kept even on a cancelled PRO subscription: the
+ * entitlement runs to the end of the paid period, and "is Pro" and
+ * "will still be Pro tomorrow" are different questions.
  */
 export interface SubscriptionState {
   tier: SubscriptionTier;

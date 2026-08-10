@@ -10,14 +10,10 @@ import { timingSafeEqual } from 'node:crypto';
 import { Request } from 'express';
 
 /**
- * The webhook's only door.
- *
- * RevenueCat signs nothing: it sends back whatever `Authorization` header
- * you configured in its dashboard, and matching it is the whole of the
- * authentication. That makes this guard the single thing standing
- * between the open internet and a free Pro subscription, so it fails
- * closed — a missing secret refuses every request rather than waving
- * them through.
+ * The webhook's only door. RevenueCat signs nothing: it echoes the
+ * `Authorization` header configured in its dashboard, and matching it is
+ * the whole authentication. Fails closed, since a missing secret would
+ * otherwise wave the open internet through to a free Pro subscription.
  */
 @Injectable()
 export class RevenueCatAuthGuard implements CanActivate {
@@ -45,10 +41,9 @@ export class RevenueCatAuthGuard implements CanActivate {
   }
 
   /**
-   * Constant time, so the comparison cannot be turned into an oracle
-   * that leaks the secret one character at a time. Lengths are compared
-   * first because timingSafeEqual throws on a mismatch, and that throw
-   * would itself be the timing signal.
+   * Constant time, so the comparison is not an oracle leaking the secret
+   * one character at a time. Lengths first: timingSafeEqual throws on a
+   * mismatch, and the throw would itself be the signal.
    */
   private matches(provided: string, expected: string): boolean {
     const a = Buffer.from(provided);

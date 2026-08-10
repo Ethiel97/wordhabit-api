@@ -25,9 +25,8 @@ export class ApplySubscriptionEventHandler implements ICommandHandler<
   ): Promise<ApplySubscriptionEventResult> {
     const userId = command.event.app_user_id;
 
-    // An anonymous id means the SDK was never told who this is. Nothing
-    // to write, and retrying will not make a user appear — see the
-    // identify() call the client makes on sign-in.
+    // The SDK was never told who this is. Retrying will not make a user
+    // appear; see the identify() call the client makes on sign-in.
     if (!userId) {
       this.logger.warn(
         `Webhook ${command.event.type} carried no app_user_id; ignored.`,
@@ -36,6 +35,10 @@ export class ApplySubscriptionEventHandler implements ICommandHandler<
     }
 
     const state = toSubscriptionState(command.event);
+
+    // Writing anything here would revoke: the payload lists none.
+    if (state === null) return { applied: false };
+
     const applied = await this.subscriptionRepository.applyState({
       userId,
       state,

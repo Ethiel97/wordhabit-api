@@ -8,11 +8,9 @@ import type { SubscriptionRepository } from '../../domain/repositories/subscript
 import { SUBSCRIPTION_REPOSITORY } from '../../domain/repositories/subscription.repository';
 
 /**
- * The server's answer to "may this user reach a Pro capability".
- *
- * Exported for other modules to inject, which is why it lives in
- * application rather than behind a query: a guard on a hot route should
- * not go through the bus for a single boolean.
+ * The server's answer to "may this user reach a Pro capability". A
+ * service rather than a query: a guard on a hot route should not go
+ * through the bus for a single boolean.
  */
 @Injectable()
 export class SubscriptionService {
@@ -28,12 +26,10 @@ export class SubscriptionService {
   }
 
   /**
-   * Re-checks the expiry rather than trusting the tier alone.
-   *
-   * The webhook is the only writer, and webhooks are lost, delayed and
-   * replayed out of order. A row left at PRO with an expiry in the past
-   * is therefore normal, not corruption, and reading the date closes
-   * that window without a scheduled job to sweep it.
+   * Re-checks the expiry rather than trusting the tier alone. Webhooks
+   * are lost, delayed and replayed out of order, so a row left at PRO
+   * with a past expiry is normal rather than corruption, and reading the
+   * date closes that window without a job to sweep it.
    */
   async isPro(userId: string, now: Date = new Date()): Promise<boolean> {
     const state = await this.stateFor(userId);

@@ -7,11 +7,7 @@ import {
 /** The entitlement the app gates on. Everything else is store detail. */
 export const PRO_ENTITLEMENT = 'pro';
 
-/**
- * The fields of a RevenueCat webhook this server actually reads. The
- * payload carries a few dozen more; naming only these keeps the parsing
- * honest about what the decision depends on.
- */
+/** The fields this server reads; the payload carries a few dozen more. */
 export interface RevenueCatEvent {
   type: string;
   app_user_id?: string;
@@ -21,28 +17,38 @@ export interface RevenueCatEvent {
 }
 
 /**
- * Events that revoke access whatever the rest of the payload says.
- * TRANSFER is the subtle one: the subscription moved to another account,
- * so *this* user loses it even though nothing expired.
+ * Revoke whatever the rest of the payload says. TRANSFER is the subtle
+ * one: the subscription moved to another account, so this user loses it
+ * even though nothing expired.
  */
 const REVOKING = new Set(['EXPIRATION', 'TRANSFER', 'SUBSCRIPTION_PAUSED']);
 
 /**
- * Reads the entitlement out of one webhook event.
+ * Paywall events carry no entitlement_ids, and "no entitlements" read as
+ * a subscription event means revoke: a paying learner merely opening the
+ * paywall would be downgraded. TEST is the dashboard button.
+ */
+function saysNothingAboutEntitlements(type: string): boolean {
+  return type.startsWith('PAYWALL_') || type === 'TEST';
+}
+
+/**
+ * The entitlement one event leaves behind, or null when the event is not
+ * about entitlements and nothing should be written.
  *
- * Deliberately not a switch over the twenty-odd event types RevenueCat
- * can send. New types appear, and a switch would fall through silently
- * on one that matters. The question asked instead is the one the app
- * actually cares about: does this payload leave the learner holding the
- * entitlement, and until when. An unknown event type answers it
- * correctly by construction.
+ * Not a switch over the twenty-odd subscription types: new ones appear
+ * and a switch would fall through silently. Asking "does this payload
+ * leave the learner holding the entitlement, and until when" answers an
+ * unknown subscription type correctly by construction.
  *
  * [now] is injected so a test can pin the boundary rather than race it.
  */
 export function toSubscriptionState(
   event: RevenueCatEvent,
   now: Date = new Date(),
-): SubscriptionState {
+): SubscriptionState | null {
+  if (saysNothingAboutEntitlements(event.type)) return null;
+
   if (REVOKING.has(event.type)) return FREE_SUBSCRIPTION;
 
   const holdsEntitlement = (event.entitlement_ids ?? []).includes(
@@ -55,10 +61,9 @@ export function toSubscriptionState(
       ? new Date(event.expiration_at_ms)
       : null;
 
-  // A billing issue does not revoke on its own: the store keeps retrying
-  // through the grace period, and the expiry it sends already accounts
-  // for that. Trusting the date rather than the event type is what makes
-  // grace periods work without a line of our own.
+  // A billing issue does not revoke on its own: the store retries
+  // through the grace period and the expiry already accounts for it.
+  // Trusting the date is what makes grace periods work for free.
   if (expiresAt !== null && expiresAt.getTime() <= now.getTime()) {
     return FREE_SUBSCRIPTION;
   }

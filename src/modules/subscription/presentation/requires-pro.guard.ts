@@ -13,11 +13,8 @@ import { AuthenticatedUser } from '../../auth/domain/entities/authenticated-user
 export const REQUIRES_PRO_KEY = 'requiresPro';
 
 /**
- * Gates a route on the Pro entitlement.
- *
- * The client also hides Pro capabilities behind its own check, and that
- * one is for responsiveness alone: it runs on a device the learner
- * controls. This guard is the one that decides.
+ * Gates a route on the Pro entitlement. The client's own check is for
+ * responsiveness alone, since it runs on a device the learner controls.
  */
 export const RequiresPro = () => SetMetadata(REQUIRES_PRO_KEY, true);
 
@@ -39,8 +36,7 @@ export class RequiresProGuard implements CanActivate {
       .switchToHttp()
       .getRequest<Request & { user?: AuthenticatedUser }>();
     const userId = request.user?.id;
-    // No authenticated user on a Pro route means the JWT guard is not in
-    // front of it. Refusing is the safe reading of a wiring mistake.
+    // No user means the JWT guard is not in front of this route.
     if (!userId) throw new ForbiddenException();
 
     if (!(await this.subscriptionService.isPro(userId))) {
