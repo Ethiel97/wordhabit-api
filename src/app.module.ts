@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { DatabaseModule } from './shared/infrastructure/database/database.module';
 import { VocabularyModule } from './modules/vocabulary/vocabulary.module';
@@ -34,6 +35,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     VocabularyIngestionModule,
     WaitlistModule,
     AuthModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

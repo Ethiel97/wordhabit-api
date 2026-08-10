@@ -264,6 +264,17 @@ model User {
   identities              UserIdentity[]
   quizResults             QuizResult[]
 
+  /// Current entitlement, written only by the RevenueCat webhook. The
+  /// store is the source of truth; this is the server's cached answer to
+  /// "may this user reach a Pro capability", and it is what guards read.
+  subscriptionTier      SubscriptionTier @default(FREE)
+  /// When the current period ends. Kept alongside the tier rather than
+  /// derived from it: a cancelled subscription stays PRO until it lapses,
+  /// and the two facts answer different questions.
+  subscriptionExpiresAt DateTime?
+  /// Which store billed it, for support and for reading revenue reports.
+  subscriptionStore     String?
+
   @@index([deletedAt])
   @@index([email])
   @@map("users")
@@ -653,6 +664,11 @@ model QuizResult {
   @@index([userId, localDate])
   @@index([userId, mode])
   @@map("quiz_results")
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
 }
 
 enum QuizMode {
