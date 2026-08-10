@@ -48,6 +48,11 @@ export class VocabularyDailyScheduler {
         explanationLanguage: LanguageCode.EN,
         count: DAILY_BATCH_SIZE,
       },
+      {
+        targetLanguage: LanguageCode.ES,
+        explanationLanguage: LanguageCode.FR,
+        count: DAILY_BATCH_SIZE,
+      },
       /*{
         targetLanguage: LanguageCode.DE,
         explanationLanguage: LanguageCode.EN,

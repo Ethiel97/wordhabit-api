@@ -17,6 +17,10 @@ import {
   localDateToInstant,
   shiftLocalDate,
 } from '../../domain/services/local-date';
+import {
+  QUIZ_REPOSITORY,
+  type QuizRepository,
+} from '../../domain/repositories/quiz.repository';
 
 @QueryHandler(GetLearningDashboardQuery)
 export class GetLearningDashboardHandler implements IQueryHandler<
@@ -26,6 +30,9 @@ export class GetLearningDashboardHandler implements IQueryHandler<
   constructor(
     @Inject(LEARNING_REPOSITORY)
     private readonly learningRepository: LearningRepository,
+
+    @Inject(QUIZ_REPOSITORY)
+    private readonly quizRepository: QuizRepository,
 
     private readonly todayWordService: TodayWordService,
   ) {}
@@ -120,7 +127,17 @@ export class GetLearningDashboardHandler implements IQueryHandler<
         this.learningRepository.findUserLearningStats(query.userId),
       ]);
 
-    const recall = await this.yesterdayRecall(query, yesterdayWord);
+    const [todayQuizCompleted, recall] = await Promise.all([
+      todayWord
+        ? this.quizRepository.hasQuizResultForWord({
+            userId: query.userId,
+            wordId: todayWord.word.id,
+            localDate: query.localDate,
+          })
+        : Promise.resolve(false),
+
+      this.yesterdayRecall(query, yesterdayWord),
+    ]);
 
     return {
       todayWord,
@@ -140,7 +157,7 @@ export class GetLearningDashboardHandler implements IQueryHandler<
         // without any history table.
         lastActivityLocalDate: streak?.lastActivityLocalDate ?? null,
       },
-
+      todayQuizCompleted,
       stats,
     };
   }

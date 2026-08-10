@@ -5,6 +5,7 @@ export type GetWordQuizResult = WordQuiz;
 
 export class GetWordQuizQuery extends Query<GetWordQuizResult> {
   constructor(
+    public readonly userId: string,
     public readonly wordId: string,
     public readonly mode: QuizMode,
   ) {

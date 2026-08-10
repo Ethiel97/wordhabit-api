@@ -83,7 +83,7 @@ export class BadgeAwarderService {
   ): Promise<BadgeCode[]> {
     try {
       return await this.award(userId, snapshot);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Badge evaluation failed', { userId, error });
       return [];
     }

@@ -12,13 +12,28 @@ export interface QuizWordMaterial {
   /** What the distractor pool is matched on. */
   targetLanguage: LanguageCode;
   difficulty: WordDifficulty;
+  /**
+   * The language the served definitions are actually in — the preferred
+   * one when the corpus has it, whatever exists otherwise. The pool
+   * must be filtered on this, or one MEANING option would stand out by
+   * its language alone.
+   */
+  explanationLanguage: LanguageCode | null;
   scenarios: QuizScenarioSource[];
+}
+
+export interface FindQuizWordMaterialParams {
+  wordId: string;
+  /** The learner's own language, from their profile; null when unknown. */
+  preferredLanguage: LanguageCode | null;
 }
 
 export interface FindQuizDistractorPoolParams {
   wordId: string;
   targetLanguage: LanguageCode;
   difficulty: WordDifficulty;
+  /** Same language as the target's served definitions (see above). */
+  explanationLanguage: LanguageCode | null;
   limit: number;
 }
 
@@ -39,8 +54,18 @@ export const QUIZ_REPOSITORY = Symbol('QUIZ_REPOSITORY');
  * scheduler's repository does not grow a second feature's surface.
  */
 export interface QuizRepository {
+  /** Whether the user has ever completed a round
+   * on this word on that date. */
+  hasQuizResultForWord(params: {
+    userId: string;
+    wordId: string;
+    localDate: string;
+  }): Promise<boolean>;
+
   /** The word under test plus its stored scenarios, or null if unknown. */
-  findQuizWordMaterial(wordId: string): Promise<QuizWordMaterial | null>;
+  findQuizWordMaterial(
+    params: FindQuizWordMaterialParams,
+  ): Promise<QuizWordMaterial | null>;
 
   /**
    * Words the wrong answers are drawn from: same language and

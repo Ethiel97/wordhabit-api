@@ -100,9 +100,15 @@ describe('buildQuizQuestions', () => {
 
     expect(questions).toHaveLength(3);
     expect(questions[2].kind).toBe(QuizQuestionKind.MEANING);
-    expect(questions[2].options).toContain(
+    // The two meaning questions must test *different* senses, whatever
+    // the sampling picked first.
+    const first = questions[0].options[questions[0].correctIndex];
+    const second = questions[2].options[questions[2].correctIndex];
+    expect([
+      'A happy accident.',
       'Luck taking the form of discovery.',
-    );
+    ]).toContain(second);
+    expect(second).not.toBe(first);
   });
 
   it('pits the antonym against the word’s own synonym in speed', () => {
@@ -119,6 +125,24 @@ describe('buildQuizQuestions', () => {
     expect(antonym.options).toContain('misfortune');
     expect(antonym.options).toContain('fluke');
     expect(antonym.options[antonym.correctIndex]).toBe('misfortune');
+  });
+
+  it('emits part-of-speech codes the client can localize', () => {
+    const questions = buildQuizQuestions({
+      word: word(),
+      pool,
+      scenarios: [],
+      mode: QuizMode.SPEED,
+      random: fixed,
+    });
+
+    const wordType = questions.find(
+      (q) => q.kind === QuizQuestionKind.WORD_TYPE,
+    )!;
+    expect(wordType.options[wordType.correctIndex]).toBe(PartOfSpeech.NOUN);
+    for (const option of wordType.options) {
+      expect(Object.values(PartOfSpeech)).toContain(option);
+    }
   });
 
   it('skips the antonym axis rather than fake an opposite', () => {

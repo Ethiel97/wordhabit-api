@@ -21,7 +21,9 @@ const nothing: BadgeSnapshot = {
 
 function makeService(snapshot: BadgeSnapshot, held: BadgeCode[] = []) {
   const repo: Repo = {
-    findBadgeSnapshot: jest.fn().mockResolvedValue(snapshot),
+    findBadgeSnapshot: jest
+      .fn<Promise<BadgeSnapshot>, [string]>()
+      .mockResolvedValue(snapshot),
     awardBadges: jest.fn(({ codes }) =>
       Promise.resolve(codes.filter((code) => !held.includes(code))),
     ),

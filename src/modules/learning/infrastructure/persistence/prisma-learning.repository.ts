@@ -37,9 +37,6 @@ import { PrismaLearningMapper } from './prisma-learning.mapper';
 import { UserLearningStreak } from '../../domain/entities/user-learning-streak';
 import { FavoriteWord } from '../../domain/entities/favorite-word';
 import { instantToLocalDate } from '../../domain/services/local-date';
-import { PartOfSpeech } from '../../../vocabulary/domain/entities/part-of-speech';
-import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
-import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 import { BadgeCode } from '../../domain/entities/badge';
 import {
   LearningBadgeFigures,

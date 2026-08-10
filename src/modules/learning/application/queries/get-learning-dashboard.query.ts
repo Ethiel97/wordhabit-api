@@ -45,6 +45,8 @@ export interface GetLearningDashboardResult {
   };
 
   stats: UserLearningStats;
+
+  todayQuizCompleted: boolean;
 }
 
 /** The outcome of yesterday's recall, once it has been answered. */

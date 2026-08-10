@@ -6,25 +6,63 @@ import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficu
 import type {
   CreateQuizResultParams,
   FindQuizDistractorPoolParams,
+  FindQuizWordMaterialParams,
   QuizRepository,
   QuizWordMaterial,
 } from '../../domain/repositories/quiz.repository';
 import type { QuizDistractorWord } from '../../domain/services/quiz-question-builder';
 
+/**
+ * The rows in [preferred], or falling back down the [fallbacks] chain,
+ * or whatever language has the most rows. A quiz in a language the
+ * learner did not ask for beats no quiz at all — the corpus does not
+ * hold every explanation language for every word.
+ */
+function pickLanguage<T>(
+  rows: T[],
+  languageOf: (row: T) => string,
+  preferred: (string | null)[],
+): { rows: T[]; language: LanguageCode | null } {
+  if (rows.length === 0) return { rows, language: null };
+
+  const groups = new Map<string, T[]>();
+  for (const row of rows) {
+    const language = languageOf(row);
+    groups.set(language, [...(groups.get(language) ?? []), row]);
+  }
+
+  for (const candidate of preferred) {
+    if (candidate && groups.has(candidate)) {
+      return {
+        rows: groups.get(candidate)!,
+        language: candidate as LanguageCode,
+      };
+    }
+  }
+
+  const [language, largest] = [...groups.entries()].sort(
+    (a, b) => b[1].length - a[1].length,
+  )[0];
+  return { rows: largest, language: language as LanguageCode };
+}
+
 @Injectable()
 export class PrismaQuizRepository implements QuizRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findQuizWordMaterial(wordId: string): Promise<QuizWordMaterial | null> {
+  async findQuizWordMaterial(
+    params: FindQuizWordMaterialParams,
+  ): Promise<QuizWordMaterial | null> {
     const word = await this.prisma.vocabularyWord.findUnique({
-      where: { id: wordId },
+      where: { id: params.wordId },
       include: {
-        definitions: { select: { text: true } },
+        definitions: { select: { text: true, explanationLanguage: true } },
         examples: { select: { sentence: true } },
         synonyms: { select: { value: true } },
         antonyms: { select: { value: true } },
         quizScenarios: {
           select: {
+            language: true,
             situation: true,
             question: true,
             correct: true,
@@ -36,19 +74,33 @@ export class PrismaQuizRepository implements QuizRepository {
 
     if (!word) return null;
 
+    const definitions = pickLanguage(
+      word.definitions,
+      (def) => def.explanationLanguage,
+      [params.preferredLanguage, word.targetLanguage],
+    );
+    // Scenario prose follows the definitions: mixing the two languages
+    // inside one round reads as a bug even when each is defensible.
+    const scenarios = pickLanguage(
+      word.quizScenarios,
+      (scenario) => scenario.language,
+      [definitions.language, params.preferredLanguage, word.targetLanguage],
+    );
+
     return {
       targetLanguage: word.targetLanguage as LanguageCode,
       difficulty: word.difficulty as WordDifficulty,
+      explanationLanguage: definitions.language,
       target: {
         wordId: word.id,
         term: word.term,
         partOfSpeech: word.partOfSpeech as PartOfSpeech,
-        definitions: word.definitions.map((def) => def.text),
+        definitions: definitions.rows.map((def) => def.text),
         examples: word.examples.map((ex) => ex.sentence),
         synonyms: word.synonyms.map((syn) => syn.value),
         antonyms: word.antonyms.map((ant) => ant.value),
       },
-      scenarios: word.quizScenarios,
+      scenarios: scenarios.rows,
     };
   }
 
@@ -75,7 +127,15 @@ export class PrismaQuizRepository implements QuizRepository {
       skip,
       take: params.limit,
       include: {
-        definitions: { select: { text: true } },
+        definitions: {
+          select: { text: true },
+          // Strict, no fallback: a wrong answer in another language than
+          // the right one would give the game away. A word with nothing
+          // in this language still lends its term and synonyms.
+          ...(params.explanationLanguage
+            ? { where: { explanationLanguage: params.explanationLanguage } }
+            : {}),
+        },
         synonyms: { select: { value: true } },
       },
     });
@@ -135,5 +195,21 @@ export class PrismaQuizRepository implements QuizRepository {
         .map((r) => r.mode),
     );
     return perfect.size;
+  }
+
+  async hasQuizResultForWord(params: {
+    userId: string;
+    wordId: string;
+    localDate: string;
+  }): Promise<boolean> {
+    const resultClient = await this.prisma.quizResult.findFirst({
+      where: {
+        userId: params.userId,
+        wordId: params.wordId,
+        localDate: params.localDate,
+      },
+      select: { id: true },
+    });
+    return resultClient !== null;
   }
 }

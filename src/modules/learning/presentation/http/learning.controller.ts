@@ -166,11 +166,12 @@ export class LearningController {
 
   @Get(LEARNING.WORD_QUIZ)
   async getWordQuiz(
+    @CurrentUser() user: AuthenticatedUser,
     @Param('wordId') wordId: string,
     @Query() query: GetWordQuizRequestDto,
   ) {
     const quiz = await this.queryBus.execute(
-      new GetWordQuizQuery(wordId, query.mode),
+      new GetWordQuizQuery(user.id, wordId, query.mode),
     );
     return ApiSuccessResponse.of(quiz);
   }

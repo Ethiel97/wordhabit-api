@@ -87,7 +87,8 @@ function buildRealWorld(
   scenarios: QuizScenarioSource[],
   random: () => number,
 ): QuizQuestion[] {
-  return scenarios.map((scenario) =>
+  // Shuffled so two rounds the same day at least change their order.
+  return shuffle(scenarios, random).map((scenario) =>
     toQuestion({
       kind: QuizQuestionKind.USAGE,
       situation: scenario.situation,
@@ -107,20 +108,24 @@ function buildMastery(
   const questions: QuizQuestion[] = [];
   const wrongCount = MASTERY_OPTION_COUNT - 1;
 
+  // Correct answers are sampled, not taken first-of-list: a learner
+  // retaking the quiz the same day should meet a different definition,
+  // sentence and synonym, or the round feels like a replay.
   const poolDefinitions = distinct(pool.flatMap((w) => w.definitions));
-  if (word.definitions.length > 0 && poolDefinitions.length >= wrongCount) {
+  const [primarySense] = sample(word.definitions, 1, random);
+  if (primarySense && poolDefinitions.length >= wrongCount) {
     questions.push(
       toQuestion({
         kind: QuizQuestionKind.MEANING,
         prompt: `What does “${word.term}” mean?`,
-        correct: word.definitions[0],
+        correct: primarySense,
         distractors: sample(poolDefinitions, wrongCount, random),
         random,
       }),
     );
   }
 
-  const gap = gapFill(word);
+  const [gap] = sample(gapFills(word), 1, random);
   const poolTerms = distinct(pool.map((w) => w.term));
   if (gap && poolTerms.length >= wrongCount) {
     questions.push(
@@ -146,7 +151,7 @@ function buildMastery(
       toQuestion({
         kind: QuizQuestionKind.SYNONYM,
         prompt: `Closest in meaning to “${word.term}”?`,
-        correct: word.synonyms[0],
+        correct: sample(word.synonyms, 1, random)[0],
         distractors: sample(poolSynonyms, wrongCount, random),
         random,
       }),
@@ -156,16 +161,17 @@ function buildMastery(
   // A second meaning question from a different sense, when the word has
   // one — the round should not shrink just because a word lacks
   // synonyms.
+  const otherSenses = word.definitions.filter((def) => def !== primarySense);
   if (
     questions.length < MIN_QUIZ_QUESTIONS &&
-    word.definitions.length > 1 &&
+    otherSenses.length > 0 &&
     poolDefinitions.length >= wrongCount
   ) {
     questions.push(
       toQuestion({
         kind: QuizQuestionKind.MEANING,
         prompt: `Which is another sense of “${word.term}”?`,
-        correct: word.definitions[1],
+        correct: sample(otherSenses, 1, random)[0],
         distractors: sample(poolDefinitions, wrongCount, random),
         random,
       }),
@@ -185,12 +191,13 @@ function buildSpeed(
   const wrongCount = SPEED_OPTION_COUNT - 1;
 
   const poolDefinitions = distinct(pool.flatMap((w) => w.definitions));
-  if (word.definitions.length > 0 && poolDefinitions.length >= wrongCount) {
+  const [sense] = sample(word.definitions, 1, random);
+  if (sense && poolDefinitions.length >= wrongCount) {
     questions.push(
       toQuestion({
         kind: QuizQuestionKind.MEANING,
         prompt: `“${word.term}” means…`,
-        correct: firstClause(word.definitions[0]),
+        correct: firstClause(sense),
         distractors: sample(poolDefinitions, wrongCount, random).map(
           firstClause,
         ),
@@ -208,7 +215,7 @@ function buildSpeed(
       toQuestion({
         kind: QuizQuestionKind.SYNONYM,
         prompt: `Closest to “${word.term}”…`,
-        correct: word.synonyms[0],
+        correct: sample(word.synonyms, 1, random)[0],
         distractors: sample(poolSynonyms, wrongCount, random),
         random,
       }),
@@ -223,13 +230,15 @@ function buildSpeed(
       toQuestion({
         kind: QuizQuestionKind.ANTONYM,
         prompt: `Opposite of “${word.term}”…`,
-        correct: word.antonyms[0],
-        distractors: [word.synonyms[0]],
+        correct: sample(word.antonyms, 1, random)[0],
+        distractors: sample(word.synonyms, 1, random),
         random,
       }),
     );
   }
 
+  // Options are PartOfSpeech codes, not prose: the client localizes
+  // them, which no stored string in either corpus language could.
   const otherPartsOfSpeech = Object.values(PartOfSpeech).filter(
     (pos) => pos !== word.partOfSpeech && pos !== PartOfSpeech.OTHER,
   );
@@ -237,8 +246,8 @@ function buildSpeed(
     toQuestion({
       kind: QuizQuestionKind.WORD_TYPE,
       prompt: `“${word.term}” is a…`,
-      correct: label(word.partOfSpeech),
-      distractors: [label(sample(otherPartsOfSpeech, 1, random)[0])],
+      correct: word.partOfSpeech,
+      distractors: sample(otherPartsOfSpeech, 1, random),
       random,
     }),
   );
@@ -281,15 +290,12 @@ function toQuestion(params: {
   };
 }
 
-/** The example with its term blanked, or null when none contains it. */
-function gapFill(word: QuizTargetWord): string | null {
-  for (const sentence of word.examples) {
-    const pattern = new RegExp(escapeRegExp(word.term), 'i');
-    if (pattern.test(sentence)) {
-      return sentence.replace(pattern, '_____');
-    }
-  }
-  return null;
+/** Every example with its term blanked — one is sampled per round. */
+function gapFills(word: QuizTargetWord): string[] {
+  const pattern = new RegExp(escapeRegExp(word.term), 'i');
+  return word.examples
+    .filter((sentence) => pattern.test(sentence))
+    .map((sentence) => sentence.replace(pattern, '_____'));
 }
 
 /**
@@ -299,10 +305,6 @@ function gapFill(word: QuizTargetWord): string | null {
 function firstClause(definition: string): string {
   const cut = definition.split(/[,—;]/)[0].trim();
   return cut.length > 0 ? cut : definition;
-}
-
-function label(partOfSpeech: PartOfSpeech): string {
-  return partOfSpeech.charAt(0) + partOfSpeech.slice(1).toLowerCase();
 }
 
 function distinct(values: string[], exclude: string[] = []): string[] {
