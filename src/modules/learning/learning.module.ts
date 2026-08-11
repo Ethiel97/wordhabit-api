@@ -19,6 +19,7 @@ import { GetUserWordLibraryHandler } from './application/handlers/get-user-word-
 import { GetUserActivityHandler } from './application/handlers/get-user-activity.handler';
 import { GetLearnerXpHandler } from './application/handlers/get-learner-xp.handler';
 import { GetUserBadgesHandler } from './application/handlers/get-user-badges.handler';
+import { GetProfilesDailyStatesHandler } from './application/handlers/get-profiles-daily-states.handler';
 import { GetWordQuizHandler } from './application/handlers/get-word-quiz.handler';
 import { SubmitQuizResultHandler } from './application/handlers/submit-quiz-result.handler';
 import { BadgeAwarderService } from './application/services/badge-awarder.service';
@@ -49,6 +50,7 @@ const queryHandlers = [
   GetWordQuizHandler,
   SubmitQuizResultHandler,
   GetUserActivityDetailHandler,
+  GetProfilesDailyStatesHandler,
   GetUserFavoriteWordsHandler,
 ];
 

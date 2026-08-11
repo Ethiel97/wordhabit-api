@@ -16,4 +16,5 @@ export const LEARNING = {
   FAVORITE_WORDS: 'favorite-words',
   FAVORITE_WORD: 'favorite-words/:wordId',
   BADGES: 'user/badges',
+  PROFILES_DAILY_STATES: 'profiles/daily-states',
 } as const;
