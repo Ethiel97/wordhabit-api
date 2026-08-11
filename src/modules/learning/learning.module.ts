@@ -27,6 +27,7 @@ import { GetUserFavoriteWordsHandler } from './application/handlers/get-user-fav
 import { AddUserFavoriteWordHandler } from './application/handlers/add-user-favorite-word.handler';
 import { RemoveUserFavoriteWordHandler } from './application/handlers/remove-user-favorite-word.handler';
 import { TodayWordService } from './application/services/today-word.service';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
 const commandHandlers = [
   SetUserWordProgressHandler,
@@ -54,7 +55,12 @@ const queryHandlers = [
 const services = [TodayWordService, BadgeAwarderService];
 
 @Module({
-  imports: [VocabularyModule, UserLearningModule, CqrsModule],
+  imports: [
+    VocabularyModule,
+    SubscriptionModule,
+    UserLearningModule,
+    CqrsModule,
+  ],
   controllers: [LearningController],
   providers: [
     ...commandHandlers,

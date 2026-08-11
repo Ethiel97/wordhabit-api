@@ -3,11 +3,12 @@ import {
   ActivateUserLearningProfileCommand,
   ActivateUserLearningProfileResult,
 } from '../commands/activate-user-learning-profile.command';
+import { UserLearningProfileNotFoundError } from '../errors/user-learning-profile-errors';
 
 import type { UserLearningRepository } from '../../domain/repositories/user-learning.repository';
 import { USER_LEARNING_REPOSITORY } from '../../domain/repositories/user-learning.repository';
+import { SubscriptionService } from '../../../subscription/application/services/subscription.service';
 import { Inject } from '@nestjs/common';
-import { UserLearningProfileNotFoundError } from '../errors/user-learning-profile-not-found.error';
 
 @CommandHandler(ActivateUserLearningProfileCommand)
 export class ActivateUserLearningProfileHandler implements ICommandHandler<
@@ -17,6 +18,7 @@ export class ActivateUserLearningProfileHandler implements ICommandHandler<
   constructor(
     @Inject(USER_LEARNING_REPOSITORY)
     private readonly userLearningProfileRepository: UserLearningRepository,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   async execute(
@@ -36,9 +38,16 @@ export class ActivateUserLearningProfileHandler implements ICommandHandler<
       );
     }
 
-    return this.userLearningProfileRepository.activateUserLearningProfile({
-      userId,
-      profileId,
-    });
+    // Switching to a frozen profile is allowed: the app shows it
+    // read-only rather than pretending it is gone.
+    const [activated, isPro] = await Promise.all([
+      this.userLearningProfileRepository.activateUserLearningProfile({
+        userId,
+        profileId,
+      }),
+      this.subscriptionService.isPro(userId),
+    ]);
+
+    return { ...activated, readOnly: !isPro && !activated.isMain };
   }
 }

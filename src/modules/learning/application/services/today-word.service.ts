@@ -5,12 +5,13 @@ import {
 } from '../../domain/repositories/learning.repository';
 import { Inject, Injectable } from '@nestjs/common';
 import { localDateToInstant } from '../../domain/services/local-date';
-import { UserLearningProfileNotFoundError } from '../../../user-learning/application/errors/user-learning-profile-not-found.error';
 import { CandidateWordNotFoundError } from '../errors/candidate-word-not-found.error';
 import {
   USER_LEARNING_REPOSITORY,
   type UserLearningRepository,
 } from '../../../user-learning/domain/repositories/user-learning.repository';
+import type { UserLearningProfile } from '../../../user-learning/domain/entities/user-learning-profile';
+import { UserLearningProfileNotFoundError } from '../../../user-learning/application/errors/user-learning-profile-errors';
 
 @Injectable()
 export class TodayWordService {
@@ -32,17 +33,6 @@ export class TodayWordService {
     userId: string,
     localDate: string,
   ): Promise<TodayWordAssignment> {
-    const today = localDateToInstant(localDate);
-
-    const assignment = await this.learningRepository.findTodayAssignment({
-      userId,
-      assignedFor: today,
-    });
-
-    if (assignment) {
-      return assignment;
-    }
-
     const profile =
       await this.userLearningRepository.findActiveUserLearningProfile(userId);
 
@@ -53,17 +43,59 @@ export class TodayWordService {
       );
     }
 
+    return this.getOrAssignForProfile(profile, localDate);
+  }
+
+  /** For callers holding an id, such as the notification sweep. */
+  async getOrAssignForProfileId(
+    profileId: string,
+    localDate: string,
+  ): Promise<TodayWordAssignment> {
+    const profile =
+      await this.userLearningRepository.findUserLearningProfileById(profileId);
+
+    if (!profile) {
+      throw new UserLearningProfileNotFoundError(
+        'User learning profile not found.',
+        { profileId },
+      );
+    }
+
+    return this.getOrAssignForProfile(profile, localDate);
+  }
+
+  /**
+   * One word per profile per day. Callers that already hold the profile
+   * come here directly: the notification sweep announces a named
+   * profile's word, and resolving the active one there would announce
+   * whichever language the learner last opened.
+   */
+  async getOrAssignForProfile(
+    profile: UserLearningProfile,
+    localDate: string,
+  ): Promise<TodayWordAssignment> {
+    const today = localDateToInstant(localDate);
+
+    const assignment = await this.learningRepository.findTodayAssignment({
+      userLearningProfileId: profile.id,
+      assignedFor: today,
+    });
+
+    if (assignment) {
+      return assignment;
+    }
+
     const word = await this.learningRepository.findCandidateWord(profile);
 
     if (!word) {
       throw new CandidateWordNotFoundError(
         'No candidate word found for the user learning profile.',
-        { userId },
+        { userId: profile.userId, profileId: profile.id },
       );
     }
 
     return this.learningRepository.createDailyAssignment({
-      userId,
+      userId: profile.userId,
       assignedFor: today,
       wordId: word.id,
       userLearningProfileId: profile.id,

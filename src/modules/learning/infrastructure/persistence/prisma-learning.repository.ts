@@ -14,6 +14,7 @@ import {
   RecordWordReviewEventParams,
   RescheduleUserWordReviewParams,
   ReviewQueueItem,
+  ProfileDayState,
   TodayWordAssignment,
   UpdateUserWordReviewParams,
   UpsertUserLearningStreakParams,
@@ -827,18 +828,54 @@ export class PrismaLearningRepository implements LearningRepository {
     };
   }
 
+  async findProfileDayStates(params: {
+    userLearningProfileIds: string[];
+    assignedFor: Date;
+  }): Promise<ProfileDayState[]> {
+    if (params.userLearningProfileIds.length === 0) return [];
+
+    const assignments = await this.prisma.dailyWordAssignment.findMany({
+      where: {
+        userLearningProfileId: { in: params.userLearningProfileIds },
+        assignedFor: params.assignedFor,
+      },
+      select: { userLearningProfileId: true, wordId: true, userId: true },
+    });
+
+    if (assignments.length === 0) return [];
+
+    const localDate = instantToLocalDate(params.assignedFor);
+    const answered = await this.prisma.quizResult.findMany({
+      where: {
+        localDate,
+        wordId: { in: assignments.map((a) => a.wordId) },
+        userId: { in: [...new Set(assignments.map((a) => a.userId))] },
+      },
+      select: { wordId: true },
+    });
+
+    const answeredWords = new Set(answered.map((row) => row.wordId));
+
+    return assignments.map((assignment) => ({
+      userLearningProfileId: assignment.userLearningProfileId,
+      wordId: assignment.wordId,
+      quizCompleted: answeredWords.has(assignment.wordId),
+    }));
+  }
+
   async findTodayAssignment(
     params: FindTodayAssignmentParams,
   ): Promise<TodayWordAssignment | null> {
-    const { userId, assignedFor } = params;
+    const { userLearningProfileId, assignedFor } = params;
 
-    const today = new Date(assignedFor);
-
-    const found = await this.prisma.dailyWordAssignment.findFirst({
+    // findUnique on the composite key rather than findFirst on the user:
+    // one word per profile per day is a database constraint, and asking
+    // for it that way is what makes a second profile impossible to miss.
+    const found = await this.prisma.dailyWordAssignment.findUnique({
       where: {
-        userId,
-        assignedFor: {
-          equals: today,
+        userLearningProfileId_assignedFor: {
+          userLearningProfileId,
+          assignedFor: new Date(assignedFor),
         },
       },
       include: {

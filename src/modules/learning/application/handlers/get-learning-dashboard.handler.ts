@@ -11,7 +11,6 @@ import type {
 } from '../../domain/repositories/learning.repository';
 import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
 import { TodayWordService } from '../services/today-word.service';
-import { UserLearningProfileNotFoundError } from '../../../user-learning/application/errors/user-learning-profile-not-found.error';
 import { CandidateWordNotFoundError } from '../errors/candidate-word-not-found.error';
 import {
   localDateToInstant,
@@ -21,6 +20,11 @@ import {
   QUIZ_REPOSITORY,
   type QuizRepository,
 } from '../../domain/repositories/quiz.repository';
+import {
+  USER_LEARNING_REPOSITORY,
+  type UserLearningRepository,
+} from '../../../user-learning/domain/repositories/user-learning.repository';
+import { UserLearningProfileNotFoundError } from '../../../user-learning/application/errors/user-learning-profile-errors';
 
 @QueryHandler(GetLearningDashboardQuery)
 export class GetLearningDashboardHandler implements IQueryHandler<
@@ -33,6 +37,9 @@ export class GetLearningDashboardHandler implements IQueryHandler<
 
     @Inject(QUIZ_REPOSITORY)
     private readonly quizRepository: QuizRepository,
+
+    @Inject(USER_LEARNING_REPOSITORY)
+    private readonly userLearningRepository: UserLearningRepository,
 
     private readonly todayWordService: TodayWordService,
   ) {}
@@ -96,6 +103,14 @@ export class GetLearningDashboardHandler implements IQueryHandler<
   async execute(
     query: GetLearningDashboardQuery,
   ): Promise<GetLearningDashboardResult> {
+    // Resolved before the parallel block because yesterday's word is
+    // keyed on the profile: a learner with two languages has two words
+    // for yesterday, and only this one's belongs on this dashboard.
+    const profile =
+      await this.userLearningRepository.findActiveUserLearningProfile(
+        query.userId,
+      );
+
     const [todayWord, yesterdayWord, reviewQueue, streak, stats] =
       await Promise.all([
         this.todayWordService
@@ -111,10 +126,14 @@ export class GetLearningDashboardHandler implements IQueryHandler<
             throw error;
           }),
 
-        this.learningRepository.findTodayAssignment({
-          userId: query.userId,
-          assignedFor: localDateToInstant(shiftLocalDate(query.localDate, -1)),
-        }),
+        profile
+          ? this.learningRepository.findTodayAssignment({
+              userLearningProfileId: profile.id,
+              assignedFor: localDateToInstant(
+                shiftLocalDate(query.localDate, -1),
+              ),
+            })
+          : null,
 
         this.learningRepository.findReviewQueue({
           userId: query.userId,

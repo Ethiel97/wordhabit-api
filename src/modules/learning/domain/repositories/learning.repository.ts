@@ -39,7 +39,12 @@ export interface CreateDailyAssignmentParams {
 }
 
 export interface FindTodayAssignmentParams {
-  userId: string;
+  /**
+   * Keyed on the profile, not the user: Pro learns one word per language
+   * per day, so a user has as many assignments for a given day as they
+   * have profiles.
+   */
+  userLearningProfileId: string;
   assignedFor: Date;
 }
 
@@ -258,7 +263,24 @@ export type EarnedBadge = {
   earnedAt: Date;
 };
 
+/** Today's word for one profile, as the profile switcher lists them. */
+export type ProfileDayState = {
+  userLearningProfileId: string;
+  wordId: string;
+  quizCompleted: boolean;
+};
+
 export interface LearningRepository {
+  /**
+   * Today's state for several profiles at once. The switcher shows a
+   * status per language, and one query per profile would grow with the
+   * plan.
+   */
+  findProfileDayStates(params: {
+    userLearningProfileIds: string[];
+    assignedFor: Date;
+  }): Promise<ProfileDayState[]>;
+
   findTodayAssignment(
     params: FindTodayAssignmentParams,
   ): Promise<TodayWordAssignment | null>;

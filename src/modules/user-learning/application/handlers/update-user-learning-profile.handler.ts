@@ -1,4 +1,9 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import {
+  ReminderSlotTakenError,
+  UserLearningProfileNotFoundError,
+  UserLearningProfileReadOnlyError,
+} from '../errors/user-learning-profile-errors';
 
 import {
   UpdateUserLearningProfileCommand,
@@ -8,7 +13,7 @@ import type { UserLearningRepository } from '../../domain/repositories/user-lear
 import { USER_LEARNING_REPOSITORY } from '../../domain/repositories/user-learning.repository';
 import { Inject } from '@nestjs/common';
 import { EnsureThemesExistService } from '../services/ensure-themes-exist.service';
-import { UserLearningProfileNotFoundError } from '../errors/user-learning-profile-not-found.error';
+import { SubscriptionService } from '../../../subscription/application/services/subscription.service';
 
 @CommandHandler(UpdateUserLearningProfileCommand)
 export class UpdateUserLearningProfileHandler implements ICommandHandler<
@@ -19,6 +24,7 @@ export class UpdateUserLearningProfileHandler implements ICommandHandler<
     @Inject(USER_LEARNING_REPOSITORY)
     private readonly userLearningRepository: UserLearningRepository,
     private readonly ensureThemesExistService: EnsureThemesExistService,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   async execute(
@@ -29,11 +35,39 @@ export class UpdateUserLearningProfileHandler implements ICommandHandler<
         command.profileId,
       );
 
-    if (!foundProfile) {
+    // Not found and not yours answer the same, so an id cannot be probed.
+    if (!foundProfile || foundProfile.userId !== command.userId) {
       throw new UserLearningProfileNotFoundError(
         'User learning profile not found.',
         { profileId: command.profileId },
       );
+    }
+
+    // A lapsed subscription keeps every profile and freezes all but the
+    // main one; switching to them is still allowed, editing is not.
+    if (!foundProfile.isMain) {
+      const isPro = await this.subscriptionService.isPro(command.userId);
+      if (!isPro) {
+        throw new UserLearningProfileReadOnlyError(command.profileId);
+      }
+    }
+
+    if (command.reminderSlot) {
+      const profiles =
+        await this.userLearningRepository.findUserLearningProfiles({
+          userId: command.userId,
+        });
+      const holder = profiles.find(
+        (profile) =>
+          profile.id !== command.profileId &&
+          profile.reminderSlot === command.reminderSlot,
+      );
+      if (holder) {
+        throw new ReminderSlotTakenError(
+          command.reminderSlot,
+          holder.targetLanguage,
+        );
+      }
     }
 
     // Undefined means "leave the themes alone", which is not the same
@@ -44,12 +78,17 @@ export class UpdateUserLearningProfileHandler implements ICommandHandler<
         )
       : undefined;
 
-    return this.userLearningRepository.updateUserLearningProfile({
-      themeSlugs: normalizedThemeSlugs,
-      interfaceLanguage: command.interfaceLanguage,
-      targetLanguage: command.targetLanguage,
-      profileId: command.profileId,
-      difficulty: command.difficulty,
-    });
+    const updated = await this.userLearningRepository.updateUserLearningProfile(
+      {
+        themeSlugs: normalizedThemeSlugs,
+        interfaceLanguage: command.interfaceLanguage,
+        targetLanguage: command.targetLanguage,
+        profileId: command.profileId,
+        difficulty: command.difficulty,
+        reminderSlot: command.reminderSlot,
+      },
+    );
+
+    return { ...updated, readOnly: false };
   }
 }

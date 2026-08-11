@@ -7,7 +7,15 @@ import type { UserLearningRepository } from '../../domain/repositories/user-lear
 import { USER_LEARNING_REPOSITORY } from '../../domain/repositories/user-learning.repository';
 import { Inject } from '@nestjs/common';
 import { EnsureThemesExistService } from '../services/ensure-themes-exist.service';
-import { UserLearningProfileAlreadyExistsError } from '../errors/user-learning-profile-already-exists.error';
+import { SubscriptionService } from '../../../subscription/application/services/subscription.service';
+import {
+  ReminderSlotTakenError,
+  UserLearningProfileAlreadyExistsError,
+  UserLearningProfileLimitReachedError,
+} from '../errors/user-learning-profile-errors';
+
+const MAX_PROFILES_FREE = 1;
+const MAX_PROFILES_PRO = 3;
 
 @CommandHandler(CreateUserLearningProfileCommand)
 export class CreateUserLearningProfileHandler implements ICommandHandler<
@@ -18,6 +26,7 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
     @Inject(USER_LEARNING_REPOSITORY)
     private readonly userLearningRepository: UserLearningRepository,
     private readonly ensureThemesExistService: EnsureThemesExistService,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   async execute(
@@ -33,6 +42,19 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
         email: command.email,
         name: command.name,
       }));
+
+    const isPro = await this.subscriptionService.isPro(user.id);
+
+    const userProfiles =
+      await this.userLearningRepository.findUserLearningProfiles({
+        userId: user.id,
+      });
+
+    const limit = isPro ? MAX_PROFILES_PRO : MAX_PROFILES_FREE;
+
+    if (userProfiles.length >= limit) {
+      throw new UserLearningProfileLimitReachedError(limit, isPro);
+    }
 
     // Guarded per (user, targetLanguage), which is what the database
     // enforces: a learner may hold one profile per language, and the
@@ -50,6 +72,20 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
       );
     }
 
+    // A partial unique index refuses this too; checking first is what
+    // turns it into a message naming the language that holds the slot.
+    if (command.reminderSlot) {
+      const holder = userProfiles.find(
+        (profile) => profile.reminderSlot === command.reminderSlot,
+      );
+      if (holder) {
+        throw new ReminderSlotTakenError(
+          command.reminderSlot,
+          holder.targetLanguage,
+        );
+      }
+    }
+
     const normalizedThemeSlugs =
       await this.ensureThemesExistService.normalizeAndEnsure(
         command.themeSlugs,
@@ -62,6 +98,10 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
         interfaceLanguage: command.interfaceLanguage,
         difficulty: command.difficulty,
         themeSlugs: normalizedThemeSlugs,
+        reminderSlot: command.reminderSlot,
+        // Server-decided: the first profile is the one a downgrade keeps,
+        // and a client that could name it would keep every language.
+        isMain: userProfiles.length === 0,
       },
     );
     return {
@@ -74,6 +114,8 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
       themeSlugs: profile.themeSlugs,
       updatedAt: profile.updatedAt,
       userId: profile.userId,
+      isMain: profile.isMain,
+      reminderSlot: profile.reminderSlot,
     };
   }
 }

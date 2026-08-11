@@ -130,15 +130,28 @@ export class PrismaNotificationRepository implements NotificationRepository {
   async findDueRecipients(
     params: FindDueRecipientsParams,
   ): Promise<DueRecipient[]> {
-    const rows = await this.prisma.user.findMany({
+    // Driven by the profile, not the user: the hour belongs to the
+    // language, so a subscriber appears once per profile due now.
+    const rows = await this.prisma.userLearningProfile.findMany({
       where: {
-        deletedAt: null,
-        devices: { some: { timeZone: params.timeZone } },
-        notificationPreferences: {
-          some: {
-            channel: params.channel,
-            enabled: true,
-            slot: params.slot,
+        // The profile's own hour, falling back to the account-wide one
+        // for profiles an older client created without asking.
+        OR: [
+          { reminderSlot: params.slot },
+          {
+            reminderSlot: null,
+            user: {
+              notificationPreferences: {
+                some: { channel: params.channel, slot: params.slot },
+              },
+            },
+          },
+        ],
+        user: {
+          deletedAt: null,
+          devices: { some: { timeZone: params.timeZone } },
+          notificationPreferences: {
+            some: { channel: params.channel, enabled: true },
           },
         },
         // The ledger, not a flag, so a restart cannot lose the fact.
@@ -151,23 +164,24 @@ export class PrismaNotificationRepository implements NotificationRepository {
       },
       select: {
         id: true,
-        devices: {
-          where: { timeZone: params.timeZone },
-          select: { token: true },
-        },
-        // The active profile carries the language the copy is written in.
-        userLearningProfiles: {
-          where: { isActive: true },
-          take: 1,
-          select: { interfaceLanguage: true },
+        userId: true,
+        interfaceLanguage: true,
+        user: {
+          select: {
+            devices: {
+              where: { timeZone: params.timeZone },
+              select: { token: true },
+            },
+          },
         },
       },
     });
 
     return rows.map((row) => ({
-      userId: row.id,
-      interfaceLanguage: row.userLearningProfiles[0]?.interfaceLanguage ?? 'EN',
-      tokens: row.devices.map((device) => device.token),
+      userId: row.userId,
+      userLearningProfileId: row.id,
+      interfaceLanguage: row.interfaceLanguage,
+      tokens: row.user.devices.map((device) => device.token),
     }));
   }
 
@@ -177,6 +191,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
     const result = await this.prisma.notificationDelivery.createMany({
       data: {
         userId: params.userId,
+        userLearningProfileId: params.userLearningProfileId,
         channel: params.channel,
         localDate: new Date(params.localDate),
       },
