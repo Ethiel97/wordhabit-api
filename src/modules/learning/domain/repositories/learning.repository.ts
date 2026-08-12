@@ -19,7 +19,10 @@ import {
 } from '../../../vocabulary/domain/entities/word-synonym';
 import { PartOfSpeech } from '../../../vocabulary/domain/entities/part-of-speech';
 import { BadgeCode } from '../entities/badge';
-import { LearningBadgeFigures } from '../services/badge-catalog';
+import {
+  LanguageMasteredWords,
+  LearningBadgeFigures,
+} from '../services/badge-catalog';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 
@@ -424,6 +427,17 @@ export interface WordProgressRepository {
 export interface LearnerBadgeRepository {
   /** Every figure the badge rules are measured against, in one read. */
   findBadgeSnapshot(userId: string): Promise<LearningBadgeFigures>;
+
+  /**
+   * Words near mastery, split by the language they belong to. Only
+   * languages holding at least one appear.
+   *
+   * The raw figures, not a verdict: `countMasteredLanguages` owns what
+   * makes a language count, so the threshold stays out of SQL.
+   */
+  countMasteredWordsByLanguage(params: {
+    userId: string;
+  }): Promise<LanguageMasteredWords[]>;
 
   /**
    * Records the codes the user does not already hold, and returns those

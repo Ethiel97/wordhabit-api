@@ -6,6 +6,8 @@ import { QUIZ_REPOSITORY } from '../../domain/repositories/quiz.repository';
 import { BadgeCode } from '../../domain/entities/badge';
 import {
   BadgeSnapshot,
+  countConqueredQuizModes,
+  countMasteredLanguages,
   earnedBadgeCodes,
 } from '../../domain/services/badge-catalog';
 
@@ -41,11 +43,17 @@ export class BadgeAwarderService {
    * another repository would be the layering running backwards.
    */
   async readSnapshot(userId: string): Promise<BadgeSnapshot> {
-    const [figures, quizPerfectModes] = await Promise.all([
+    const [figures, quizDays, languages] = await Promise.all([
       this.badgeRepository.findBadgeSnapshot(userId),
-      this.quizRepository.countPerfectQuizModes({ userId }),
+      this.quizRepository.findPerfectQuizDaysByMode({ userId }),
+      this.badgeRepository.countMasteredWordsByLanguage({ userId }),
     ]);
-    return { ...figures, quizPerfectModes };
+
+    return {
+      ...figures,
+      quizPerfectModes: countConqueredQuizModes(quizDays),
+      masteredLanguages: countMasteredLanguages(languages),
+    };
   }
 
   /**

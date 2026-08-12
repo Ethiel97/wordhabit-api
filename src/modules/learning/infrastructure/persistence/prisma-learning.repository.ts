@@ -44,6 +44,7 @@ import { instantToLocalDate } from '../../domain/services/local-date';
 import { BadgeCode } from '../../domain/entities/badge';
 import {
   FLUENT_MASTERY_LEVEL,
+  LanguageMasteredWords,
   LearningBadgeFigures,
 } from '../../domain/services/badge-catalog';
 
@@ -339,6 +340,28 @@ export class PrismaLearningRepository implements LearningRepository {
       wordsNearMastery,
       themesExplored: Number(themes[0]?.count ?? 0),
     };
+  }
+
+  async countMasteredWordsByLanguage(params: {
+    userId: string;
+  }): Promise<LanguageMasteredWords[]> {
+    // Raw, because the language lives on the word: Prisma groups by a
+    // column of the queried table, never by one across the relation.
+    const rows = await this.prisma.$queryRaw<
+      { language: string; count: bigint }[]
+    >`
+      SELECT vw."targetLanguage"::text AS language, COUNT(*)::bigint AS count
+      FROM user_word_progress uwp
+      JOIN vocabulary_words vw ON vw.id = uwp."wordId"
+      WHERE uwp."userId" = ${params.userId}
+        AND uwp."masteryLevel" >= ${FLUENT_MASTERY_LEVEL}
+      GROUP BY vw."targetLanguage"
+    `;
+
+    return rows.map((row) => ({
+      language: row.language,
+      masteredWords: Number(row.count),
+    }));
   }
 
   async awardBadges(params: {

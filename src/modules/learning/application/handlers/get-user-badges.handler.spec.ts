@@ -9,6 +9,7 @@ const snapshot: BadgeSnapshot = {
   themesExplored: 0,
   wordsNearMastery: 0,
   quizPerfectModes: 0,
+  masteredLanguages: 0,
 };
 
 function makeHandler(earnedNow: BadgeCode[]) {

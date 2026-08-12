@@ -23,19 +23,88 @@ export type BadgeSnapshot = {
   /** Words held at [FLUENT_MASTERY_LEVEL] or above. */
   wordsNearMastery: number;
 
-  /** Distinct quiz modes with at least one perfect round. */
+  /** Quiz modes conquered — see [PERFECT_DAYS_PER_QUIZ_MODE]. */
   quizPerfectModes: number;
+
+  /**
+   * Languages carried to mastery — see
+   * [MASTERED_WORDS_PER_BILINGUAL_LANGUAGE].
+   */
+  masteredLanguages: number;
 };
 
 /**
- * The snapshot's learning-side figures — what [LearningRepository] can
- * answer alone. The quiz repository contributes the rest, and
- * `BadgeAwarderService` composes the two.
+ * The snapshot's plain learning figures — the ones a single count
+ * answers. The two that are a verdict over a distribution are composed
+ * by `BadgeAwarderService` from the rows their repositories return.
  */
-export type LearningBadgeFigures = Omit<BadgeSnapshot, 'quizPerfectModes'>;
+export type LearningBadgeFigures = Omit<
+  BadgeSnapshot,
+  'quizPerfectModes' | 'masteredLanguages'
+>;
 
 /** What "fluent" means for a single word, as a mastery percentage. */
 export const FLUENT_MASTERY_LEVEL = 90;
+
+/**
+ * Days carrying a perfect round before a quiz mode counts as conquered.
+ *
+ * Days rather than rounds, because rounds can be farmed in one sitting
+ * and days cannot. The product rewards coming back, so the badge that
+ * says "champion" should measure the same thing the streak does.
+ *
+ * The client states this number in `badgeDescQuizChampion`; moving the
+ * dial means moving that sentence in all three ARB files.
+ */
+export const PERFECT_DAYS_PER_QUIZ_MODE = 5;
+
+/** How many days a learner has played one quiz mode perfectly. */
+export type QuizModePerfectDays = {
+  mode: string;
+  perfectDays: number;
+};
+
+/**
+ * Modes that clear [PERFECT_DAYS_PER_QUIZ_MODE].
+ *
+ * Here rather than in the query so the threshold is testable without a
+ * database, and so the badge's rules stay in one file.
+ */
+export function countConqueredQuizModes(
+  modes: readonly QuizModePerfectDays[],
+): number {
+  return modes.filter((mode) => mode.perfectDays >= PERFECT_DAYS_PER_QUIZ_MODE)
+    .length;
+}
+
+/**
+ * Words at [FLUENT_MASTERY_LEVEL] a language needs before it counts
+ * towards BILINGUAL_PRO.
+ *
+ * Held words would make the badge a button press: adding a profile is
+ * one tap, and "bilingual" has to mean something was learned. Twice this
+ * figure is FLUENT_LEARNER's own bar, which is the point — the same
+ * effort, split across two languages instead of poured into one.
+ *
+ * The client states the number in `badgeDescBilingualPro`.
+ */
+export const MASTERED_WORDS_PER_BILINGUAL_LANGUAGE = 25;
+
+/** How many words a learner has brought near mastery in one language. */
+export type LanguageMasteredWords = {
+  language: string;
+  masteredWords: number;
+};
+
+/** Languages that clear [MASTERED_WORDS_PER_BILINGUAL_LANGUAGE]. */
+export function countMasteredLanguages(
+  languages: readonly LanguageMasteredWords[],
+): number {
+  return languages.filter(
+    (language) =>
+      language.masteredWords >= MASTERED_WORDS_PER_BILINGUAL_LANGUAGE,
+  ).length;
+}
 
 type BadgeRule = {
   code: BadgeCode;
@@ -51,10 +120,6 @@ type BadgeRule = {
  * Every badge is the same shape — a count against a target — which is
  * what lets the evaluator and the "closest to unlocking" hint both read
  * from here instead of restating the thresholds.
- *
- * BILINGUAL_PRO is deliberately absent: it needs a second active
- * learning profile. It stays locked, which reads as a distant goal
- * rather than a defect, and adding it later is a row.
  */
 export const BADGE_RULES: readonly BadgeRule[] = [
   { code: BadgeCode.STREAK_30, target: 30, progress: (s) => s.longestStreak },
@@ -97,8 +162,17 @@ export const BADGE_RULES: readonly BadgeRule[] = [
     progress: (s) => s.wordsNearMastery,
   },
   {
-    // A perfect round in each of the three modes — mastery is free,
+    // Two languages carried to mastery, not two profiles created.
+    code: BadgeCode.BILINGUAL_PRO,
+    target: 2,
+    progress: (s) => s.masteredLanguages,
+  },
+  {
+    // The three modes, each carried on several days — mastery is free,
     // the other two are Pro, so the badge is structurally a Pro badge.
+    // Its bar is set accordingly: the only people who can reach it are
+    // already subscribers, and a trophy they clear in one session is
+    // not a trophy.
     code: BadgeCode.QUIZ_CHAMPION,
     target: 3,
     progress: (s) => s.quizPerfectModes,

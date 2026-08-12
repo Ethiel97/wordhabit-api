@@ -5,7 +5,11 @@ import {
   BadgeSnapshot,
   badgeProgress,
   badgeStandings,
+  countConqueredQuizModes,
+  countMasteredLanguages,
   earnedBadgeCodes,
+  MASTERED_WORDS_PER_BILINGUAL_LANGUAGE,
+  PERFECT_DAYS_PER_QUIZ_MODE,
 } from './badge-catalog';
 
 const nothing: BadgeSnapshot = {
@@ -14,6 +18,7 @@ const nothing: BadgeSnapshot = {
   themesExplored: 0,
   wordsNearMastery: 0,
   quizPerfectModes: 0,
+  masteredLanguages: 0,
 };
 
 describe('earnedBadgeCodes', () => {
@@ -45,6 +50,7 @@ describe('earnedBadgeCodes', () => {
       themesExplored: 5,
       wordsNearMastery: 0,
       quizPerfectModes: 0,
+      masteredLanguages: 0,
     });
 
     expect(earned).toEqual([
@@ -54,19 +60,21 @@ describe('earnedBadgeCodes', () => {
     ]);
   });
 
-  it('leaves the two blocked badges unreachable', () => {
+  it('does not hand out the two Pro badges on the free figures', () => {
     const everything: BadgeSnapshot = {
       longestStreak: 99999,
       wordsCollected: 99999,
       themesExplored: 99999,
       wordsNearMastery: 99999,
       quizPerfectModes: 0,
+      masteredLanguages: 0,
     };
 
-    // They need a second learning profile and the quiz. Absent from the
-    // catalogue means locked, not broken.
+    // Both measure something a free account cannot reach: the two paid
+    // quiz modes, and a second language. No amount of the other figures
+    // stands in for them.
     expect(earnedBadgeCodes(everything)).not.toContain(BadgeCode.BILINGUAL_PRO);
-    expect(earnedBadgeCodes(everything)).not.toContain(BadgeCode.BILINGUAL_PRO);
+    expect(earnedBadgeCodes(everything)).not.toContain(BadgeCode.QUIZ_CHAMPION);
   });
 });
 
@@ -85,7 +93,9 @@ describe('badgeProgress', () => {
   });
 
   it('has nothing to say about a badge outside the catalogue', () => {
-    expect(badgeProgress(BadgeCode.BILINGUAL_PRO, nothing)).toBeNull();
+    // Every real code carries a rule now, so the guard is reached only
+    // by a code the catalogue has never heard of.
+    expect(badgeProgress('NOT_A_BADGE' as BadgeCode, nothing)).toBeNull();
   });
 });
 
@@ -136,12 +146,13 @@ describe('badgeStandings', () => {
     expect(locked.progress).toEqual({ have: 40, need: 50 });
   });
 
-  it('has nothing to measure on a badge with no rule yet', () => {
+  it('can measure every badge the app draws', () => {
+    // What catches a code added to the enum and forgotten in the rules:
+    // it would render as a tile with no bar and sink to the bottom of
+    // the screen, which reads as a defect rather than a goal.
     const standings = badgeStandings({ earned: [], snapshot: nothing });
 
-    expect(
-      standings.find((s) => s.code === BadgeCode.BILINGUAL_PRO)!.progress,
-    ).toBeNull();
+    expect(standings.every((s) => s.progress !== null)).toBe(true);
   });
 
   it('orders held first, then whatever is closest to falling', () => {
@@ -153,8 +164,70 @@ describe('badgeStandings', () => {
     expect(standings[0].code).toBe(BadgeCode.STREAK_30);
     // 40/50 beats every collector sitting at zero.
     expect(standings[1].code).toBe(BadgeCode.STREAK_50);
-    // The ruleless pair sinks: there is nothing to rank them on.
-    expect(standings.at(-1)!.progress).toBeNull();
-    expect(standings.at(-1)!.earnedAt).toBeNull();
+
+    // The rest never climbs back: asserting the whole run rather than
+    // the last tile, which only ever proved the enum's own order.
+    const shares = standings
+      .filter((standing) => !standing.earnedAt)
+      .map((standing) => standing.progress!.have / standing.progress!.need);
+
+    expect(shares).toEqual([...shares].sort((a, b) => b - a));
+  });
+});
+
+describe('countConqueredQuizModes', () => {
+  const days = (...counts: number[]) =>
+    counts.map((perfectDays, index) => ({
+      mode: `MODE_${index}`,
+      perfectDays,
+    }));
+
+  it('counts a mode only once it clears the threshold', () => {
+    const modes = days(
+      PERFECT_DAYS_PER_QUIZ_MODE,
+      PERFECT_DAYS_PER_QUIZ_MODE - 1,
+      PERFECT_DAYS_PER_QUIZ_MODE + 4,
+    );
+
+    expect(countConqueredQuizModes(modes)).toBe(2);
+  });
+
+  it('gives nothing for a single flawless session', () => {
+    // The badge this feeds says "champion". One good afternoon in all
+    // three modes used to win it outright.
+    expect(countConqueredQuizModes(days(1, 1, 1))).toBe(0);
+  });
+
+  it('counts nothing when the learner has never played', () => {
+    expect(countConqueredQuizModes([])).toBe(0);
+  });
+});
+
+describe('countMasteredLanguages', () => {
+  const languages = (...counts: number[]) =>
+    counts.map((masteredWords, index) => ({
+      language: `LANG_${index}`,
+      masteredWords,
+    }));
+
+  it('counts a language only once it clears the threshold', () => {
+    const held = languages(
+      MASTERED_WORDS_PER_BILINGUAL_LANGUAGE,
+      MASTERED_WORDS_PER_BILINGUAL_LANGUAGE - 1,
+    );
+
+    expect(countMasteredLanguages(held)).toBe(1);
+  });
+
+  it('does not let one strong language stand in for two', () => {
+    // BILINGUAL_PRO is won at two. Pouring everything into one language
+    // is FLUENT_LEARNER's badge, not this one.
+    const held = languages(MASTERED_WORDS_PER_BILINGUAL_LANGUAGE * 10);
+
+    expect(countMasteredLanguages(held)).toBe(1);
+  });
+
+  it('gives nothing for a second profile created and left alone', () => {
+    expect(countMasteredLanguages(languages(30, 0))).toBe(1);
   });
 });
