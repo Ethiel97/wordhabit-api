@@ -1,15 +1,19 @@
 import {
   ActivityDetailWord,
   CreateDailyAssignmentParams,
+  EarnedBadge,
   FindRandomWordParams,
   FindReviewQueueParams,
   FindTodayAssignmentParams,
   FindUserActivityDetailParams,
   FindUserDailyActivityParams,
+  FindUserLearningStatsParams,
   FindUserWordLibraryParams,
   FindUserWordProgressParams,
   LastWordReview,
   LearningRepository,
+  ProfileDayState,
+  ProfileWordCount,
   RandomWord,
   RecordWordReviewEventParams,
   RescheduleUserWordReviewParams,
@@ -39,10 +43,10 @@ import { FavoriteWord } from '../../domain/entities/favorite-word';
 import { instantToLocalDate } from '../../domain/services/local-date';
 import { BadgeCode } from '../../domain/entities/badge';
 import {
-  LearningBadgeFigures,
   FLUENT_MASTERY_LEVEL,
+  LanguageMasteredWords,
+  LearningBadgeFigures,
 } from '../../domain/services/badge-catalog';
-import { EarnedBadge } from '../../domain/repositories/learning.repository';
 
 @Injectable()
 export class PrismaLearningRepository implements LearningRepository {
@@ -114,28 +118,39 @@ export class PrismaLearningRepository implements LearningRepository {
   async findUserWordLibrary(
     params: FindUserWordLibraryParams,
   ): Promise<UserWordLibraryResult> {
-    const { userId, status, search, limit, cursor } = params;
+    const { userId, targetLanguage, status, search, limit, cursor } = params;
+
+    const ofLanguage = {
+      userId,
+      word: {
+        targetLanguage:
+          PrismaVocabularyMapper.toPrismaLanguageCode(targetLanguage),
+      },
+    };
 
     // Unfiltered on purpose, so the header and chip counts never move
     // as the user searches.
     const [grouped, aggregate, items] = await Promise.all([
       this.prisma.userWordProgress.groupBy({
         by: ['status'],
-        where: { userId },
+        where: ofLanguage,
         _count: { status: true },
       }),
       this.prisma.userWordProgress.aggregate({
-        where: { userId },
+        where: ofLanguage,
         _avg: { masteryLevel: true },
         _count: { id: true },
       }),
       this.prisma.userWordProgress.findMany({
         where: {
-          userId,
+          ...ofLanguage,
           ...(status ? { status } : {}),
-          ...(search
-            ? {
-                word: {
+          // Nested inside `word` rather than beside it: a second `word`
+          // key would replace the language filter, not add to it.
+          word: {
+            ...ofLanguage.word,
+            ...(search
+              ? {
                   OR: [
                     { term: { contains: search, mode: 'insensitive' } },
                     {
@@ -145,9 +160,9 @@ export class PrismaLearningRepository implements LearningRepository {
                       },
                     },
                   ],
-                },
-              }
-            : {}),
+                }
+              : {}),
+          },
         },
         include: {
           word: {
@@ -232,11 +247,18 @@ export class PrismaLearningRepository implements LearningRepository {
     };
   }
 
-  async findUserLearningStats(userId: string): Promise<UserLearningStats> {
+  async findUserLearningStats(
+    params: FindUserLearningStatsParams,
+  ): Promise<UserLearningStats> {
     const grouped = await this.prisma.userWordProgress.groupBy({
       by: ['status'],
       where: {
-        userId,
+        userId: params.userId,
+        word: {
+          targetLanguage: PrismaVocabularyMapper.toPrismaLanguageCode(
+            params.targetLanguage,
+          ),
+        },
       },
       _count: {
         status: true,
@@ -318,6 +340,28 @@ export class PrismaLearningRepository implements LearningRepository {
       wordsNearMastery,
       themesExplored: Number(themes[0]?.count ?? 0),
     };
+  }
+
+  async countMasteredWordsByLanguage(params: {
+    userId: string;
+  }): Promise<LanguageMasteredWords[]> {
+    // Raw, because the language lives on the word: Prisma groups by a
+    // column of the queried table, never by one across the relation.
+    const rows = await this.prisma.$queryRaw<
+      { language: string; count: bigint }[]
+    >`
+      SELECT vw."targetLanguage"::text AS language, COUNT(*)::bigint AS count
+      FROM user_word_progress uwp
+      JOIN vocabulary_words vw ON vw.id = uwp."wordId"
+      WHERE uwp."userId" = ${params.userId}
+        AND uwp."masteryLevel" >= ${FLUENT_MASTERY_LEVEL}
+      GROUP BY vw."targetLanguage"
+    `;
+
+    return rows.map((row) => ({
+      language: row.language,
+      masteredWords: Number(row.count),
+    }));
   }
 
   async awardBadges(params: {
@@ -593,13 +637,22 @@ export class PrismaLearningRepository implements LearningRepository {
   async findReviewQueue(
     params: FindReviewQueueParams,
   ): Promise<ReviewQueueItem[]> {
-    const { userId, localDate, limit } = params;
+    const { userId, targetLanguage, localDate, limit } = params;
 
-    this.logger.log('Finding review queue', { userId, localDate, limit });
+    this.logger.log('Finding review queue', {
+      userId,
+      targetLanguage,
+      localDate,
+      limit,
+    });
 
     const items = await this.prisma.userWordProgress.findMany({
       where: {
         userId,
+        word: {
+          targetLanguage:
+            PrismaVocabularyMapper.toPrismaLanguageCode(targetLanguage),
+        },
         // MASTERED and SKIPPED are excluded above, so a null
         // nextReviewOn can only mean "discovered, not yet practised".
         status: {
@@ -827,18 +880,75 @@ export class PrismaLearningRepository implements LearningRepository {
     };
   }
 
+  async countWordsByProfile(params: {
+    userLearningProfileIds: string[];
+  }): Promise<ProfileWordCount[]> {
+    if (params.userLearningProfileIds.length === 0) return [];
+
+    const rows = await this.prisma.dailyWordAssignment.groupBy({
+      by: ['userLearningProfileId'],
+      // No date filter: this is a lifetime total, and narrowing it to a
+      // day would answer 0 or 1 for every profile.
+      where: {
+        userLearningProfileId: { in: params.userLearningProfileIds },
+      },
+      _count: { wordId: true },
+    });
+
+    return rows.map((row) => ({
+      userLearningProfileId: row.userLearningProfileId,
+      wordCount: row._count.wordId,
+    }));
+  }
+
+  async findProfileDayStates(params: {
+    userLearningProfileIds: string[];
+    assignedFor: Date;
+  }): Promise<ProfileDayState[]> {
+    if (params.userLearningProfileIds.length === 0) return [];
+
+    const assignments = await this.prisma.dailyWordAssignment.findMany({
+      where: {
+        userLearningProfileId: { in: params.userLearningProfileIds },
+        assignedFor: params.assignedFor,
+      },
+      select: { userLearningProfileId: true, wordId: true, userId: true },
+    });
+
+    if (assignments.length === 0) return [];
+
+    const localDate = instantToLocalDate(params.assignedFor);
+    const answered = await this.prisma.quizResult.findMany({
+      where: {
+        localDate,
+        wordId: { in: assignments.map((a) => a.wordId) },
+        userId: { in: [...new Set(assignments.map((a) => a.userId))] },
+      },
+      select: { wordId: true },
+    });
+
+    const answeredWords = new Set(answered.map((row) => row.wordId));
+
+    return assignments.map((assignment) => ({
+      userLearningProfileId: assignment.userLearningProfileId,
+      wordId: assignment.wordId,
+      quizCompleted: answeredWords.has(assignment.wordId),
+    }));
+  }
+
   async findTodayAssignment(
     params: FindTodayAssignmentParams,
   ): Promise<TodayWordAssignment | null> {
-    const { userId, assignedFor } = params;
+    const { userLearningProfileId, assignedFor } = params;
 
-    const today = new Date(assignedFor);
-
-    const found = await this.prisma.dailyWordAssignment.findFirst({
+    // findUnique on the composite key rather than findFirst on the user:
+    // one word per profile per day is a database constraint, and asking
+    // for it that way is what makes a second profile impossible to miss.
+    const found = await this.prisma.dailyWordAssignment.findUnique({
       where: {
-        userId,
-        assignedFor: {
-          equals: today,
+        userLearningProfileId_assignedFor: {
+          userLearningProfileId,
+          assignedFor: new Date(assignedFor),
         },
       },
       include: {

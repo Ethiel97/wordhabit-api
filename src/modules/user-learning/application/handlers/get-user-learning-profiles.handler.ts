@@ -6,6 +6,7 @@ import {
 import { Inject } from '@nestjs/common';
 import type { UserLearningRepository } from '../../domain/repositories/user-learning.repository';
 import { USER_LEARNING_REPOSITORY } from '../../domain/repositories/user-learning.repository';
+import { SubscriptionService } from '../../../subscription/application/services/subscription.service';
 
 @QueryHandler(GetUserLearningProfilesQuery)
 export class GetUserLearningProfilesHandler implements IQueryHandler<
@@ -15,14 +16,22 @@ export class GetUserLearningProfilesHandler implements IQueryHandler<
   constructor(
     @Inject(USER_LEARNING_REPOSITORY)
     private readonly userLearningRepository: UserLearningRepository,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
-  execute(
+
+  async execute(
     query: GetUserLearningProfilesQuery,
   ): Promise<GetUserLearningProfilesResult> {
     const { userId } = query;
 
-    return this.userLearningRepository.findUserLearningProfiles({
-      userId,
-    });
+    const [profiles, isPro] = await Promise.all([
+      this.userLearningRepository.findUserLearningProfiles({ userId }),
+      this.subscriptionService.isPro(userId),
+    ]);
+
+    return profiles.map((profile) => ({
+      ...profile,
+      readOnly: !isPro && !profile.isMain,
+    }));
   }
 }

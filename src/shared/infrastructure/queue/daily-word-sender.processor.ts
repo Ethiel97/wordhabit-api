@@ -59,7 +59,7 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
 
     if (notified > 0) {
       this.logger.log(
-        `Notified ${notified} user(s) over ${due.length} slot(s)`,
+        `Notified ${notified} profile(s) over ${due.length} slot(s)`,
       );
     }
 
@@ -109,23 +109,25 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
     for (const recipient of recipients) {
       if (recipient.tokens.length === 0) continue;
 
+      const profileId = recipient.userLearningProfileId;
+      if (!profileId) continue;
+
       let word: { id: string; term: string };
       try {
-        const assignment = await this.todayWord.getOrAssignTodayWord(
-          recipient.userId,
+        const assignment = await this.todayWord.getOrAssignForProfileId(
+          profileId,
           due.localDate,
         );
         word = { id: assignment.word.id, term: assignment.word.term };
       } catch (error) {
-        // No profile, or a dry corpus: not worth abandoning the batch.
-        this.logger.warn(
-          `No word for user ${recipient.userId}: ${String(error)}`,
-        );
+        // A dry corpus for this language: not worth abandoning the batch.
+        this.logger.warn(`No word for profile ${profileId}: ${String(error)}`);
         continue;
       }
 
       const isOurs = await this.notifications.recordDelivery({
         userId: recipient.userId,
+        userLearningProfileId: profileId,
         channel: NotificationChannel.DAILY_WORD,
         localDate: due.localDate,
       });

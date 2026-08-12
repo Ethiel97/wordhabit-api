@@ -1,5 +1,13 @@
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Delete,
+} from '@nestjs/common';
 import { CreateUserLearningProfileRequestDto } from '../../application/dtos/create-user-learning-profile.request.dto';
 import { CreateUserLearningProfileCommand } from '../../application/commands/create-user-learning-profile.command';
 import { ApiSuccessResponse } from '../../../../shared/presentation/http/api-success-response';
@@ -11,6 +19,7 @@ import { ActivateUserLearningProfileCommand } from '../../application/commands/a
 import { USER_LEARNING } from '../../../../shared/presentation/http/endpoints';
 import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
 import type { AuthenticatedUser } from '../../../auth/domain/entities/authenticated-user';
+import { DeleteUserLearningProfileCommand } from '../../application/commands/delete-user-learning-profile.command';
 
 @Controller(USER_LEARNING.BASE)
 export class UserLearningController {
@@ -21,16 +30,19 @@ export class UserLearningController {
 
   @Post(USER_LEARNING.CREATE_PROFILE)
   async createUserLearningProfile(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser()
+    user: AuthenticatedUser,
     @Body() body: CreateUserLearningProfileRequestDto,
   ) {
     const result = await this.commandBus.execute(
       new CreateUserLearningProfileCommand(
         user.email,
         user.name,
-        body.targetLanguage,
         body.interfaceLanguage,
+        body.targetLanguage,
         body.themeSlugs,
+        body.difficulty,
+        body.reminderSlot,
       ),
     );
 
@@ -69,17 +81,32 @@ export class UserLearningController {
 
   @Patch(USER_LEARNING.UPDATE_PROFILE)
   async updateUserLearningProfile(
+    @CurrentUser() user: AuthenticatedUser,
     @Param('profileId') profileId: string,
     @Body() body: UpdateUserLearningProfileDto,
   ) {
     const result = await this.commandBus.execute(
       new UpdateUserLearningProfileCommand(
+        user.id,
         profileId,
         body.themeSlugs,
         body.interfaceLanguage,
         body.targetLanguage,
         body.difficulty,
+        body.reminderSlot,
       ),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Delete(USER_LEARNING.DELETE_PROFILE)
+  async deleteUserLearningProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('profileId') profileId: string,
+  ) {
+    const result = await this.commandBus.execute(
+      new DeleteUserLearningProfileCommand(user.id, profileId),
     );
 
     return ApiSuccessResponse.of(result);

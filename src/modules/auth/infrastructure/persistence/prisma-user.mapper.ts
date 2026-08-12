@@ -16,19 +16,4 @@ export class PrismaUserMapper {
       updatedAt: prismaUser.updatedAt,
     };
   }
-
-  static toPrisma(domainUser: User): PrismaUser {
-    return {
-      id: domainUser.id,
-      email: domainUser.email,
-      name: domainUser.name,
-      password: domainUser.password,
-      emailVerifiedAt: domainUser.emailVerifiedAt,
-      passwordVersion: domainUser.passwordVersion,
-      createdAt: domainUser.createdAt,
-      updatedAt: domainUser.updatedAt,
-      deletedAt: domainUser.deletedAt,
-      deletionReason: null,
-    };
-  }
 }

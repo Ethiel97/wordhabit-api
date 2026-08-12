@@ -264,6 +264,17 @@ model User {
   identities              UserIdentity[]
   quizResults             QuizResult[]
 
+  /// Current entitlement, written only by the RevenueCat webhook. The
+  /// store is the source of truth; this is the server's cached answer to
+  /// "may this user reach a Pro capability", and it is what guards read.
+  subscriptionTier      SubscriptionTier @default(FREE)
+  /// When the current period ends. Kept alongside the tier rather than
+  /// derived from it: a cancelled subscription stays PRO until it lapses,
+  /// and the two facts answer different questions.
+  subscriptionExpiresAt DateTime?
+  /// Which store billed it, for support and for reading revenue reports.
+  subscriptionStore     String?
+
   @@index([deletedAt])
   @@index([email])
   @@map("users")
@@ -342,13 +353,24 @@ model UserLearningProfile {
   targetLanguage    LanguageCode
   difficulty        WordDifficulty?
 
+  /// The one profile a downgrade keeps writable, and the only one that
+  /// cannot be deleted. Distinct from `isActive`, which is merely what
+  /// the learner is looking at right now.
+  isMain Boolean @default(false)
+
+  /// When this profile's word is announced. Per profile so two words
+  /// never land together; a partial unique index below keeps the slots
+  /// exclusive within a user.
+  reminderSlot NotificationSlot?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  themes               UserLearningProfileTheme[]
-  dailyWordAssignments DailyWordAssignment[]
+  themes                 UserLearningProfileTheme[]
+  dailyWordAssignments   DailyWordAssignment[]
+  notificationDeliveries NotificationDelivery[]
 
   // One profile per user *per language*. Which of them is current is
   // `isActive`, guarded by a partial unique index the migration creates
@@ -382,8 +404,10 @@ model DailyWordAssignment {
   userLearningProfile UserLearningProfile @relation(fields: [userLearningProfileId], references: [id], onDelete: Cascade)
   word                VocabularyWord      @relation(fields: [wordId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, assignedFor])
-  @@index([userLearningProfileId])
+  // Per profile, not per user: Pro learns one word per language per day,
+  // and keying this on the user made that impossible by construction.
+  @@unique([userLearningProfileId, assignedFor])
+  @@index([userId])
   @@index([wordId])
   @@map("daily_word_assignments")
 }
@@ -603,9 +627,19 @@ model NotificationDelivery {
   sentAt    DateTime            @default(now())
   createdAt DateTime            @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Set on per-profile channels: the daily word is announced once per
+  /// language. Null on channels that speak to the person, like the
+  /// streak reminder.
+  userLearningProfileId String?
 
-  @@unique([userId, channel, localDate])
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userLearningProfile UserLearningProfile? @relation(fields: [userLearningProfileId], references: [id], onDelete: Cascade)
+
+  // Uniqueness is two hand-written partial indexes, one per shape: a
+  // plain composite would let NULL profiles duplicate, since Postgres
+  // treats NULLs as distinct.
+  @@index([userId, channel, localDate])
+  @@index([userLearningProfileId])
   @@map("notification_deliveries")
 }
 
@@ -653,6 +687,11 @@ model QuizResult {
   @@index([userId, localDate])
   @@index([userId, mode])
   @@map("quiz_results")
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
 }
 
 enum QuizMode {

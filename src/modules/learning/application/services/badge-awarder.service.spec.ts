@@ -1,10 +1,18 @@
 import { Logger } from '@nestjs/common';
 import { BadgeCode } from '../../domain/entities/badge';
-import { BadgeSnapshot } from '../../domain/services/badge-catalog';
+import {
+  BadgeSnapshot,
+  MASTERED_WORDS_PER_BILINGUAL_LANGUAGE,
+  PERFECT_DAYS_PER_QUIZ_MODE,
+} from '../../domain/services/badge-catalog';
 import { BadgeAwarderService } from './badge-awarder.service';
 
 type Repo = {
   findBadgeSnapshot: jest.Mock<Promise<BadgeSnapshot>, [string]>;
+  countMasteredWordsByLanguage: jest.Mock<
+    Promise<{ language: string; masteredWords: number }[]>,
+    []
+  >;
   awardBadges: jest.Mock<
     Promise<BadgeCode[]>,
     [{ userId: string; codes: BadgeCode[] }]
@@ -17,6 +25,7 @@ const nothing: BadgeSnapshot = {
   themesExplored: 0,
   wordsNearMastery: 0,
   quizPerfectModes: 0,
+  masteredLanguages: 0,
 };
 
 function makeService(snapshot: BadgeSnapshot, held: BadgeCode[] = []) {
@@ -24,6 +33,16 @@ function makeService(snapshot: BadgeSnapshot, held: BadgeCode[] = []) {
     findBadgeSnapshot: jest
       .fn<Promise<BadgeSnapshot>, [string]>()
       .mockResolvedValue(snapshot),
+    // Handed back at the threshold, so the fixture's language count
+    // survives the composition.
+    countMasteredWordsByLanguage: jest.fn(() =>
+      Promise.resolve(
+        Array.from({ length: snapshot.masteredLanguages }, (_, index) => ({
+          language: `LANG_${index}`,
+          masteredWords: MASTERED_WORDS_PER_BILINGUAL_LANGUAGE,
+        })),
+      ),
+    ),
     awardBadges: jest.fn(({ codes }) =>
       Promise.resolve(codes.filter((code) => !held.includes(code))),
     ),
@@ -33,9 +52,15 @@ function makeService(snapshot: BadgeSnapshot, held: BadgeCode[] = []) {
     service: new BadgeAwarderService(
       repo as never,
       {
-        // The quiz side of the snapshot; the composed figure under test
-        // already carries it, so the split must contribute nothing here.
-        countPerfectQuizModes: () => Promise.resolve(snapshot.quizPerfectModes),
+        // The quiz side of the snapshot, handed back at the threshold so
+        // the fixture's mode count survives the composition.
+        findPerfectQuizDaysByMode: () =>
+          Promise.resolve(
+            Array.from({ length: snapshot.quizPerfectModes }, (_, index) => ({
+              mode: `MODE_${index}`,
+              perfectDays: PERFECT_DAYS_PER_QUIZ_MODE,
+            })),
+          ),
       } as never,
     ),
   };
@@ -82,10 +107,8 @@ describe('BadgeAwarderService', () => {
   it('never lets a badge failure fail the write it followed', async () => {
     const { service } = makeService(nothing);
     (
-      service as never as { learningRepository: Repo }
-    ).learningRepository.findBadgeSnapshot.mockRejectedValue(
-      new Error('db down'),
-    );
+      service as never as { badgeRepository: Repo }
+    ).badgeRepository.findBadgeSnapshot.mockRejectedValue(new Error('db down'));
 
     // The review that triggered this already succeeded, and the next
     // write re-evaluates from scratch.

@@ -27,6 +27,10 @@ import { RescheduleWordReviewRequestDto } from '../../application/dtos/reschedul
 import { SubmitWordReviewCommand } from '../../application/commands/submit-word-review.command';
 import { SubmitQuizResultCommand } from '../../application/commands/submit-quiz-result.command';
 import { GetWordQuizQuery } from '../../application/queries/get-word-quiz.query';
+import {
+  GetProfilesDailyStatesQuery,
+  GetProfilesDailyStatesResult,
+} from '../../application/queries/get-profiles-daily-states.query';
 import { SubmitQuizResultRequestDto } from '../../application/dtos/submit-quiz-result-request.dto';
 import { GetWordQuizRequestDto } from '../../application/dtos/get-word-quiz-request.dto';
 import { SubmitWordReviewRequestDto } from '../../application/dtos/submit-word-review-request.dto';
@@ -90,6 +94,18 @@ export class LearningController {
     );
 
     return ApiSuccessResponse.of(randomWord);
+  }
+
+  @Get(LEARNING.PROFILES_DAILY_STATES)
+  async getProfilesDailyStates(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: LocalDateQueryDto,
+  ) {
+    const states: GetProfilesDailyStatesResult = await this.queryBus.execute(
+      new GetProfilesDailyStatesQuery(user.id, query.localDate),
+    );
+
+    return ApiSuccessResponse.of(states);
   }
 
   @Get(LEARNING.TODAY_WORD)

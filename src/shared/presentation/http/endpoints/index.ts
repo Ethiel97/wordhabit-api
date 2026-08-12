@@ -5,4 +5,5 @@ export { VOCABULARY, THEMES } from './vocabulary.endpoints';
 export { USER_LEARNING, ONBOARDING } from './user-learning.endpoints';
 export { WAITLIST } from './waitlist.endpoints';
 export { VOCABULARY_INGESTION } from './vocabulary-ingestion.endpoints';
+export { SUBSCRIPTION } from './subscription.endpoints';
 export { replacePath } from './endpoints.helper';

@@ -1,6 +1,7 @@
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 import { QuizMode } from '../entities/quiz';
+import { QuizModePerfectDays } from '../services/badge-catalog';
 import {
   QuizDistractorWord,
   QuizScenarioSource,
@@ -87,8 +88,13 @@ export interface QuizRepository {
   }): Promise<number>;
 
   /**
-   * Distinct modes in which the learner has at least one perfect round.
-   * QUIZ_CHAMPION is won at all three.
+   * Separate days carrying a perfect round, per mode. Only modes with
+   * at least one appear.
+   *
+   * The raw figures, not a verdict: `countConqueredQuizModes` owns what
+   * makes a mode count, so the threshold stays out of SQL.
    */
-  countPerfectQuizModes(params: { userId: string }): Promise<number>;
+  findPerfectQuizDaysByMode(params: {
+    userId: string;
+  }): Promise<QuizModePerfectDays[]>;
 }

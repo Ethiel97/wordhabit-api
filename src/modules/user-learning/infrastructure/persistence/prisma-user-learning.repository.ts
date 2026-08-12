@@ -12,11 +12,52 @@ import { UserLearningProfile } from '../../domain/entities/user-learning-profile
 import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
+import { NotificationSlot } from '../../../notifications/domain/entities/notification';
 import { Injectable } from '@nestjs/common';
+
+const withThemes = { themes: { include: { theme: true } } } as const;
+
+type ProfileRow = {
+  id: string;
+  userId: string;
+  isActive: boolean;
+  isMain: boolean;
+  interfaceLanguage: string;
+  targetLanguage: string;
+  difficulty: string | null;
+  reminderSlot: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  themes: { theme: { slug: string } }[];
+};
+
+function toDomain(row: ProfileRow): UserLearningProfile {
+  return {
+    id: row.id,
+    userId: row.userId,
+    isActive: row.isActive,
+    isMain: row.isMain,
+    interfaceLanguage: row.interfaceLanguage as LanguageCode,
+    targetLanguage: row.targetLanguage as LanguageCode,
+    difficulty: (row.difficulty as WordDifficulty | null) ?? undefined,
+    reminderSlot: (row.reminderSlot as NotificationSlot | null) ?? undefined,
+    themeSlugs: row.themes.map((t) => t.theme.slug),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
 
 @Injectable()
 export class PrismaUserLearningRepository implements UserLearningRepository {
   constructor(private readonly prisma: PrismaService) {}
+  async deleteUserLearningProfile(profileId: string): Promise<boolean> {
+    const result = await this.prisma.userLearningProfile.delete({
+      where: {
+        id: profileId,
+      },
+    });
+    return !!result;
+  }
 
   async findUserLearningProfileById(
     profileId: string,
@@ -25,29 +66,10 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       where: {
         id: profileId,
       },
-      include: {
-        themes: {
-          include: {
-            theme: true,
-          },
-        },
-      },
+      include: withThemes,
     });
 
-    if (!found) {
-      return null;
-    }
-    return {
-      id: found.id,
-      userId: found.userId,
-      isActive: found.isActive,
-      interfaceLanguage: found.interfaceLanguage as LanguageCode,
-      targetLanguage: found.targetLanguage as LanguageCode,
-      difficulty: (found.difficulty as WordDifficulty | null) ?? undefined,
-      themeSlugs: found.themes.map((t) => t.theme.slug),
-      createdAt: found.createdAt,
-      updatedAt: found.updatedAt,
-    };
+    return found ? toDomain(found) : null;
   }
 
   async updateUserLearningProfile(
@@ -59,6 +81,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       interfaceLanguage,
       targetLanguage,
       difficulty,
+      reminderSlot,
     } = params;
 
     const updated = await this.prisma.userLearningProfile.update({
@@ -83,27 +106,12 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
         ...(interfaceLanguage != null ? { interfaceLanguage } : {}),
         ...(targetLanguage != null ? { targetLanguage } : {}),
         ...(difficulty != null ? { difficulty } : {}),
+        ...(reminderSlot !== undefined ? { reminderSlot } : {}),
       },
-      include: {
-        themes: {
-          include: {
-            theme: true,
-          },
-        },
-      },
+      include: withThemes,
     });
 
-    return {
-      id: updated.id,
-      userId: updated.userId,
-      isActive: updated.isActive,
-      interfaceLanguage: updated.interfaceLanguage as LanguageCode,
-      targetLanguage: updated.targetLanguage as LanguageCode,
-      difficulty: (updated.difficulty as WordDifficulty | null) ?? undefined,
-      themeSlugs: updated.themes.map((t) => t.theme.slug),
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
-    };
+    return toDomain(updated);
   }
   activateUserLearningProfile(
     params: ActivateUserLearningProfileParams,
@@ -128,27 +136,10 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
         data: {
           isActive: true,
         },
-        include: {
-          themes: {
-            include: {
-              theme: true,
-            },
-          },
-        },
+        include: withThemes,
       });
 
-      return {
-        id: activated.id,
-        userId: activated.userId,
-        isActive: activated.isActive,
-        interfaceLanguage: activated.interfaceLanguage as LanguageCode,
-        targetLanguage: activated.targetLanguage as LanguageCode,
-        difficulty:
-          (activated.difficulty as WordDifficulty | null) ?? undefined,
-        themeSlugs: activated.themes.map((t) => t.theme.slug),
-        createdAt: activated.createdAt,
-        updatedAt: activated.updatedAt,
-      };
+      return toDomain(activated);
     });
   }
 
@@ -160,26 +151,11 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       where: {
         userId,
       },
-      include: {
-        themes: {
-          include: {
-            theme: true,
-          },
-        },
-      },
+      include: withThemes,
+      orderBy: [{ isMain: 'desc' }, { createdAt: 'asc' }],
     });
 
-    return profiles.map((profile) => ({
-      id: profile.id,
-      userId: profile.userId,
-      isActive: profile.isActive,
-      interfaceLanguage: profile.interfaceLanguage as LanguageCode,
-      targetLanguage: profile.targetLanguage as LanguageCode,
-      difficulty: (profile.difficulty as WordDifficulty | null) ?? undefined,
-      themeSlugs: profile.themes.map((t) => t.theme.slug),
-      createdAt: profile.createdAt,
-      updatedAt: profile.updatedAt,
-    }));
+    return profiles.map(toDomain);
   }
 
   async createUser(params: CreateUserParams): Promise<User> {
@@ -195,6 +171,9 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
     params: CreateUserLearningProfileParams,
   ): Promise<UserLearningProfile> {
     const userLearningProfile = await this.prisma.$transaction(async (tx) => {
+      // Any active profile, not just the main one: a learner creating a
+      // third language from their second would otherwise end up with two
+      // active profiles, which the partial unique index refuses.
       await tx.userLearningProfile.updateMany({
         where: { userId: params.userId, isActive: true },
         data: { isActive: false },
@@ -205,8 +184,10 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
           userId: params.userId,
           targetLanguage: params.targetLanguage,
           isActive: true,
+          isMain: params.isMain,
           interfaceLanguage: params.interfaceLanguage,
           difficulty: params.difficulty,
+          reminderSlot: params.reminderSlot,
           themes: {
             create: params.themeSlugs.map((themeSlug) => ({
               theme: {
@@ -217,28 +198,11 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
             })),
           },
         },
-        include: {
-          themes: {
-            include: {
-              theme: true,
-            },
-          },
-        },
+        include: withThemes,
       });
     });
 
-    return {
-      id: userLearningProfile.id,
-      userId: userLearningProfile.userId,
-      isActive: userLearningProfile.isActive,
-      interfaceLanguage: userLearningProfile.interfaceLanguage as LanguageCode,
-      targetLanguage: userLearningProfile.targetLanguage as LanguageCode,
-      difficulty:
-        (userLearningProfile.difficulty as WordDifficulty | null) ?? undefined,
-      themeSlugs: userLearningProfile.themes.map((t) => t.theme.slug),
-      createdAt: userLearningProfile.createdAt,
-      updatedAt: userLearningProfile.updatedAt,
-    };
+    return toDomain(userLearningProfile);
   }
 
   async findActiveUserLearningProfile(
@@ -249,28 +213,10 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
         userId,
         isActive: true,
       },
-      include: {
-        themes: {
-          include: {
-            theme: true,
-          },
-        },
-      },
+      include: withThemes,
     });
-    if (!found) {
-      return null;
-    }
-    return {
-      id: found.id,
-      userId: found.userId,
-      isActive: found.isActive,
-      interfaceLanguage: found.interfaceLanguage as LanguageCode,
-      targetLanguage: found.targetLanguage as LanguageCode,
-      difficulty: (found.difficulty as WordDifficulty | null) ?? undefined,
-      themeSlugs: found.themes.map((t) => t.theme.slug),
-      createdAt: found.createdAt,
-      updatedAt: found.updatedAt,
-    };
+
+    return found ? toDomain(found) : null;
   }
 
   async findUserByEmail(email: string): Promise<User | null> {
@@ -306,29 +252,9 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
         userId: params.userId,
         targetLanguage: params.targetLanguage,
       },
-      include: {
-        themes: {
-          include: {
-            theme: true,
-          },
-        },
-      },
+      include: withThemes,
     });
 
-    if (!found) {
-      return null;
-    }
-
-    return {
-      id: found.id,
-      userId: found.userId,
-      isActive: found.isActive,
-      interfaceLanguage: found.interfaceLanguage as LanguageCode,
-      targetLanguage: found.targetLanguage as LanguageCode,
-      difficulty: (found.difficulty as WordDifficulty | null) ?? undefined,
-      themeSlugs: found.themes.map((t) => t.theme.slug),
-      createdAt: found.createdAt,
-      updatedAt: found.updatedAt,
-    };
+    return found ? toDomain(found) : null;
   }
 }

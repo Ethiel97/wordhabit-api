@@ -2,6 +2,7 @@ import { User } from '../entities/user';
 import { UserLearningProfile } from '../entities/user-learning-profile';
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
+import { NotificationSlot } from '../../../notifications/domain/entities/notification';
 
 export const USER_LEARNING_REPOSITORY = Symbol('USER_LEARNING_REPOSITORY');
 
@@ -26,6 +27,8 @@ export interface UpdateUserLearningProfileParams {
   interfaceLanguage?: LanguageCode;
   targetLanguage?: LanguageCode;
   difficulty?: WordDifficulty;
+  /** Null clears the reminder; undefined leaves it alone. */
+  reminderSlot?: NotificationSlot | null;
 }
 
 export interface CreateUserParams {
@@ -39,6 +42,8 @@ export interface CreateUserLearningProfileParams {
   interfaceLanguage: LanguageCode;
   difficulty?: WordDifficulty;
   themeSlugs: string[];
+  isMain: boolean;
+  reminderSlot?: NotificationSlot;
 }
 
 export interface UserLearningRepository {
@@ -75,4 +80,6 @@ export interface UserLearningRepository {
   updateUserLearningProfile(
     params: UpdateUserLearningProfileParams,
   ): Promise<UserLearningProfile>;
+
+  deleteUserLearningProfile(profileId: string): Promise<boolean>;
 }

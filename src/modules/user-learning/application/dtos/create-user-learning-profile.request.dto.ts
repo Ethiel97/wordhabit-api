@@ -7,6 +7,7 @@ import {
   IsString,
 } from 'class-validator';
 import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
+import { NotificationSlot } from '../../../notifications/domain/entities/notification';
 
 export class CreateUserLearningProfileRequestDto {
   @IsIn(Object.values(LanguageCode))
@@ -29,4 +30,9 @@ export class CreateUserLearningProfileRequestDto {
   @IsString({ each: true })
   @IsNotEmpty({ each: true })
   themeSlugs!: string[];
+
+  /** Optional: a profile with no reminder is simply never announced. */
+  @IsOptional()
+  @IsIn(Object.values(NotificationSlot))
+  reminderSlot?: NotificationSlot;
 }

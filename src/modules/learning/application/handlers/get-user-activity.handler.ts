@@ -4,8 +4,8 @@ import {
   GetUserActivityQuery,
   GetUserActivityResult,
 } from '../queries/get-user-activity.query';
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { LearnerProgressRepository } from '../../domain/repositories/learning.repository';
+import { LEARNER_PROGRESS_REPOSITORY } from '../../domain/repositories/learning.repository';
 import { shiftLocalDate } from '../../domain/services/local-date';
 
 @QueryHandler(GetUserActivityQuery)
@@ -14,8 +14,8 @@ export class GetUserActivityHandler implements IQueryHandler<
   GetUserActivityResult
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(LEARNER_PROGRESS_REPOSITORY)
+    private readonly progressRepository: LearnerProgressRepository,
   ) {}
 
   async execute(query: GetUserActivityQuery): Promise<GetUserActivityResult> {
@@ -24,7 +24,7 @@ export class GetUserActivityHandler implements IQueryHandler<
     // string range.
     const from = shiftLocalDate(query.to, -(query.days - 1));
 
-    const days = await this.learningRepository.findUserDailyActivity({
+    const days = await this.progressRepository.findUserDailyActivity({
       userId: query.userId,
       from,
       to: query.to,

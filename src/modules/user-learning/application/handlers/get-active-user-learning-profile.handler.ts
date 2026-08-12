@@ -6,7 +6,8 @@ import {
 import type { UserLearningRepository } from '../../domain/repositories/user-learning.repository';
 import { USER_LEARNING_REPOSITORY } from '../../domain/repositories/user-learning.repository';
 import { Inject } from '@nestjs/common';
-import { UserLearningProfileNotFoundError } from '../errors/user-learning-profile-not-found.error';
+import { SubscriptionService } from '../../../subscription/application/services/subscription.service';
+import { UserLearningProfileNotFoundError } from '../errors/user-learning-profile-errors';
 
 @QueryHandler(GetActiveUserLearningProfileQuery)
 export class GetActiveUserLearningProfileHandler implements IQueryHandler<
@@ -16,6 +17,7 @@ export class GetActiveUserLearningProfileHandler implements IQueryHandler<
   constructor(
     @Inject(USER_LEARNING_REPOSITORY)
     private readonly userLearningProfileRepository: UserLearningRepository,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   async execute(
@@ -35,6 +37,8 @@ export class GetActiveUserLearningProfileHandler implements IQueryHandler<
       );
     }
 
-    return found;
+    const isPro = await this.subscriptionService.isPro(userId);
+
+    return { ...found, readOnly: !isPro && !found.isMain };
   }
 }

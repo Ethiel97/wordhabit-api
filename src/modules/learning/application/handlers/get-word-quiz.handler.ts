@@ -1,10 +1,16 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject, NotFoundException } from '@nestjs/common';
-import { GetWordQuizQuery, GetWordQuizResult, } from '../queries/get-word-quiz.query';
+import {
+  GetWordQuizQuery,
+  GetWordQuizResult,
+} from '../queries/get-word-quiz.query';
 import type { QuizRepository } from '../../domain/repositories/quiz.repository';
 import { QUIZ_REPOSITORY } from '../../domain/repositories/quiz.repository';
 import { QuizMode } from '../../domain/entities/quiz';
-import { buildQuizQuestions, MIN_QUIZ_QUESTIONS, } from '../../domain/services/quiz-question-builder';
+import {
+  buildQuizQuestions,
+  MIN_QUIZ_QUESTIONS,
+} from '../../domain/services/quiz-question-builder';
 import {
   USER_LEARNING_REPOSITORY,
   type UserLearningRepository,

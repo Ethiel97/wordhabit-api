@@ -11,6 +11,7 @@ import type {
   QuizWordMaterial,
 } from '../../domain/repositories/quiz.repository';
 import type { QuizDistractorWord } from '../../domain/services/quiz-question-builder';
+import type { QuizModePerfectDays } from '../../domain/services/badge-catalog';
 
 /**
  * The rows in [preferred], or falling back down the [fallbacks] chain,
@@ -178,23 +179,39 @@ export class PrismaQuizRepository implements QuizRepository {
     return aggregate._sum.correctCount ?? 0;
   }
 
-  async countPerfectQuizModes(params: { userId: string }): Promise<number> {
+  async findPerfectQuizDaysByMode(params: {
+    userId: string;
+  }): Promise<QuizModePerfectDays[]> {
     // Perfect is computed, never stored — see the schema comment.
-    const modes = await this.prisma.quizResult.findMany({
+    const rounds = await this.prisma.quizResult.findMany({
       where: {
         userId: params.userId,
         questionCount: { gt: 0 },
         // Prisma cannot compare two columns; the raw filter stays in
         // one place here rather than leaking SQL into the handler.
       },
-      select: { mode: true, correctCount: true, questionCount: true },
+      select: {
+        mode: true,
+        localDate: true,
+        correctCount: true,
+        questionCount: true,
+      },
     });
-    const perfect = new Set(
-      modes
-        .filter((r) => r.correctCount === r.questionCount)
-        .map((r) => r.mode),
-    );
-    return perfect.size;
+
+    // Days, not rounds: two perfect rounds in one afternoon are one day
+    // of playing well, which is what the badge is asking for.
+    const daysByMode = new Map<string, Set<string>>();
+    for (const round of rounds) {
+      if (round.correctCount !== round.questionCount) continue;
+      const days = daysByMode.get(round.mode) ?? new Set<string>();
+      days.add(round.localDate);
+      daysByMode.set(round.mode, days);
+    }
+
+    return [...daysByMode].map(([mode, days]) => ({
+      mode,
+      perfectDays: days.size,
+    }));
   }
 
   async hasQuizResultForWord(params: {

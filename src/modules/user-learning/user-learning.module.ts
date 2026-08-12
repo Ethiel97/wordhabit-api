@@ -11,11 +11,14 @@ import { GetUserLearningProfilesHandler } from './application/handlers/get-user-
 import { ActivateUserLearningProfileHandler } from './application/handlers/activate-user-learning-profile.handler';
 import { VocabularyModule } from '../vocabulary/vocabulary.module';
 import { EnsureThemesExistService } from './application/services/ensure-themes-exist.service';
+import { DeleteUserLearningProfileHandler } from './application/handlers/delete-user-learning-profile.handler';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
 const commandHandlers = [
   ActivateUserLearningProfileHandler,
   CreateUserLearningProfileHandler,
   UpdateUserLearningProfileHandler,
+  DeleteUserLearningProfileHandler,
 ];
 const queryHandlers = [
   GetActiveUserLearningProfileHandler,
@@ -23,7 +26,7 @@ const queryHandlers = [
 ];
 
 @Module({
-  imports: [CqrsModule, VocabularyModule],
+  imports: [CqrsModule, VocabularyModule, SubscriptionModule],
   controllers: [OnboardingController, UserLearningController],
   providers: [
     ...commandHandlers,

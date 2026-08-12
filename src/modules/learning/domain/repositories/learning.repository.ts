@@ -19,9 +19,23 @@ import {
 } from '../../../vocabulary/domain/entities/word-synonym';
 import { PartOfSpeech } from '../../../vocabulary/domain/entities/part-of-speech';
 import { BadgeCode } from '../entities/badge';
-import { LearningBadgeFigures } from '../services/badge-catalog';
+import {
+  LanguageMasteredWords,
+  LearningBadgeFigures,
+} from '../services/badge-catalog';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
+
+// One token per contract, all resolving to the same Prisma class for
+// now. A handler injects the one it needs, and the day an implementation
+// is split off, only its token's binding changes.
+export const TODAY_WORD_REPOSITORY = Symbol('TODAY_WORD_REPOSITORY');
+export const WORD_PROGRESS_REPOSITORY = Symbol('WORD_PROGRESS_REPOSITORY');
+export const LEARNER_BADGE_REPOSITORY = Symbol('LEARNER_BADGE_REPOSITORY');
+export const LEARNER_PROGRESS_REPOSITORY = Symbol(
+  'LEARNER_PROGRESS_REPOSITORY',
+);
+export const WORD_LIBRARY_REPOSITORY = Symbol('WORD_LIBRARY_REPOSITORY');
 
 export type UserLearningStats = {
   seen: number;
@@ -31,6 +45,20 @@ export type UserLearningStats = {
   total: number;
 };
 
+export type FindUserLearningStatsParams = {
+  userId: string;
+  /** @see FindReviewQueueParams.targetLanguage */
+  targetLanguage: LanguageCode;
+};
+
+export const emptyUserLearningStats = (): UserLearningStats => ({
+  seen: 0,
+  learning: 0,
+  mastered: 0,
+  skipped: 0,
+  total: 0,
+});
+
 export interface CreateDailyAssignmentParams {
   userId: string;
   userLearningProfileId: string;
@@ -39,7 +67,12 @@ export interface CreateDailyAssignmentParams {
 }
 
 export interface FindTodayAssignmentParams {
-  userId: string;
+  /**
+   * Keyed on the profile, not the user: Pro learns one word per language
+   * per day, so a user has as many assignments for a given day as they
+   * have profiles.
+   */
+  userLearningProfileId: string;
   assignedFor: Date;
 }
 
@@ -97,6 +130,12 @@ export interface FindRandomWordParams {
 
 export interface FindReviewQueueParams {
   userId: string;
+  /**
+   * The profile's language, not its id: progress hangs off the word, and
+   * a word belongs to one language. Deriving the profile that way means a
+   * language deleted and taken up again finds its own history waiting.
+   */
+  targetLanguage: LanguageCode;
   /** The learner's own day, `yyyy-MM-dd`: due dates are days, not times. */
   localDate: string;
   limit: number;
@@ -208,6 +247,8 @@ export type UserActivityDetail = {
 
 export type FindUserWordLibraryParams = {
   userId: string;
+  /** @see FindReviewQueueParams.targetLanguage */
+  targetLanguage: LanguageCode;
   status?: UserWordProgressStatus;
   search?: string;
   limit: number;
@@ -252,13 +293,75 @@ export type UserWordLibraryResult = {
   summary: UserWordLibrarySummary;
 };
 
+/**
+ * Whole, so a learner without a profile still gets a parsable page.
+ *
+ * Built per call rather than shared: `items` is a mutable array, and one
+ * caller appending to it would poison every later empty page.
+ */
+export const emptyUserWordLibrary = (): UserWordLibraryResult => ({
+  items: [],
+  nextCursor: null,
+  summary: {
+    total: 0,
+    averageMastery: 0,
+    statusCounts: {
+      [UserWordProgressStatus.NEW]: 0,
+      [UserWordProgressStatus.SEEN]: 0,
+      [UserWordProgressStatus.LEARNING]: 0,
+      [UserWordProgressStatus.MASTERED]: 0,
+      [UserWordProgressStatus.SKIPPED]: 0,
+    },
+  },
+});
+
 /** A badge a user holds, and the day they won it. */
 export type EarnedBadge = {
   code: BadgeCode;
   earnedAt: Date;
 };
 
-export interface LearningRepository {
+/** Today's word for one profile, as the profile switcher lists them. */
+export type ProfileDayState = {
+  userLearningProfileId: string;
+  wordId: string;
+  quizCompleted: boolean;
+};
+
+/// How many words a profile has been given, all time. Counted from the
+/// assignments because they are the only table keyed on the profile;
+/// UserWordProgress belongs to the person.
+export type ProfileWordCount = {
+  userLearningProfileId: string;
+  wordCount: number;
+};
+
+/**
+ * The contracts below are declared separately so a handler can depend on
+ * the slice it uses instead of on all twenty-five methods. They live in
+ * one file for now because they share this file's parameter types;
+ * splitting the file means extracting those first.
+ *
+ * `LearningRepository` remains their union, so nothing that already
+ * injects it has to move at once.
+ */
+
+/** Assigning and finding the word a profile owes today. */
+export interface TodayWordRepository {
+  /**
+   * Today's state for several profiles at once. The switcher shows a
+   * status per language, and one query per profile would grow with the
+   * plan.
+   */
+  findProfileDayStates(params: {
+    userLearningProfileIds: string[];
+    assignedFor: Date;
+  }): Promise<ProfileDayState[]>;
+
+  countWordsByProfile(params: {
+    userLearningProfileIds: string[];
+  }): Promise<ProfileWordCount[]>;
+
   findTodayAssignment(
     params: FindTodayAssignmentParams,
   ): Promise<TodayWordAssignment | null>;
@@ -275,6 +378,11 @@ export interface LearningRepository {
     profile: UserLearningProfile,
   ): Promise<VocabularyWord | null>;
 
+  findRandomWord(params: FindRandomWordParams): Promise<RandomWord | null>;
+}
+
+/** What the learner has done with a word, and when it comes back. */
+export interface WordProgressRepository {
   findUserWordProgress(
     params: FindUserWordProgressParams,
   ): Promise<UserWordProgress | null>;
@@ -282,8 +390,6 @@ export interface LearningRepository {
   setUserWordProgressStatus(
     params: SetUserWordProgressStatusParams,
   ): Promise<UserWordProgress>;
-
-  findRandomWord(params: FindRandomWordParams): Promise<RandomWord | null>;
 
   findReviewQueue(params: FindReviewQueueParams): Promise<ReviewQueueItem[]>;
 
@@ -315,9 +421,23 @@ export interface LearningRepository {
     from?: string;
     to?: string;
   }): Promise<number>;
+}
 
+/** Measuring and awarding badges. */
+export interface LearnerBadgeRepository {
   /** Every figure the badge rules are measured against, in one read. */
   findBadgeSnapshot(userId: string): Promise<LearningBadgeFigures>;
+
+  /**
+   * Words near mastery, split by the language they belong to. Only
+   * languages holding at least one appear.
+   *
+   * The raw figures, not a verdict: `countMasteredLanguages` owns what
+   * makes a language count, so the threshold stays out of SQL.
+   */
+  countMasteredWordsByLanguage(params: {
+    userId: string;
+  }): Promise<LanguageMasteredWords[]>;
 
   /**
    * Records the codes the user does not already hold, and returns those
@@ -333,7 +453,10 @@ export interface LearningRepository {
   }): Promise<BadgeCode[]>;
 
   findUserBadges(userId: string): Promise<EarnedBadge[]>;
+}
 
+/** Activity, streak and the figures the progress tab reads. */
+export interface LearnerProgressRepository {
   /**
    * Review counts per local day, sparse: the client generates its own
    * day list and fills the gaps.
@@ -353,8 +476,20 @@ export interface LearningRepository {
     params: UpsertUserLearningStreakParams,
   ): Promise<UserLearningStreak>;
 
-  findUserLearningStats(userId: string): Promise<UserLearningStats>;
+  /**
+   * Words collected, and how far each one has come, for one language.
+   *
+   * The streak above it stays whole-person: a day practised is a day
+   * practised, whichever language it was. Mastery does not travel that
+   * way, so it is counted per language.
+   */
+  findUserLearningStats(
+    params: FindUserLearningStatsParams,
+  ): Promise<UserLearningStats>;
+}
 
+/** The words a learner has collected. */
+export interface WordLibraryRepository {
   findUserWordLibrary(
     params: FindUserWordLibraryParams,
   ): Promise<UserWordLibraryResult>;
@@ -365,3 +500,11 @@ export interface LearningRepository {
 
   removeUserFavoriteWord(userId: string, wordId: string): Promise<boolean>;
 }
+
+export interface LearningRepository
+  extends
+    TodayWordRepository,
+    WordProgressRepository,
+    LearnerBadgeRepository,
+    LearnerProgressRepository,
+    WordLibraryRepository {}

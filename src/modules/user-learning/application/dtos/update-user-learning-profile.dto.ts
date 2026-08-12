@@ -7,6 +7,7 @@ import {
 } from 'class-validator';
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
+import { NotificationSlot } from '../../../notifications/domain/entities/notification';
 
 /**
  * A true PATCH: every field is optional and only the ones present are
@@ -32,4 +33,9 @@ export class UpdateUserLearningProfileDto {
   @IsEnum(WordDifficulty)
   @IsOptional()
   difficulty!: WordDifficulty;
+
+  /** Null clears the reminder; absent leaves it alone. */
+  @IsOptional()
+  @IsEnum(NotificationSlot)
+  reminderSlot?: NotificationSlot | null;
 }

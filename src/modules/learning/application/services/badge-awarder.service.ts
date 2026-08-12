@@ -1,11 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { LearnerBadgeRepository } from '../../domain/repositories/learning.repository';
+import { LEARNER_BADGE_REPOSITORY } from '../../domain/repositories/learning.repository';
 import type { QuizRepository } from '../../domain/repositories/quiz.repository';
 import { QUIZ_REPOSITORY } from '../../domain/repositories/quiz.repository';
 import { BadgeCode } from '../../domain/entities/badge';
 import {
   BadgeSnapshot,
+  countConqueredQuizModes,
+  countMasteredLanguages,
   earnedBadgeCodes,
 } from '../../domain/services/badge-catalog';
 
@@ -25,8 +27,8 @@ export class BadgeAwarderService {
   private readonly logger = new Logger(BadgeAwarderService.name);
 
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(LEARNER_BADGE_REPOSITORY)
+    private readonly badgeRepository: LearnerBadgeRepository,
 
     @Inject(QUIZ_REPOSITORY)
     private readonly quizRepository: QuizRepository,
@@ -41,11 +43,17 @@ export class BadgeAwarderService {
    * another repository would be the layering running backwards.
    */
   async readSnapshot(userId: string): Promise<BadgeSnapshot> {
-    const [figures, quizPerfectModes] = await Promise.all([
-      this.learningRepository.findBadgeSnapshot(userId),
-      this.quizRepository.countPerfectQuizModes({ userId }),
+    const [figures, quizDays, languages] = await Promise.all([
+      this.badgeRepository.findBadgeSnapshot(userId),
+      this.quizRepository.findPerfectQuizDaysByMode({ userId }),
+      this.badgeRepository.countMasteredWordsByLanguage({ userId }),
     ]);
-    return { ...figures, quizPerfectModes };
+
+    return {
+      ...figures,
+      quizPerfectModes: countConqueredQuizModes(quizDays),
+      masteredLanguages: countMasteredLanguages(languages),
+    };
   }
 
   /**
@@ -58,7 +66,7 @@ export class BadgeAwarderService {
     const standing = snapshot ?? (await this.readSnapshot(userId));
     const eligible = earnedBadgeCodes(standing);
 
-    const awarded = await this.learningRepository.awardBadges({
+    const awarded = await this.badgeRepository.awardBadges({
       userId,
       codes: eligible,
     });

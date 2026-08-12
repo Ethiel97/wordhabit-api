@@ -4,8 +4,8 @@ import {
   GetUserActivityDetailQuery,
   GetUserActivityDetailResult,
 } from '../queries/get-user-activity-detail.query';
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { LearnerProgressRepository } from '../../domain/repositories/learning.repository';
+import { LEARNER_PROGRESS_REPOSITORY } from '../../domain/repositories/learning.repository';
 
 @QueryHandler(GetUserActivityDetailQuery)
 export class GetUserActivityDetailHandler implements IQueryHandler<
@@ -13,8 +13,8 @@ export class GetUserActivityDetailHandler implements IQueryHandler<
   GetUserActivityDetailResult
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(LEARNER_PROGRESS_REPOSITORY)
+    private readonly progressRepository: LearnerProgressRepository,
   ) {}
 
   async execute(
@@ -26,7 +26,7 @@ export class GetUserActivityDetailHandler implements IQueryHandler<
       throw new BadRequestException('to must not precede from.');
     }
 
-    const detail = await this.learningRepository.findUserActivityDetail({
+    const detail = await this.progressRepository.findUserActivityDetail({
       userId: query.userId,
       from: query.from,
       to: query.to,
