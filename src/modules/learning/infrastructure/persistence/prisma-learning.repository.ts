@@ -1,6 +1,7 @@
 import {
   ActivityDetailWord,
   CreateDailyAssignmentParams,
+  EarnedBadge,
   FindRandomWordParams,
   FindReviewQueueParams,
   FindTodayAssignmentParams,
@@ -10,11 +11,12 @@ import {
   FindUserWordProgressParams,
   LastWordReview,
   LearningRepository,
+  ProfileDayState,
+  ProfileWordCount,
   RandomWord,
   RecordWordReviewEventParams,
   RescheduleUserWordReviewParams,
   ReviewQueueItem,
-  ProfileDayState,
   TodayWordAssignment,
   UpdateUserWordReviewParams,
   UpsertUserLearningStreakParams,
@@ -40,10 +42,9 @@ import { FavoriteWord } from '../../domain/entities/favorite-word';
 import { instantToLocalDate } from '../../domain/services/local-date';
 import { BadgeCode } from '../../domain/entities/badge';
 import {
-  LearningBadgeFigures,
   FLUENT_MASTERY_LEVEL,
+  LearningBadgeFigures,
 } from '../../domain/services/badge-catalog';
-import { EarnedBadge } from '../../domain/repositories/learning.repository';
 
 @Injectable()
 export class PrismaLearningRepository implements LearningRepository {
@@ -826,6 +827,27 @@ export class PrismaLearningRepository implements LearningRepository {
       createdAt: word.createdAt,
       updatedAt: word.updatedAt,
     };
+  }
+
+  async countWordsByProfile(params: {
+    userLearningProfileIds: string[];
+  }): Promise<ProfileWordCount[]> {
+    if (params.userLearningProfileIds.length === 0) return [];
+
+    const rows = await this.prisma.dailyWordAssignment.groupBy({
+      by: ['userLearningProfileId'],
+      // No date filter: this is a lifetime total, and narrowing it to a
+      // day would answer 0 or 1 for every profile.
+      where: {
+        userLearningProfileId: { in: params.userLearningProfileIds },
+      },
+      _count: { wordId: true },
+    });
+
+    return rows.map((row) => ({
+      userLearningProfileId: row.userLearningProfileId,
+      wordCount: row._count.wordId,
+    }));
   }
 
   async findProfileDayStates(params: {

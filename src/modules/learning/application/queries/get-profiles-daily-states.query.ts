@@ -16,4 +16,6 @@ export type GetProfilesDailyStatesResult = {
   /** Absent when this profile has no word for the day yet. */
   wordId: string | null;
   quizCompleted: boolean;
+  /** Words this profile has been given, all time. */
+  wordCount: number;
 }[];

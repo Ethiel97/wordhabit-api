@@ -2,8 +2,14 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import type { UserLearningRepository } from '../../../user-learning/domain/repositories/user-learning.repository';
 import { USER_LEARNING_REPOSITORY } from '../../../user-learning/domain/repositories/user-learning.repository';
-import { GetProfilesDailyStatesQuery, GetProfilesDailyStatesResult, } from '../queries/get-profiles-daily-states.query';
-import { LEARNING_REPOSITORY, type LearningRepository, } from '../../domain/repositories/learning.repository';
+import {
+  GetProfilesDailyStatesQuery,
+  GetProfilesDailyStatesResult,
+} from '../queries/get-profiles-daily-states.query';
+import {
+  LEARNING_REPOSITORY,
+  type LearningRepository,
+} from '../../domain/repositories/learning.repository';
 import { localDateToInstant } from '../../domain/services/local-date';
 
 /**
@@ -36,10 +42,21 @@ export class GetProfilesDailyStatesHandler implements IQueryHandler<
 
     if (profiles.length === 0) return [];
 
-    const states = await this.learningRepository.findProfileDayStates({
-      userLearningProfileIds: profiles.map((profile) => profile.id),
-      assignedFor: localDateToInstant(query.localDate),
-    });
+    const profileIds = profiles.map((profile) => profile.id);
+
+    const [states, counts] = await Promise.all([
+      this.learningRepository.findProfileDayStates({
+        userLearningProfileIds: profileIds,
+        assignedFor: localDateToInstant(query.localDate),
+      }),
+      this.learningRepository.countWordsByProfile({
+        userLearningProfileIds: profileIds,
+      }),
+    ]);
+
+    const countByProfile = new Map(
+      counts.map((row) => [row.userLearningProfileId, row.wordCount]),
+    );
 
     const byProfile = new Map(
       states.map((state) => [state.userLearningProfileId, state]),
@@ -52,6 +69,7 @@ export class GetProfilesDailyStatesHandler implements IQueryHandler<
         targetLanguage: profile.targetLanguage,
         wordId: state?.wordId ?? null,
         quizCompleted: state?.quizCompleted ?? false,
+        wordCount: countByProfile.get(profile.id) ?? 0,
       };
     });
   }

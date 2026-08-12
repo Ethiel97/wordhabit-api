@@ -270,6 +270,14 @@ export type ProfileDayState = {
   quizCompleted: boolean;
 };
 
+/// How many words a profile has been given, all time. Counted from the
+/// assignments because they are the only table keyed on the profile;
+/// UserWordProgress belongs to the person.
+export type ProfileWordCount = {
+  userLearningProfileId: string;
+  wordCount: number;
+};
+
 export interface LearningRepository {
   /**
    * Today's state for several profiles at once. The switcher shows a
@@ -280,6 +288,10 @@ export interface LearningRepository {
     userLearningProfileIds: string[];
     assignedFor: Date;
   }): Promise<ProfileDayState[]>;
+
+  countWordsByProfile(params: {
+    userLearningProfileIds: string[];
+  }): Promise<ProfileWordCount[]>;
 
   findTodayAssignment(
     params: FindTodayAssignmentParams,

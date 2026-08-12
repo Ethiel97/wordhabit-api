@@ -6,12 +6,23 @@ import type { UserLearningRepository } from '../../../user-learning/domain/repos
 const profile = (id: string, targetLanguage: string) =>
   ({ id, targetLanguage }) as never;
 
-function build(options: { profiles?: unknown[]; states?: unknown[] }) {
+function build(options: {
+  profiles?: unknown[];
+  states?: unknown[];
+  counts?: unknown[];
+}) {
   const findProfileDayStates = jest
     .fn<Promise<unknown[]>, [Record<string, unknown>]>()
     .mockResolvedValue(options.states ?? []);
 
-  const learning = { findProfileDayStates } as unknown as LearningRepository;
+  const countWordsByProfile = jest
+    .fn<Promise<unknown[]>, [Record<string, unknown>]>()
+    .mockResolvedValue(options.counts ?? []);
+
+  const learning = {
+    findProfileDayStates,
+    countWordsByProfile,
+  } as unknown as LearningRepository;
   const userLearning = {
     findUserLearningProfiles: jest
       .fn()
@@ -21,6 +32,7 @@ function build(options: { profiles?: unknown[]; states?: unknown[] }) {
   return {
     handler: new GetProfilesDailyStatesHandler(learning, userLearning),
     findProfileDayStates,
+    countWordsByProfile,
   };
 }
 
@@ -35,6 +47,7 @@ describe('GetProfilesDailyStatesHandler', () => {
       states: [
         { userLearningProfileId: 'p-en', wordId: 'w1', quizCompleted: true },
       ],
+      counts: [{ userLearningProfileId: 'p-en', wordCount: 124 }],
     });
 
     const result = await handler.execute(query());
@@ -45,12 +58,16 @@ describe('GetProfilesDailyStatesHandler', () => {
         targetLanguage: 'EN',
         wordId: 'w1',
         quizCompleted: true,
+        wordCount: 124,
       },
+      // Counted from nothing rather than left undefined: a profile with
+      // no assignment yet has zero words, not an unknown number.
       {
         profileId: 'p-fr',
         targetLanguage: 'FR',
         wordId: null,
         quizCompleted: false,
+        wordCount: 0,
       },
     ]);
   });
@@ -69,9 +86,12 @@ describe('GetProfilesDailyStatesHandler', () => {
   });
 
   it('spares the database a query when there is no profile', async () => {
-    const { handler, findProfileDayStates } = build({ profiles: [] });
+    const { handler, findProfileDayStates, countWordsByProfile } = build({
+      profiles: [],
+    });
 
     await expect(handler.execute(query())).resolves.toEqual([]);
     expect(findProfileDayStates).not.toHaveBeenCalled();
+    expect(countWordsByProfile).not.toHaveBeenCalled();
   });
 });
