@@ -4,8 +4,8 @@ import {
   RescheduleWordReviewCommand,
   RescheduleWordReviewResult,
 } from '../commands/reschedule-word-review.command';
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { WordProgressRepository } from '../../domain/repositories/learning.repository';
+import { WORD_PROGRESS_REPOSITORY } from '../../domain/repositories/learning.repository';
 import { computeWordRescheduleState } from '../../domain/services/user-word-review-scheduler';
 
 /**
@@ -19,14 +19,14 @@ export class RescheduleWordReviewHandler implements ICommandHandler<
   RescheduleWordReviewResult
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(WORD_PROGRESS_REPOSITORY)
+    private readonly wordProgressRepository: WordProgressRepository,
   ) {}
 
   async execute(
     command: RescheduleWordReviewCommand,
   ): Promise<RescheduleWordReviewResult> {
-    const current = await this.learningRepository.findUserWordProgress({
+    const current = await this.wordProgressRepository.findUserWordProgress({
       userId: command.userId,
       wordId: command.wordId,
     });
@@ -43,7 +43,7 @@ export class RescheduleWordReviewHandler implements ICommandHandler<
       localDate: command.localDate,
     });
 
-    const updated = await this.learningRepository.rescheduleUserWordReview({
+    const updated = await this.wordProgressRepository.rescheduleUserWordReview({
       userId: command.userId,
       wordId: command.wordId,
       ...nextState,

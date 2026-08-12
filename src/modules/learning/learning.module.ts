@@ -5,7 +5,14 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaQuizRepository } from './infrastructure/persistence/prisma-quiz.repository';
 import { QUIZ_REPOSITORY } from './domain/repositories/quiz.repository';
 import { PrismaLearningRepository } from './infrastructure/persistence/prisma-learning.repository';
-import { LEARNING_REPOSITORY } from './domain/repositories/learning.repository';
+import {
+  LEARNING_REPOSITORY,
+  LEARNER_BADGE_REPOSITORY,
+  LEARNER_PROGRESS_REPOSITORY,
+  TODAY_WORD_REPOSITORY,
+  WORD_LIBRARY_REPOSITORY,
+  WORD_PROGRESS_REPOSITORY,
+} from './domain/repositories/learning.repository';
 import { UserLearningModule } from '../user-learning/user-learning.module';
 import { GetTodayWordForUserHandler } from './application/handlers/get-today-word-for-user.handler';
 import { GetUserWordProgressHandler } from './application/handlers/get-user-word-progress.handler';
@@ -67,9 +74,32 @@ const services = [TodayWordService, BadgeAwarderService];
   providers: [
     ...commandHandlers,
     ...queryHandlers,
+    PrismaLearningRepository,
     {
       provide: LEARNING_REPOSITORY,
-      useClass: PrismaLearningRepository,
+      useExisting: PrismaLearningRepository,
+    },
+    // useExisting, not useClass: one instance behind every token, so two
+    // handlers injecting different contracts still share a connection.
+    {
+      provide: TODAY_WORD_REPOSITORY,
+      useExisting: PrismaLearningRepository,
+    },
+    {
+      provide: WORD_PROGRESS_REPOSITORY,
+      useExisting: PrismaLearningRepository,
+    },
+    {
+      provide: LEARNER_BADGE_REPOSITORY,
+      useExisting: PrismaLearningRepository,
+    },
+    {
+      provide: LEARNER_PROGRESS_REPOSITORY,
+      useExisting: PrismaLearningRepository,
+    },
+    {
+      provide: WORD_LIBRARY_REPOSITORY,
+      useExisting: PrismaLearningRepository,
     },
     {
       provide: QUIZ_REPOSITORY,

@@ -23,6 +23,17 @@ import { LearningBadgeFigures } from '../services/badge-catalog';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 
+// One token per contract, all resolving to the same Prisma class for
+// now. A handler injects the one it needs, and the day an implementation
+// is split off, only its token's binding changes.
+export const TODAY_WORD_REPOSITORY = Symbol('TODAY_WORD_REPOSITORY');
+export const WORD_PROGRESS_REPOSITORY = Symbol('WORD_PROGRESS_REPOSITORY');
+export const LEARNER_BADGE_REPOSITORY = Symbol('LEARNER_BADGE_REPOSITORY');
+export const LEARNER_PROGRESS_REPOSITORY = Symbol(
+  'LEARNER_PROGRESS_REPOSITORY',
+);
+export const WORD_LIBRARY_REPOSITORY = Symbol('WORD_LIBRARY_REPOSITORY');
+
 export type UserLearningStats = {
   seen: number;
   learning: number;
@@ -278,7 +289,18 @@ export type ProfileWordCount = {
   wordCount: number;
 };
 
-export interface LearningRepository {
+/**
+ * The contracts below are declared separately so a handler can depend on
+ * the slice it uses instead of on all twenty-five methods. They live in
+ * one file for now because they share this file's parameter types;
+ * splitting the file means extracting those first.
+ *
+ * `LearningRepository` remains their union, so nothing that already
+ * injects it has to move at once.
+ */
+
+/** Assigning and finding the word a profile owes today. */
+export interface TodayWordRepository {
   /**
    * Today's state for several profiles at once. The switcher shows a
    * status per language, and one query per profile would grow with the
@@ -309,6 +331,11 @@ export interface LearningRepository {
     profile: UserLearningProfile,
   ): Promise<VocabularyWord | null>;
 
+  findRandomWord(params: FindRandomWordParams): Promise<RandomWord | null>;
+}
+
+/** What the learner has done with a word, and when it comes back. */
+export interface WordProgressRepository {
   findUserWordProgress(
     params: FindUserWordProgressParams,
   ): Promise<UserWordProgress | null>;
@@ -316,8 +343,6 @@ export interface LearningRepository {
   setUserWordProgressStatus(
     params: SetUserWordProgressStatusParams,
   ): Promise<UserWordProgress>;
-
-  findRandomWord(params: FindRandomWordParams): Promise<RandomWord | null>;
 
   findReviewQueue(params: FindReviewQueueParams): Promise<ReviewQueueItem[]>;
 
@@ -349,7 +374,10 @@ export interface LearningRepository {
     from?: string;
     to?: string;
   }): Promise<number>;
+}
 
+/** Measuring and awarding badges. */
+export interface LearnerBadgeRepository {
   /** Every figure the badge rules are measured against, in one read. */
   findBadgeSnapshot(userId: string): Promise<LearningBadgeFigures>;
 
@@ -367,7 +395,10 @@ export interface LearningRepository {
   }): Promise<BadgeCode[]>;
 
   findUserBadges(userId: string): Promise<EarnedBadge[]>;
+}
 
+/** Activity, streak and the figures the progress tab reads. */
+export interface LearnerProgressRepository {
   /**
    * Review counts per local day, sparse: the client generates its own
    * day list and fills the gaps.
@@ -388,7 +419,10 @@ export interface LearningRepository {
   ): Promise<UserLearningStreak>;
 
   findUserLearningStats(userId: string): Promise<UserLearningStats>;
+}
 
+/** The words a learner has collected. */
+export interface WordLibraryRepository {
   findUserWordLibrary(
     params: FindUserWordLibraryParams,
   ): Promise<UserWordLibraryResult>;
@@ -399,3 +433,11 @@ export interface LearningRepository {
 
   removeUserFavoriteWord(userId: string, wordId: string): Promise<boolean>;
 }
+
+export interface LearningRepository
+  extends
+    TodayWordRepository,
+    WordProgressRepository,
+    LearnerBadgeRepository,
+    LearnerProgressRepository,
+    WordLibraryRepository {}

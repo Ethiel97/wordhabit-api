@@ -7,8 +7,8 @@ import {
   GetProfilesDailyStatesResult,
 } from '../queries/get-profiles-daily-states.query';
 import {
-  LEARNING_REPOSITORY,
-  type LearningRepository,
+  TODAY_WORD_REPOSITORY,
+  type TodayWordRepository,
 } from '../../domain/repositories/learning.repository';
 import { localDateToInstant } from '../../domain/services/local-date';
 
@@ -26,30 +26,31 @@ export class GetProfilesDailyStatesHandler implements IQueryHandler<
   GetProfilesDailyStatesResult
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(TODAY_WORD_REPOSITORY)
+    private readonly todayWordRepository: TodayWordRepository,
 
     @Inject(USER_LEARNING_REPOSITORY)
-    private readonly userLearningRepository: UserLearningRepository,
+    private readonly userTodayWordRepository: UserLearningRepository,
   ) {}
 
   async execute(
     query: GetProfilesDailyStatesQuery,
   ): Promise<GetProfilesDailyStatesResult> {
-    const profiles = await this.userLearningRepository.findUserLearningProfiles(
-      { userId: query.userId },
-    );
+    const profiles =
+      await this.userTodayWordRepository.findUserLearningProfiles({
+        userId: query.userId,
+      });
 
     if (profiles.length === 0) return [];
 
     const profileIds = profiles.map((profile) => profile.id);
 
     const [states, counts] = await Promise.all([
-      this.learningRepository.findProfileDayStates({
+      this.todayWordRepository.findProfileDayStates({
         userLearningProfileIds: profileIds,
         assignedFor: localDateToInstant(query.localDate),
       }),
-      this.learningRepository.countWordsByProfile({
+      this.todayWordRepository.countWordsByProfile({
         userLearningProfileIds: profileIds,
       }),
     ]);

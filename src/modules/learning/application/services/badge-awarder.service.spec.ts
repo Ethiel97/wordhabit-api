@@ -82,10 +82,8 @@ describe('BadgeAwarderService', () => {
   it('never lets a badge failure fail the write it followed', async () => {
     const { service } = makeService(nothing);
     (
-      service as never as { learningRepository: Repo }
-    ).learningRepository.findBadgeSnapshot.mockRejectedValue(
-      new Error('db down'),
-    );
+      service as never as { badgeRepository: Repo }
+    ).badgeRepository.findBadgeSnapshot.mockRejectedValue(new Error('db down'));
 
     // The review that triggered this already succeeded, and the next
     // write re-evaluates from scratch.

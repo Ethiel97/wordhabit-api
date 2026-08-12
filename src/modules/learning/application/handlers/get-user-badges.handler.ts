@@ -1,7 +1,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { LearnerBadgeRepository } from '../../domain/repositories/learning.repository';
+import { LEARNER_BADGE_REPOSITORY } from '../../domain/repositories/learning.repository';
 import {
   GetUserBadgesQuery,
   GetUserBadgesResult,
@@ -15,8 +15,8 @@ export class GetUserBadgesHandler implements IQueryHandler<
   GetUserBadgesResult
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(LEARNER_BADGE_REPOSITORY)
+    private readonly badgeRepository: LearnerBadgeRepository,
     private readonly badgeAwarder: BadgeAwarderService,
   ) {}
 
@@ -32,7 +32,7 @@ export class GetUserBadgesHandler implements IQueryHandler<
     await this.badgeAwarder.awardQuietly(query.userId, snapshot);
 
     // After awarding, so a badge won a moment ago carries its date.
-    const earned = await this.learningRepository.findUserBadges(query.userId);
+    const earned = await this.badgeRepository.findUserBadges(query.userId);
 
     return { badges: badgeStandings({ earned, snapshot }) };
   }

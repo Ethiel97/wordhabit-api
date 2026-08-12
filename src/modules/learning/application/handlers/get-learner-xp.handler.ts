@@ -4,8 +4,8 @@ import {
   GetLearnerXpQuery,
   GetLearnerXpResult,
 } from '../queries/get-learner-xp.query';
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { WordProgressRepository } from '../../domain/repositories/learning.repository';
+import { WORD_PROGRESS_REPOSITORY } from '../../domain/repositories/learning.repository';
 import type { QuizRepository } from '../../domain/repositories/quiz.repository';
 import { QUIZ_REPOSITORY } from '../../domain/repositories/quiz.repository';
 import { shiftLocalDate } from '../../domain/services/local-date';
@@ -22,8 +22,8 @@ export class GetLearnerXpHandler implements IQueryHandler<
   GetLearnerXpResult
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(WORD_PROGRESS_REPOSITORY)
+    private readonly wordProgressRepository: WordProgressRepository,
 
     @Inject(QUIZ_REPOSITORY)
     private readonly quizRepository: QuizRepository,
@@ -34,8 +34,8 @@ export class GetLearnerXpHandler implements IQueryHandler<
     const from = shiftLocalDate(query.to, -(XP_PACE_WINDOW_DAYS - 1));
 
     const [lifetime, recent, quizLifetime, quizRecent] = await Promise.all([
-      this.learningRepository.countCorrectReviews({ userId: query.userId }),
-      this.learningRepository.countCorrectReviews({
+      this.wordProgressRepository.countCorrectReviews({ userId: query.userId }),
+      this.wordProgressRepository.countCorrectReviews({
         userId: query.userId,
         from,
         to: query.to,

@@ -2,8 +2,8 @@ import {
   GetUserWordProgressQuery,
   GetUserWordProgressStatusResult,
 } from '../queries/get-user-word-progress.query';
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { WordProgressRepository } from '../../domain/repositories/learning.repository';
+import { WORD_PROGRESS_REPOSITORY } from '../../domain/repositories/learning.repository';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import {
   UserWordProgressMasteryLevel,
@@ -17,15 +17,15 @@ export class GetUserWordProgressHandler implements IQueryHandler<
   UserWordProgressStatus
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(WORD_PROGRESS_REPOSITORY)
+    private readonly wordProgressRepository: WordProgressRepository,
   ) {}
 
   async execute(
     query: GetUserWordProgressQuery,
   ): Promise<GetUserWordProgressStatusResult> {
     const { userId, wordId } = query;
-    const progress = await this.learningRepository.findUserWordProgress({
+    const progress = await this.wordProgressRepository.findUserWordProgress({
       userId,
       wordId,
     });

@@ -1,7 +1,7 @@
 import { Inject } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { WordLibraryRepository } from '../../domain/repositories/learning.repository';
+import { WORD_LIBRARY_REPOSITORY } from '../../domain/repositories/learning.repository';
 import {
   GetUserFavoriteWordsQuery,
   GetUserFavoriteWordsResult,
@@ -13,14 +13,14 @@ export class GetUserFavoriteWordsHandler implements IQueryHandler<
   GetUserFavoriteWordsResult
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(WORD_LIBRARY_REPOSITORY)
+    private readonly libraryRepository: WordLibraryRepository,
   ) {}
 
   async execute(
     query: GetUserFavoriteWordsQuery,
   ): Promise<GetUserFavoriteWordsResult> {
-    const favoriteWords = await this.learningRepository.findUserFavoriteWords(
+    const favoriteWords = await this.libraryRepository.findUserFavoriteWords(
       query.userId,
     );
     return { favoriteWords };

@@ -1,7 +1,7 @@
 import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { WordLibraryRepository } from '../../domain/repositories/learning.repository';
+import { WORD_LIBRARY_REPOSITORY } from '../../domain/repositories/learning.repository';
 import {
   RemoveUserFavoriteWordCommand,
   RemoveUserFavoriteWordResult,
@@ -13,14 +13,14 @@ export class RemoveUserFavoriteWordHandler implements ICommandHandler<
   RemoveUserFavoriteWordResult
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(WORD_LIBRARY_REPOSITORY)
+    private readonly libraryRepository: WordLibraryRepository,
   ) {}
 
   async execute(
     command: RemoveUserFavoriteWordCommand,
   ): Promise<RemoveUserFavoriteWordResult> {
-    const removed = await this.learningRepository.removeUserFavoriteWord(
+    const removed = await this.libraryRepository.removeUserFavoriteWord(
       command.userId,
       command.wordId,
     );

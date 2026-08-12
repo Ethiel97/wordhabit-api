@@ -5,8 +5,8 @@ import {
 } from '../queries/get-review-queue.query';
 import { Inject } from '@nestjs/common';
 
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { WordProgressRepository } from '../../domain/repositories/learning.repository';
+import { WORD_PROGRESS_REPOSITORY } from '../../domain/repositories/learning.repository';
 
 @QueryHandler(GetReviewQueueQuery)
 export class GetReviewQueueHandler implements IQueryHandler<
@@ -14,14 +14,14 @@ export class GetReviewQueueHandler implements IQueryHandler<
   GetReviewQueueResult
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(WORD_PROGRESS_REPOSITORY)
+    private readonly wordProgressRepository: WordProgressRepository,
   ) {}
 
   async execute(query: GetReviewQueueQuery): Promise<GetReviewQueueResult> {
     const { userId, localDate, limit } = query;
 
-    const items = await this.learningRepository.findReviewQueue({
+    const items = await this.wordProgressRepository.findReviewQueue({
       userId,
       limit,
       localDate,

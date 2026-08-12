@@ -1,7 +1,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import type { LearningRepository } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import type { WordLibraryRepository } from '../../domain/repositories/learning.repository';
+import { WORD_LIBRARY_REPOSITORY } from '../../domain/repositories/learning.repository';
 import {
   GetUserWordLibraryQuery,
   GetUserWordLibraryResult,
@@ -13,14 +13,14 @@ export class GetUserWordLibraryHandler implements IQueryHandler<
   GetUserWordLibraryResult
 > {
   constructor(
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(WORD_LIBRARY_REPOSITORY)
+    private readonly libraryRepository: WordLibraryRepository,
   ) {}
 
   async execute(
     query: GetUserWordLibraryQuery,
   ): Promise<GetUserWordLibraryResult> {
-    return await this.learningRepository.findUserWordLibrary({
+    return await this.libraryRepository.findUserWordLibrary({
       userId: query.userId,
       status: query.status,
       search: query.search,

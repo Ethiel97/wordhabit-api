@@ -1,6 +1,6 @@
 import {
-  LEARNING_REPOSITORY,
-  type LearningRepository,
+  TODAY_WORD_REPOSITORY,
+  type TodayWordRepository,
   TodayWordAssignment,
 } from '../../domain/repositories/learning.repository';
 import { Inject, Injectable } from '@nestjs/common';
@@ -19,8 +19,8 @@ export class TodayWordService {
     @Inject(USER_LEARNING_REPOSITORY)
     private readonly userLearningRepository: UserLearningRepository,
 
-    @Inject(LEARNING_REPOSITORY)
-    private readonly learningRepository: LearningRepository,
+    @Inject(TODAY_WORD_REPOSITORY)
+    private readonly todayWordRepository: TodayWordRepository,
   ) {}
 
   /**
@@ -76,7 +76,7 @@ export class TodayWordService {
   ): Promise<TodayWordAssignment> {
     const today = localDateToInstant(localDate);
 
-    const assignment = await this.learningRepository.findTodayAssignment({
+    const assignment = await this.todayWordRepository.findTodayAssignment({
       userLearningProfileId: profile.id,
       assignedFor: today,
     });
@@ -85,7 +85,7 @@ export class TodayWordService {
       return assignment;
     }
 
-    const word = await this.learningRepository.findCandidateWord(profile);
+    const word = await this.todayWordRepository.findCandidateWord(profile);
 
     if (!word) {
       throw new CandidateWordNotFoundError(
@@ -94,7 +94,7 @@ export class TodayWordService {
       );
     }
 
-    return this.learningRepository.createDailyAssignment({
+    return this.todayWordRepository.createDailyAssignment({
       userId: profile.userId,
       assignedFor: today,
       wordId: word.id,
