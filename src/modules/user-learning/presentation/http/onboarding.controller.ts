@@ -29,6 +29,10 @@ export class OnboardingController {
         body.targetLanguage,
         body.themeSlugs,
         body.difficulty,
+        // Dropped here while the sibling endpoint forwarded it, so
+        // setup asked for a reminder hour and every profile it created
+        // was never announced.
+        body.reminderSlot,
       ),
     );
 
