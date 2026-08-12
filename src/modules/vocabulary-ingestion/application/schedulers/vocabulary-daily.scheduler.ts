@@ -1,6 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import {
+  BACKFILL_QUIZ_MATERIAL_JOB,
   GENERATE_VOCABULARY_BATCH_JOB,
   VOCABULARY_QUEUE,
 } from '../../infrastructure/queue/vocabulary-queue.constants';
@@ -18,6 +19,13 @@ import { LanguageCode } from '../../../vocabulary/domain/entities/language-code'
  * for ten entries) the difference is most of the bill.
  */
 const DAILY_BATCH_SIZE = 15;
+
+/**
+ * Words swept per night. Above the sixty the generator adds, so the
+ * legacy gap shrinks every night instead of only holding level; within
+ * the HTTP endpoint's own cap of 100.
+ */
+const NIGHTLY_BACKFILL_SIZE = 80;
 
 export class VocabularyDailyScheduler {
   private readonly logger = new Logger(VocabularyDailyScheduler.name);
@@ -85,6 +93,44 @@ export class VocabularyDailyScheduler {
           `Failed to enqueue job for ${payload.targetLanguage}: ${error}`,
         );
       }
+    }
+  }
+
+  /**
+   * Sweeps up the words still missing quiz scenarios: the pre-scenario
+   * corpus, and any night where the generator's response came back
+   * without a usable scenario. At convergence the finder returns
+   * nothing and the run costs no model time at all.
+   *
+   * An hour and a half after generation, so the words written at 02:00
+   * are done being written before they are inspected.
+   */
+  @Cron('0 30 3 * * *', {
+    name: 'dailyQuizMaterialBackfill',
+    timeZone: 'Europe/Paris',
+    waitForCompletion: true,
+    disabled: process.env.NODE_ENV !== 'production',
+  })
+  async enqueueBackfill() {
+    const jobId = `backfill-${new Date().toISOString().split('T')[0]}`;
+    try {
+      await this.queue.add(
+        BACKFILL_QUIZ_MATERIAL_JOB,
+        { count: NIGHTLY_BACKFILL_SIZE },
+        {
+          jobId,
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 2000,
+          },
+          removeOnComplete: 100,
+          removeOnFail: 100,
+        },
+      );
+      this.logger.log(`Enqueued job ${jobId}`);
+    } catch (error) {
+      this.logger.error(`Failed to enqueue quiz material backfill: ${error}`);
     }
   }
 }
