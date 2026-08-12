@@ -9,7 +9,10 @@ import type {
   LearningRepository,
   TodayWordAssignment,
 } from '../../domain/repositories/learning.repository';
-import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import {
+  emptyUserLearningStats,
+  LEARNING_REPOSITORY,
+} from '../../domain/repositories/learning.repository';
 import { TodayWordService } from '../services/today-word.service';
 import { CandidateWordNotFoundError } from '../errors/candidate-word-not-found.error';
 import {
@@ -135,15 +138,23 @@ export class GetLearningDashboardHandler implements IQueryHandler<
             })
           : null,
 
-        this.learningRepository.findReviewQueue({
-          userId: query.userId,
-          localDate: query.localDate,
-          limit: 5,
-        }),
+        profile
+          ? this.learningRepository.findReviewQueue({
+              userId: query.userId,
+              targetLanguage: profile.targetLanguage,
+              localDate: query.localDate,
+              limit: 5,
+            })
+          : [],
 
         this.learningRepository.findUserLearningStreak(query.userId),
 
-        this.learningRepository.findUserLearningStats(query.userId),
+        profile
+          ? this.learningRepository.findUserLearningStats({
+              userId: query.userId,
+              targetLanguage: profile.targetLanguage,
+            })
+          : emptyUserLearningStats(),
       ]);
 
     const [todayQuizCompleted, recall] = await Promise.all([

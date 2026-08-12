@@ -7,6 +7,7 @@ import {
   FindTodayAssignmentParams,
   FindUserActivityDetailParams,
   FindUserDailyActivityParams,
+  FindUserLearningStatsParams,
   FindUserWordLibraryParams,
   FindUserWordProgressParams,
   LastWordReview,
@@ -116,28 +117,39 @@ export class PrismaLearningRepository implements LearningRepository {
   async findUserWordLibrary(
     params: FindUserWordLibraryParams,
   ): Promise<UserWordLibraryResult> {
-    const { userId, status, search, limit, cursor } = params;
+    const { userId, targetLanguage, status, search, limit, cursor } = params;
+
+    const ofLanguage = {
+      userId,
+      word: {
+        targetLanguage:
+          PrismaVocabularyMapper.toPrismaLanguageCode(targetLanguage),
+      },
+    };
 
     // Unfiltered on purpose, so the header and chip counts never move
     // as the user searches.
     const [grouped, aggregate, items] = await Promise.all([
       this.prisma.userWordProgress.groupBy({
         by: ['status'],
-        where: { userId },
+        where: ofLanguage,
         _count: { status: true },
       }),
       this.prisma.userWordProgress.aggregate({
-        where: { userId },
+        where: ofLanguage,
         _avg: { masteryLevel: true },
         _count: { id: true },
       }),
       this.prisma.userWordProgress.findMany({
         where: {
-          userId,
+          ...ofLanguage,
           ...(status ? { status } : {}),
-          ...(search
-            ? {
-                word: {
+          // Nested inside `word` rather than beside it: a second `word`
+          // key would replace the language filter, not add to it.
+          word: {
+            ...ofLanguage.word,
+            ...(search
+              ? {
                   OR: [
                     { term: { contains: search, mode: 'insensitive' } },
                     {
@@ -147,9 +159,9 @@ export class PrismaLearningRepository implements LearningRepository {
                       },
                     },
                   ],
-                },
-              }
-            : {}),
+                }
+              : {}),
+          },
         },
         include: {
           word: {
@@ -234,11 +246,18 @@ export class PrismaLearningRepository implements LearningRepository {
     };
   }
 
-  async findUserLearningStats(userId: string): Promise<UserLearningStats> {
+  async findUserLearningStats(
+    params: FindUserLearningStatsParams,
+  ): Promise<UserLearningStats> {
     const grouped = await this.prisma.userWordProgress.groupBy({
       by: ['status'],
       where: {
-        userId,
+        userId: params.userId,
+        word: {
+          targetLanguage: PrismaVocabularyMapper.toPrismaLanguageCode(
+            params.targetLanguage,
+          ),
+        },
       },
       _count: {
         status: true,
@@ -595,13 +614,22 @@ export class PrismaLearningRepository implements LearningRepository {
   async findReviewQueue(
     params: FindReviewQueueParams,
   ): Promise<ReviewQueueItem[]> {
-    const { userId, localDate, limit } = params;
+    const { userId, targetLanguage, localDate, limit } = params;
 
-    this.logger.log('Finding review queue', { userId, localDate, limit });
+    this.logger.log('Finding review queue', {
+      userId,
+      targetLanguage,
+      localDate,
+      limit,
+    });
 
     const items = await this.prisma.userWordProgress.findMany({
       where: {
         userId,
+        word: {
+          targetLanguage:
+            PrismaVocabularyMapper.toPrismaLanguageCode(targetLanguage),
+        },
         // MASTERED and SKIPPED are excluded above, so a null
         // nextReviewOn can only mean "discovered, not yet practised".
         status: {

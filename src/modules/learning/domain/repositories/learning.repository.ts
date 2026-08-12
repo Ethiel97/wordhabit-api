@@ -42,6 +42,20 @@ export type UserLearningStats = {
   total: number;
 };
 
+export type FindUserLearningStatsParams = {
+  userId: string;
+  /** @see FindReviewQueueParams.targetLanguage */
+  targetLanguage: LanguageCode;
+};
+
+export const emptyUserLearningStats = (): UserLearningStats => ({
+  seen: 0,
+  learning: 0,
+  mastered: 0,
+  skipped: 0,
+  total: 0,
+});
+
 export interface CreateDailyAssignmentParams {
   userId: string;
   userLearningProfileId: string;
@@ -113,6 +127,12 @@ export interface FindRandomWordParams {
 
 export interface FindReviewQueueParams {
   userId: string;
+  /**
+   * The profile's language, not its id: progress hangs off the word, and
+   * a word belongs to one language. Deriving the profile that way means a
+   * language deleted and taken up again finds its own history waiting.
+   */
+  targetLanguage: LanguageCode;
   /** The learner's own day, `yyyy-MM-dd`: due dates are days, not times. */
   localDate: string;
   limit: number;
@@ -224,6 +244,8 @@ export type UserActivityDetail = {
 
 export type FindUserWordLibraryParams = {
   userId: string;
+  /** @see FindReviewQueueParams.targetLanguage */
+  targetLanguage: LanguageCode;
   status?: UserWordProgressStatus;
   search?: string;
   limit: number;
@@ -267,6 +289,28 @@ export type UserWordLibraryResult = {
   nextCursor: string | null;
   summary: UserWordLibrarySummary;
 };
+
+/**
+ * Whole, so a learner without a profile still gets a parsable page.
+ *
+ * Built per call rather than shared: `items` is a mutable array, and one
+ * caller appending to it would poison every later empty page.
+ */
+export const emptyUserWordLibrary = (): UserWordLibraryResult => ({
+  items: [],
+  nextCursor: null,
+  summary: {
+    total: 0,
+    averageMastery: 0,
+    statusCounts: {
+      [UserWordProgressStatus.NEW]: 0,
+      [UserWordProgressStatus.SEEN]: 0,
+      [UserWordProgressStatus.LEARNING]: 0,
+      [UserWordProgressStatus.MASTERED]: 0,
+      [UserWordProgressStatus.SKIPPED]: 0,
+    },
+  },
+});
 
 /** A badge a user holds, and the day they won it. */
 export type EarnedBadge = {
@@ -418,7 +462,16 @@ export interface LearnerProgressRepository {
     params: UpsertUserLearningStreakParams,
   ): Promise<UserLearningStreak>;
 
-  findUserLearningStats(userId: string): Promise<UserLearningStats>;
+  /**
+   * Words collected, and how far each one has come, for one language.
+   *
+   * The streak above it stays whole-person: a day practised is a day
+   * practised, whichever language it was. Mastery does not travel that
+   * way, so it is counted per language.
+   */
+  findUserLearningStats(
+    params: FindUserLearningStatsParams,
+  ): Promise<UserLearningStats>;
 }
 
 /** The words a learner has collected. */
