@@ -33,6 +33,7 @@ export class GetSharedWordHandler implements IQueryHandler<
       term: aggregate.word.term,
       pronunciation: aggregate.pronunciations[0]?.phonetic || null,
       partOfSpeech: aggregate.word.partOfSpeech,
+      targetLanguage: aggregate.word.targetLanguage,
       definitions: aggregate.definitions.map((definition) => ({
         id: definition.id,
         wordId: definition.wordId,

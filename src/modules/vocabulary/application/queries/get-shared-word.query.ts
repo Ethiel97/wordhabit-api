@@ -6,6 +6,7 @@ export type GetSharedWordQueryResult = {
   term: string;
   pronunciation: string | null;
   partOfSpeech: string;
+  targetLanguage: string;
   definitions: WordDefinition[];
   example: {
     sentence: string | null;
