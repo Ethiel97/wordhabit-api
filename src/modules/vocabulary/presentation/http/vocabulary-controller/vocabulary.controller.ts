@@ -64,11 +64,13 @@ export class VocabularyController {
     return ApiSuccessResponse.of(result);
   }
 
+  // No blockDuration: the landing proxies every visitor through one IP,
+  // so a ban here takes the public word page down for everyone. The
+  // sliding one-minute window is the whole protection.
   @Throttle({
     default: {
       limit: 10,
       ttl: minutes(1),
-      blockDuration: minutes(60 * 5),
     },
   })
   @Public()
