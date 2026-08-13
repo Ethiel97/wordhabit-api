@@ -36,9 +36,19 @@ export class DailyWordScheduler {
         // The tick's instant, not the processor's clock: a queued job
         // must still sweep the window it was made for.
         { tickAt: tickAt.toISOString() },
-        // attempts: 1. A replayed half-done sweep sends twice, and the
-        // next tick picks up whatever was missed.
-        { jobId, attempts: 1, removeOnComplete: 100, removeOnFail: 500 },
+        // Retries are safe: the processor claims each recipient in the
+        // delivery ledger before sending, so a replay skips everyone
+        // already served. Without them, a transient failure before the
+        // claims — a dropped DB connection in findActiveTimeZones —
+        // silently costs a whole time zone its slot for the day, since
+        // the next tick's 30-minute window no longer covers this one.
+        {
+          jobId,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 30_000 },
+          removeOnComplete: 100,
+          removeOnFail: 500,
+        },
       );
     } catch (error) {
       this.logger.error(`Failed to enqueue ${jobId}: ${error}`);
