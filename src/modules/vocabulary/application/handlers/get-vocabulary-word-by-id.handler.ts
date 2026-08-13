@@ -3,9 +3,11 @@ import {
   GetVocabularyWordByIdQuery,
   GetVocabularyWordByIdResult,
 } from '../queries/get-vocabulary-word-by-id.query';
-import { PrismaVocabularyRepository } from '../../infrastructure/persistence/prisma-vocabulary.repository';
 import { Inject, NotFoundException } from '@nestjs/common';
-import { VOCABULARY_REPOSITORY } from '../../domain/repositories/vocabulary.repository';
+import {
+  VOCABULARY_REPOSITORY,
+  type VocabularyRepository,
+} from '../../domain/repositories/vocabulary.repository';
 
 @QueryHandler(GetVocabularyWordByIdQuery)
 export class GetVocabularyWordByIdHandler implements IQueryHandler<
@@ -14,7 +16,7 @@ export class GetVocabularyWordByIdHandler implements IQueryHandler<
 > {
   constructor(
     @Inject(VOCABULARY_REPOSITORY)
-    private readonly vocabularyRepository: PrismaVocabularyRepository,
+    private readonly vocabularyRepository: VocabularyRepository,
   ) {}
 
   async execute(

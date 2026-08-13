@@ -1,7 +1,9 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaVocabularyRepository } from '../../infrastructure/persistence/prisma-vocabulary.repository';
 import { Inject } from '@nestjs/common';
-import { VOCABULARY_REPOSITORY } from '../../domain/repositories/vocabulary.repository';
+import {
+  VOCABULARY_REPOSITORY,
+  type VocabularyRepository,
+} from '../../domain/repositories/vocabulary.repository';
 import {
   SearchVocabularyWordsQuery,
   SearchVocabularyWordsResult,
@@ -14,7 +16,7 @@ export class SearchVocabularyWordsHandler implements IQueryHandler<
 > {
   constructor(
     @Inject(VOCABULARY_REPOSITORY)
-    private readonly vocabularyRepository: PrismaVocabularyRepository,
+    private readonly vocabularyRepository: VocabularyRepository,
   ) {}
 
   async execute(

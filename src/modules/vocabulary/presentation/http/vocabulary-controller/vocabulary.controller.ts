@@ -9,6 +9,9 @@ import { ListVocabularyWordsQuery } from '../../../application/queries/list-voca
 import { ListVocabularyWordsRequestDto } from '../../../application/dto/list-vocabulary-words.request.dto';
 import { VOCABULARY } from '../../../../../shared/presentation/http/endpoints';
 import { SearchVocabularyWordsRequestDto } from '../../../application/dto/search-vocabulary-words.request.dto';
+import { GetSharedWordQuery } from '../../../application/queries/get-shared-word.query';
+import { Public } from '../../../../auth/presentation/public.decorator';
+import { minutes, Throttle } from '@nestjs/throttler';
 
 @Controller(VOCABULARY.BASE)
 export class VocabularyController {
@@ -57,6 +60,21 @@ export class VocabularyController {
     const result = await this.queryBus.execute(
       new GetVocabularyWordByIdQuery(id),
     );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: minutes(1),
+      blockDuration: minutes(60 * 5),
+    },
+  })
+  @Public()
+  @Get(VOCABULARY.SHARED)
+  async getSharedWordById(@Param('id') id: string) {
+    const result = await this.queryBus.execute(new GetSharedWordQuery(id));
 
     return ApiSuccessResponse.of(result);
   }

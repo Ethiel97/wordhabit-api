@@ -16,6 +16,7 @@ import { UpdateThemeHandler } from './application/handlers/update-theme.handler'
 import { DeleteThemeHandler } from './application/handlers/delete-theme.handler';
 import { ListThemesHandler } from './application/handlers/list-themes.handler';
 import { GetThemeBySlugHandler } from './application/handlers/get-theme-by-slug.handler';
+import { GetSharedWordHandler } from './application/handlers/get-shared-word.handler';
 
 const commandHandlers = [
   CreateVocabularyWordHandler,
@@ -30,6 +31,7 @@ const queryHandlers = [
   ListVocabularyWordsHandler,
   ListThemesHandler,
   GetThemeBySlugHandler,
+  GetSharedWordHandler,
 ];
 
 @Module({
