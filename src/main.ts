@@ -28,6 +28,9 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new HttpExceptionFilter());
+  // Fly stops machines with a signal; without this, the pool's
+  // connections linger against the role cap until Postgres reaps them.
+  app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 4000);
 }
 

@@ -6,9 +6,13 @@ import { SentryLogger } from './shared/infrastructure/observability/sentry-logge
 async function bootstrap() {
   initializeSentry('wordhabit-worker');
 
-  await NestFactory.createApplicationContext(WorkerAppModule, {
+  const app = await NestFactory.createApplicationContext(WorkerAppModule, {
     logger: new SentryLogger(),
   });
+
+  // Fly stops machines with a signal; without this, the pool's
+  // connections linger against the role cap until Postgres reaps them.
+  app.enableShutdownHooks();
 }
 
 void bootstrap();
