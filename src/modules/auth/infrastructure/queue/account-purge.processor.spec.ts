@@ -3,7 +3,7 @@ import { AccountPurgeProcessor } from './account-purge.processor';
 import { ACCOUNT_PURGE_JOBS } from './account-purge-queue.constants';
 import { ACCOUNT_PURGE_GRACE_DAYS } from '../../domain/account-deletion.policy';
 import type { AuthUserRepository } from '../../domain/repositories/auth-user.repository';
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../../domain/entities/user';
 
 const deletedUser = (id: string): User => ({
   id,

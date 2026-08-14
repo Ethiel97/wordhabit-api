@@ -4,7 +4,7 @@ import { LoginUserCommand } from '../commands/login-user.command';
 import type { AuthUserRepository } from '../../domain/repositories/auth-user.repository';
 import type { PasswordService } from '../../domain/services/password-service';
 import type { SessionIssuer } from '../services/session-issuer.service';
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../../domain/entities/user';
 
 const user = (overrides: Partial<User> = {}): User => ({
   id: 'u1',

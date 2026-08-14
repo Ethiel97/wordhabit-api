@@ -1,4 +1,4 @@
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../entities/user';
 import { AccountDeletionReason } from '../entities/account-deletion-reason';
 import { AuthProvider } from '../entities/auth-provider';
 

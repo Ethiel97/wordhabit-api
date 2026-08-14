@@ -4,7 +4,7 @@ import type { AuthUserRepository } from '../../domain/repositories/auth-user.rep
 import type { EmailChangeRequestRepository } from '../../domain/repositories/email-change-request.repository';
 import type { PasswordService } from '../../domain/services/password-service';
 import { EmailChangeRequest } from '../../domain/entities/email-change-request';
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../../domain/entities/user';
 import { EmailAlreadyTakenError } from '../errors/auth-error';
 import {
   EmailChangeCodeExpiredError,

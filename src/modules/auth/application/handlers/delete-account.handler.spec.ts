@@ -3,7 +3,7 @@ import { DeleteAccountHandler } from './delete-account.handler';
 import { DeleteAccountCommand } from '../commands/delete-account.command';
 import { AccountDeletionReason } from '../../domain/entities/account-deletion-reason';
 import type { AuthUserRepository } from '../../domain/repositories/auth-user.repository';
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../../domain/entities/user';
 import { ACCOUNT_PURGE_GRACE_DAYS } from '../../domain/account-deletion.policy';
 
 const liveUser = (overrides: Partial<User> = {}): User => ({

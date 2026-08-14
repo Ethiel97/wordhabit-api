@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../../domain/entities/user';
 import {
   TOKEN_SERVICE,
   type TokenService,

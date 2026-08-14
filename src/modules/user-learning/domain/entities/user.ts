@@ -1,10 +1,11 @@
+// No credential fields here: password and its version belong to the
+// auth module's own User. This entity answers "who is learning", and
+// none of its consumers verifies anything.
 export interface User {
   id: string;
   email: string;
-  password: string | null;
   name: string;
   emailVerifiedAt: Date | null;
-  passwordVersion: number;
   createdAt: Date;
   updatedAt: Date;
   /**

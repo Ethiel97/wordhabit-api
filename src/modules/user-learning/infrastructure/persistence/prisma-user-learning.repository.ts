@@ -164,6 +164,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
         email: params.email.trim().toLowerCase(),
         name: params.name,
       },
+      omit: { password: true },
     });
   }
 
@@ -224,6 +225,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       where: {
         email: email.trim().toLowerCase(),
       },
+      omit: { password: true },
     });
 
     if (!found) {
@@ -237,6 +239,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       where: {
         id: userId,
       },
+      omit: { password: true },
     });
     if (!found) {
       return null;

@@ -6,7 +6,7 @@ import {
 } from '../../domain/repositories/auth-user.repository';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../../domain/entities/user';
 import { PrismaUserMapper } from './prisma-user.mapper';
 import { AccountDeletionReason } from '../../domain/entities/account-deletion-reason';
 import { AuthProvider } from '../../domain/entities/auth-provider';

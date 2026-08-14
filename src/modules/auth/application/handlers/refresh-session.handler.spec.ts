@@ -6,7 +6,7 @@ import type { RefreshTokenRepository } from '../../domain/repositories/refresh-t
 import type { RefreshTokenService } from '../../domain/services/refresh-token-service';
 import type { SessionIssuer } from '../services/session-issuer.service';
 import { RefreshToken } from '../../domain/entities/refresh-token';
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../../domain/entities/user';
 
 const user: User = {
   id: 'u1',

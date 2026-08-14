@@ -4,9 +4,8 @@ import { AuthenticateWithProviderCommand } from '../commands/authenticate-with-p
 import { AuthProvider } from '../../domain/entities/auth-provider';
 import { SocialIdentity } from '../../domain/entities/social-identity';
 import type { AuthUserRepository } from '../../domain/repositories/auth-user.repository';
-import type { SocialIdentityVerifier } from '../../domain/services/social-identity-verifier';
 import type { SessionIssuer } from '../services/session-issuer.service';
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../../domain/entities/user';
 
 const user = (overrides: Partial<User> = {}): User => ({
   id: 'u1',

@@ -14,7 +14,7 @@ import {
 } from '../../domain/services/social-identity-verifier';
 import { SocialIdentity } from '../../domain/entities/social-identity';
 import { SessionIssuer } from '../services/session-issuer.service';
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../../domain/entities/user';
 
 @CommandHandler(AuthenticateWithProviderCommand)
 export class AuthenticateWithProviderHandler implements ICommandHandler<

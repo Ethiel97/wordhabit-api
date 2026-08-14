@@ -1,4 +1,4 @@
-import { User } from '../../../user-learning/domain/entities/user';
+import { User } from '../../domain/entities/user';
 
 import type { UserModel as PrismaUser } from 'generated/prisma/models';
 
