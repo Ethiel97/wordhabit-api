@@ -119,9 +119,11 @@ export class PrismaNotificationRepository implements NotificationRepository {
   }
 
   async findActiveTimeZones(): Promise<string[]> {
-    const rows = await this.prisma.device.findMany({
-      distinct: ['timeZone'],
-      select: { timeZone: true },
+    // groupBy, not findMany({ distinct }): Prisma applies `distinct`
+    // in memory after fetching every row, a full-table scan repeated
+    // every sweep. groupBy pushes the deduplication into SQL.
+    const rows = await this.prisma.device.groupBy({
+      by: ['timeZone'],
     });
 
     return rows.map((row) => row.timeZone);
