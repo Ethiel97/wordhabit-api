@@ -1,5 +1,5 @@
 import { ValidationPipe } from '@nestjs/common';
-import { RevenueCatWebhookRequestDto } from '../../application/dtos/revenue-cat-webhook-request.dto';
+import { parseRevenueCatWebhook } from '../../application/dtos/revenue-cat-webhook-request.dto';
 
 /**
  * A real RevenueCat payload, trimmed of nothing: every field here was
@@ -35,33 +35,36 @@ const REAL_EVENT = {
   },
 };
 
+/** Mirrors main.ts, which is what the route has to survive. */
+const globalPipe = new ValidationPipe({
+  whitelist: true,
+  forbidNonWhitelisted: true,
+  transform: true,
+});
+
 describe('RevenueCat webhook validation', () => {
-  // The route's own pipe, not the global one it deliberately replaces.
-  const pipe = new ValidationPipe({
-    transform: true,
-    whitelist: false,
-    forbidNonWhitelisted: false,
-  });
+  it('reaches the handler through the global pipe', async () => {
+    // `@Body() body: unknown` leaves the pipe no metatype to validate
+    // against, so it hands the payload through untouched.
+    const afterPipe: unknown = await globalPipe.transform(REAL_EVENT, {
+      type: 'body',
+    });
 
-  const metadata = {
-    type: 'body' as const,
-    metatype: RevenueCatWebhookRequestDto,
-  };
+    const payload = await parseRevenueCatWebhook(afterPipe);
 
-  it('accepts a full RevenueCat payload', async () => {
-    const result = (await pipe.transform(
-      REAL_EVENT,
-      metadata,
-    )) as RevenueCatWebhookRequestDto;
-
-    expect(result.event.type).toBe('EXPIRATION');
-    expect(result.event.app_user_id).toBe('cmsnnve2y0000iitwqs885om3');
-    expect(result.event.entitlement_ids).toEqual(['pro']);
+    expect(payload.event.type).toBe('EXPIRATION');
+    expect(payload.event.app_user_id).toBe('cmsnnve2y0000iitwqs885om3');
+    expect(payload.event.entitlement_ids).toEqual(['pro']);
+    expect(payload.event.store).toBe('PROMOTIONAL');
   });
 
   it('still refuses a payload missing the fields the decision reads', async () => {
     await expect(
-      pipe.transform({ event: { app_user_id: 'u1' } }, metadata),
-    ).rejects.toThrow();
+      parseRevenueCatWebhook({ event: { app_user_id: 'u1' } }),
+    ).rejects.toThrow(/Unusable RevenueCat payload/);
+  });
+
+  it('refuses a body that is not an event at all', async () => {
+    await expect(parseRevenueCatWebhook(null)).rejects.toThrow();
   });
 });
