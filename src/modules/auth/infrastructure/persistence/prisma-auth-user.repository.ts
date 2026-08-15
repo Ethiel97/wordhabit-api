@@ -33,7 +33,7 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
     // having verified something.
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { email },
+      data: { email: normalizeEmail(email) },
     });
 
     return PrismaUserMapper.toDomain(user);
@@ -87,7 +87,7 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizeEmail(email) },
     });
 
     if (!user) {
@@ -113,7 +113,7 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
   async create(params: CreateAuthUserParams): Promise<User> {
     const user = await this.prisma.user.create({
       data: {
-        email: params.email,
+        email: normalizeEmail(params.email),
         name: params.name,
         password: params.password,
         emailVerifiedAt: params.emailVerified ? new Date() : null,
@@ -171,4 +171,15 @@ export class PrismaAuthUserRepository implements AuthUserRepository {
     });
     return PrismaUserMapper.toDomain(user);
   }
+}
+
+/**
+ * Emails are matched and stored lowercase. Postgres compares strings
+ * case-sensitively, so `Clau.beke@` and `clau.beke@` were two accounts:
+ * registration stored the address as typed while the social verifier
+ * already lowercased it, and login lowercases too — which left the
+ * password account unreachable.
+ */
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
