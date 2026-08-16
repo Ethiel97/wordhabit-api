@@ -21,11 +21,11 @@ import { LanguageCode } from '../../../vocabulary/domain/entities/language-code'
 const DAILY_BATCH_SIZE = 15;
 
 /**
- * Words swept per night. Above the sixty the generator adds, so the
- * legacy gap shrinks every night instead of only holding level; within
+ * Words swept per pass. Above the sixty the generator adds, so the
+ * legacy gap shrinks every pass instead of only holding level; within
  * the HTTP endpoint's own cap of 100.
  */
-const NIGHTLY_BACKFILL_SIZE = 80;
+const BACKFILL_SIZE = 80;
 
 export class VocabularyDailyScheduler {
   private readonly logger = new Logger(VocabularyDailyScheduler.name);
@@ -98,25 +98,30 @@ export class VocabularyDailyScheduler {
 
   /**
    * Sweeps up the words still missing quiz scenarios: the pre-scenario
-   * corpus, and any night where the generator's response came back
+   * corpus, and any pass where the generator's response came back
    * without a usable scenario. At convergence the finder returns
-   * nothing and the run costs no model time at all.
+   * nothing and the run costs no model time at all — which is what
+   * makes four passes a day cheap once the backlog is drained.
    *
-   * An hour and a half after generation, so the words written at 02:00
-   * are done being written before they are inspected.
+   * The 03:30 pass is an hour and a half after generation, so the words
+   * written at 02:00 are done being written before they are inspected;
+   * the other three exist only to drain the legacy gap faster.
    */
-  @Cron('0 30 3 * * *', {
+  @Cron('0 30 3,9,15,21 * * *', {
     name: 'dailyQuizMaterialBackfill',
     timeZone: 'Europe/Paris',
     waitForCompletion: true,
     disabled: process.env.NODE_ENV !== 'production',
   })
   async enqueueBackfill() {
-    const jobId = `backfill-${new Date().toISOString().split('T')[0]}`;
+    // Hour-granular, not day: BullMQ rejects a duplicate id, so a
+    // date-only id would let the 03:30 pass through and silently drop
+    // the three that follow it.
+    const jobId = `backfill-${new Date().toISOString().slice(0, 13).replace(/[-T:]/g, '-')}`;
     try {
       await this.queue.add(
         BACKFILL_QUIZ_MATERIAL_JOB,
-        { count: NIGHTLY_BACKFILL_SIZE },
+        { count: BACKFILL_SIZE },
         {
           jobId,
           attempts: 3,

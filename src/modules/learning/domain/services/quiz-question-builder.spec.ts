@@ -2,6 +2,7 @@ import { PartOfSpeech } from '../../../vocabulary/domain/entities/part-of-speech
 import { QuizMode, QuizQuestionKind } from '../entities/quiz';
 import {
   buildQuizQuestions,
+  MIN_QUIZ_QUESTIONS,
   QuizDistractorWord,
   QuizTargetWord,
 } from './quiz-question-builder';
@@ -65,6 +66,27 @@ describe('buildQuizQuestions', () => {
         expect(question.options.length).toBeGreaterThanOrEqual(2);
         expect(new Set(question.options).size).toBe(question.options.length);
       }
+    }
+  });
+
+  // 97% of the corpus has no antonyms yet, so this is the ordinary
+  // word, not the edge case. Raising MIN_QUIZ_QUESTIONS to 4 refused
+  // every one of them in production: the constant is the threshold
+  // below which a round is rejected, never a target the builder fills.
+  it('still yields a playable round for a word without antonyms', () => {
+    for (const mode of [QuizMode.MASTERY, QuizMode.SPEED]) {
+      const questions = buildQuizQuestions({
+        word: word({ antonyms: [] }),
+        pool,
+        scenarios: [scenario],
+        mode,
+        random: Math.random,
+      });
+
+      expect(questions.length).toBeGreaterThanOrEqual(MIN_QUIZ_QUESTIONS);
+      expect(questions.map((question) => question.kind)).not.toContain(
+        QuizQuestionKind.ANTONYM,
+      );
     }
   });
 
