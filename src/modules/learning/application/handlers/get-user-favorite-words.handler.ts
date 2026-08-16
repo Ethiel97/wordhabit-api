@@ -6,6 +6,10 @@ import {
   GetUserFavoriteWordsQuery,
   GetUserFavoriteWordsResult,
 } from '../queries/get-user-favorite-words.query';
+import {
+  USER_LEARNING_REPOSITORY,
+  type UserLearningRepository,
+} from '../../../user-learning/domain/repositories/user-learning.repository';
 
 @QueryHandler(GetUserFavoriteWordsQuery)
 export class GetUserFavoriteWordsHandler implements IQueryHandler<
@@ -15,14 +19,25 @@ export class GetUserFavoriteWordsHandler implements IQueryHandler<
   constructor(
     @Inject(WORD_LIBRARY_REPOSITORY)
     private readonly libraryRepository: WordLibraryRepository,
+
+    @Inject(USER_LEARNING_REPOSITORY)
+    private readonly userLearningRepository: UserLearningRepository,
   ) {}
 
   async execute(
     query: GetUserFavoriteWordsQuery,
   ): Promise<GetUserFavoriteWordsResult> {
-    const favoriteWords = await this.libraryRepository.findUserFavoriteWords(
-      query.userId,
-    );
+    const profile =
+      await this.userLearningRepository.findActiveUserLearningProfile(
+        query.userId,
+      );
+
+    if (!profile) return { favoriteWords: [] };
+
+    const favoriteWords = await this.libraryRepository.findUserFavoriteWords({
+      userId: query.userId,
+      targetLanguage: profile.targetLanguage,
+    });
     return { favoriteWords };
   }
 }

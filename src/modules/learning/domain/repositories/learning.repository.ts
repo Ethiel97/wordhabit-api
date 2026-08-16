@@ -494,7 +494,15 @@ export interface WordLibraryRepository {
     params: FindUserWordLibraryParams,
   ): Promise<UserWordLibraryResult>;
 
-  findUserFavoriteWords(userId: string): Promise<FavoriteWord[]>;
+  /**
+   * The learner's saved words in [targetLanguage]. Scoped like the
+   * library itself: a French profile showing English favourites gives a
+   * count that its own list can never match.
+   */
+  findUserFavoriteWords(params: {
+    userId: string;
+    targetLanguage: LanguageCode;
+  }): Promise<FavoriteWord[]>;
 
   addUserFavoriteWord(userId: string, wordId: string): Promise<FavoriteWord>;
 

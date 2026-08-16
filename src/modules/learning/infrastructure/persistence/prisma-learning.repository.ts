@@ -42,6 +42,7 @@ import { UserLearningStreak } from '../../domain/entities/user-learning-streak';
 import { FavoriteWord } from '../../domain/entities/favorite-word';
 import { instantToLocalDate } from '../../domain/services/local-date';
 import { BadgeCode } from '../../domain/entities/badge';
+import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 import {
   FLUENT_MASTERY_LEVEL,
   LanguageMasteredWords,
@@ -54,9 +55,13 @@ export class PrismaLearningRepository implements LearningRepository {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async findUserFavoriteWords(userId: string): Promise<FavoriteWord[]> {
+  async findUserFavoriteWords(params: {
+    userId: string;
+    targetLanguage: LanguageCode;
+  }): Promise<FavoriteWord[]> {
+    const { userId, targetLanguage } = params;
     const favorites = await this.prisma.favoriteWord.findMany({
-      where: { userId },
+      where: { userId, word: { targetLanguage } },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: {
         word: true, // Include the related word entity
