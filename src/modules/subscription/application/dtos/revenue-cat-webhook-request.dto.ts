@@ -38,6 +38,10 @@ export class RevenueCatEventDto {
   @IsOptional()
   @IsString()
   store?: string;
+
+  @IsOptional()
+  @IsInt()
+  event_timestamp_ms?: number;
 }
 
 export class RevenueCatWebhookRequestDto {

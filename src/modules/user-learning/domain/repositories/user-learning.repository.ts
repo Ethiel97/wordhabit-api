@@ -31,6 +31,12 @@ export interface UpdateUserLearningProfileParams {
   reminderSlot?: NotificationSlot | null;
 }
 
+export interface SwapReminderSlotParams {
+  userId: string;
+  profileId: string;
+  reminderSlot: NotificationSlot;
+}
+
 export interface CreateUserParams {
   email: string;
   name: string;
@@ -79,6 +85,15 @@ export interface UserLearningRepository {
 
   updateUserLearningProfile(
     params: UpdateUserLearningProfileParams,
+  ): Promise<UserLearningProfile>;
+
+  /**
+   * Moves [profileId] onto [reminderSlot], handing its current slot to
+   * whichever profile held the target — atomically, since a learner
+   * with one profile per slot can only ever trade.
+   */
+  swapReminderSlot(
+    params: SwapReminderSlotParams,
   ): Promise<UserLearningProfile>;
 
   deleteUserLearningProfile(profileId: string): Promise<boolean>;

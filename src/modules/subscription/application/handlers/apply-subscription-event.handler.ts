@@ -39,14 +39,25 @@ export class ApplySubscriptionEventHandler implements ICommandHandler<
     // Writing anything here would revoke: the payload lists none.
     if (state === null) return { applied: false };
 
+    // The event's own instant, not arrival time: a delivery retried for
+    // an hour must not look newer than what replaced it meanwhile.
+    const eventAt =
+      typeof command.event.event_timestamp_ms === 'number'
+        ? new Date(command.event.event_timestamp_ms)
+        : undefined;
+
     const applied = await this.subscriptionRepository.applyState({
       userId,
       state,
+      eventAt,
     });
 
+    // Also false when the guard refused an out-of-order event, which is
+    // a correct outcome rather than a miss.
     if (!applied) {
       this.logger.warn(
-        `Webhook ${command.event.type} named unknown user ${userId}.`,
+        `Webhook ${command.event.type} for ${userId} changed nothing: ` +
+          'unknown user, or older than the state on file.',
       );
     }
 

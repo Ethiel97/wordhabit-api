@@ -6,10 +6,16 @@ import { ApplySubscriptionEventHandler } from './application/handlers/apply-subs
 import { SubscriptionService } from './application/services/subscription.service';
 import { RequiresProGuard } from './presentation/requires-pro.guard';
 import { RevenueCatAuthGuard } from './infrastructure/webhook/revenue-cat-auth.guard';
+import { SyncSubscriptionHandler } from './application/handlers/sync-subscription.handler';
+import { SUBSCRIBER_SOURCE } from './domain/ports/subscriber-source.port';
+import { RevenueCatSubscriberSource } from './infrastructure/revenue-cat/revenue-cat-subscriber.source';
 import { PrismaSubscriptionRepository } from './infrastructure/persistence/prisma-subscription.repository';
 import { SUBSCRIPTION_REPOSITORY } from './domain/repositories/subscription.repository';
 
-const commandHandlers = [ApplySubscriptionEventHandler];
+const commandHandlers = [
+  ApplySubscriptionEventHandler,
+  SyncSubscriptionHandler,
+];
 
 @Module({
   imports: [CqrsModule, ConfigModule],
@@ -20,9 +26,14 @@ const commandHandlers = [ApplySubscriptionEventHandler];
     RequiresProGuard,
     RevenueCatAuthGuard,
     PrismaSubscriptionRepository,
+    RevenueCatSubscriberSource,
     {
       provide: SUBSCRIPTION_REPOSITORY,
       useExisting: PrismaSubscriptionRepository,
+    },
+    {
+      provide: SUBSCRIBER_SOURCE,
+      useExisting: RevenueCatSubscriberSource,
     },
   ],
   // Both are exported so any module can gate a route on Pro without

@@ -13,12 +13,14 @@ import { VocabularyModule } from '../vocabulary/vocabulary.module';
 import { EnsureThemesExistService } from './application/services/ensure-themes-exist.service';
 import { DeleteUserLearningProfileHandler } from './application/handlers/delete-user-learning-profile.handler';
 import { SubscriptionModule } from '../subscription/subscription.module';
+import { SwapReminderSlotHandler } from './application/handlers/swap-reminder-slot.handler';
 
 const commandHandlers = [
   ActivateUserLearningProfileHandler,
   CreateUserLearningProfileHandler,
   UpdateUserLearningProfileHandler,
   DeleteUserLearningProfileHandler,
+  SwapReminderSlotHandler,
 ];
 const queryHandlers = [
   GetActiveUserLearningProfileHandler,

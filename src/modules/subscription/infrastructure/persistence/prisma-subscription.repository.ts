@@ -13,15 +13,29 @@ export class PrismaSubscriptionRepository implements SubscriptionRepository {
   async applyState(params: {
     userId: string;
     state: SubscriptionState;
+    eventAt?: Date;
   }): Promise<boolean> {
     // updateMany rather than update: a webhook for a deleted account is
     // an ordinary race, not an exception to throw and retry forever.
+    // The date guard rides in the same statement so two deliveries
+    // racing each other cannot both read "newer" and both write.
     const { count } = await this.prisma.user.updateMany({
-      where: { id: params.userId },
+      where: {
+        id: params.userId,
+        ...(params.eventAt
+          ? {
+              OR: [
+                { subscriptionEventAt: null },
+                { subscriptionEventAt: { lte: params.eventAt } },
+              ],
+            }
+          : {}),
+      },
       data: {
         subscriptionTier: params.state.tier,
         subscriptionExpiresAt: params.state.expiresAt,
         subscriptionStore: params.state.store,
+        ...(params.eventAt ? { subscriptionEventAt: params.eventAt } : {}),
       },
     });
     return count > 0;

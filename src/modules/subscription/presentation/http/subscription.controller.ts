@@ -15,6 +15,7 @@ import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
 import type { AuthenticatedUser } from '../../../auth/domain/entities/authenticated-user';
 import { RevenueCatAuthGuard } from '../../infrastructure/webhook/revenue-cat-auth.guard';
 import { ApplySubscriptionEventCommand } from '../../application/commands/apply-subscription-event.command';
+import { SyncSubscriptionCommand } from '../../application/commands/sync-subscription.command';
 import { parseRevenueCatWebhook } from '../../application/dtos/revenue-cat-webhook-request.dto';
 import { SubscriptionService } from '../../application/services/subscription.service';
 
@@ -44,6 +45,20 @@ export class SubscriptionController {
     const result = await this.commandBus.execute(
       new ApplySubscriptionEventCommand(payload.event),
     );
+    return ApiSuccessResponse.of(result);
+  }
+
+  /**
+   * Asks the server to re-read the store. Answers the state it wrote,
+   * so the caller needs no second round trip.
+   */
+  @Post(SUBSCRIPTION.SYNC)
+  @HttpCode(HttpStatus.OK)
+  async syncSubscription(@CurrentUser() user: AuthenticatedUser) {
+    const result = await this.commandBus.execute(
+      new SyncSubscriptionCommand(user.id),
+    );
+
     return ApiSuccessResponse.of(result);
   }
 

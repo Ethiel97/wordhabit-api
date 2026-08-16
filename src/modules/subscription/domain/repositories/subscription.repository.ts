@@ -12,6 +12,11 @@ export interface SubscriptionRepository {
   applyState(params: {
     userId: string;
     state: SubscriptionState;
+    /**
+     * When the store event happened. An event older than the one already
+     * applied is ignored — see the column's own comment.
+     */
+    eventAt?: Date;
   }): Promise<boolean>;
 
   findState(userId: string): Promise<SubscriptionState | null>;

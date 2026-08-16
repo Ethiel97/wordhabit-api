@@ -4,6 +4,7 @@ import {
   CreateUserParams,
   FindUserLearningProfileParams,
   FindUserLearningProfilesParams,
+  SwapReminderSlotParams,
   UpdateUserLearningProfileParams,
   UserLearningRepository,
 } from '../../domain/repositories/user-learning.repository';
@@ -50,6 +51,55 @@ function toDomain(row: ProfileRow): UserLearningProfile {
 @Injectable()
 export class PrismaUserLearningRepository implements UserLearningRepository {
   constructor(private readonly prisma: PrismaService) {}
+  async swapReminderSlot(
+    params: SwapReminderSlotParams,
+  ): Promise<UserLearningProfile> {
+    const { userId, profileId, reminderSlot } = params;
+
+    const swapped = await this.prisma.$transaction(async (tx) => {
+      const holder = await tx.userLearningProfile.findFirst({
+        where: { userId, reminderSlot, id: { not: profileId } },
+        select: { id: true },
+      });
+
+      if (!holder) {
+        return tx.userLearningProfile.update({
+          where: { id: profileId },
+          data: { reminderSlot },
+          include: withThemes,
+        });
+      }
+
+      const mover = await tx.userLearningProfile.findUniqueOrThrow({
+        where: { id: profileId },
+        select: { reminderSlot: true },
+      });
+
+      // Through null first: `(userId, reminderSlot)` is unique, so the
+      // two profiles can never hold the same slot, not even between two
+      // statements of one transaction. The index is partial — `WHERE
+      // reminderSlot IS NOT NULL` — which is exactly what makes this
+      // detour legal, and Postgres cannot defer a partial unique index.
+      await tx.userLearningProfile.update({
+        where: { id: profileId },
+        data: { reminderSlot: null },
+      });
+
+      await tx.userLearningProfile.update({
+        where: { id: holder.id },
+        data: { reminderSlot: mover.reminderSlot },
+      });
+
+      return tx.userLearningProfile.update({
+        where: { id: profileId },
+        data: { reminderSlot },
+        include: withThemes,
+      });
+    });
+
+    return toDomain(swapped);
+  }
+
   async deleteUserLearningProfile(profileId: string): Promise<boolean> {
     const result = await this.prisma.userLearningProfile.delete({
       where: {

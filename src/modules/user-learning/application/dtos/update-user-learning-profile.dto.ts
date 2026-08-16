@@ -6,8 +6,8 @@ import {
   IsString,
 } from 'class-validator';
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
-import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 import { NotificationSlot } from '../../../notifications/domain/entities/notification';
+import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 
 /**
  * A true PATCH: every field is optional and only the ones present are
@@ -34,7 +34,13 @@ export class UpdateUserLearningProfileDto {
   @IsOptional()
   difficulty!: WordDifficulty;
 
-  /** Null clears the reminder; absent leaves it alone. */
+  /**
+   * Accepted and ignored. The reminder moved to its own route, but
+   * versions already installed still send it here, and the global pipe
+   * rejects the whole request over an undeclared field — which would
+   * break editing themes and difficulty too. Drop this once the store
+   * versions that send it are gone.
+   */
   @IsOptional()
   @IsEnum(NotificationSlot)
   reminderSlot?: NotificationSlot | null;

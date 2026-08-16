@@ -1,6 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import {
-  ReminderSlotTakenError,
   UserLearningProfileNotFoundError,
   UserLearningProfileReadOnlyError,
 } from '../errors/user-learning-profile-errors';
@@ -52,24 +51,6 @@ export class UpdateUserLearningProfileHandler implements ICommandHandler<
       }
     }
 
-    if (command.reminderSlot) {
-      const profiles =
-        await this.userLearningRepository.findUserLearningProfiles({
-          userId: command.userId,
-        });
-      const holder = profiles.find(
-        (profile) =>
-          profile.id !== command.profileId &&
-          profile.reminderSlot === command.reminderSlot,
-      );
-      if (holder) {
-        throw new ReminderSlotTakenError(
-          command.reminderSlot,
-          holder.targetLanguage,
-        );
-      }
-    }
-
     // Undefined means "leave the themes alone", which is not the same
     // as an empty array — that one is a deliberate clear.
     const normalizedThemeSlugs = command.themeSlugs
@@ -85,7 +66,6 @@ export class UpdateUserLearningProfileHandler implements ICommandHandler<
         targetLanguage: command.targetLanguage,
         profileId: command.profileId,
         difficulty: command.difficulty,
-        reminderSlot: command.reminderSlot,
       },
     );
 

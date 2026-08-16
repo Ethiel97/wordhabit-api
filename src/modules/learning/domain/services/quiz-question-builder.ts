@@ -59,9 +59,10 @@ const SPEED_OPTION_COUNT = 2;
  * Below this the word cannot sustain a round, and the caller should
  * say so rather than serve a two-question "challenge".
  */
-export const MIN_QUIZ_QUESTIONS = 3;
+export const MIN_QUIZ_QUESTIONS = 4;
 
 /**
+ *
  * Builds a quiz round from corpus material alone.
  *
  * MASTERY and SPEED are assembled here by combination — definitions,

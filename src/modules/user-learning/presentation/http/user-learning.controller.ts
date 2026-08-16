@@ -20,6 +20,8 @@ import { USER_LEARNING } from '../../../../shared/presentation/http/endpoints';
 import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
 import type { AuthenticatedUser } from '../../../auth/domain/entities/authenticated-user';
 import { DeleteUserLearningProfileCommand } from '../../application/commands/delete-user-learning-profile.command';
+import { SwapReminderSlotCommand } from '../../application/commands/swap-reminder-slot.command';
+import { SwapReminderSlotDto } from '../../application/dtos/swap-reminder-slot.dto';
 
 @Controller(USER_LEARNING.BASE)
 export class UserLearningController {
@@ -93,8 +95,20 @@ export class UserLearningController {
         body.interfaceLanguage,
         body.targetLanguage,
         body.difficulty,
-        body.reminderSlot,
       ),
+    );
+
+    return ApiSuccessResponse.of(result);
+  }
+
+  @Patch(USER_LEARNING.SWAP_REMINDER)
+  async swapUserLearningProfileReminderSlot(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('profileId') profileId: string,
+    @Body() body: SwapReminderSlotDto,
+  ) {
+    const result = await this.commandBus.execute(
+      new SwapReminderSlotCommand(user.id, profileId, body.reminderSlot),
     );
 
     return ApiSuccessResponse.of(result);

@@ -14,6 +14,7 @@ export interface RevenueCatEvent {
   entitlement_ids?: string[] | null;
   expiration_at_ms?: number | null;
   store?: string | null;
+  event_timestamp_ms?: number | null;
 }
 
 /**

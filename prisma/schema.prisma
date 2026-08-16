@@ -274,6 +274,11 @@ model User {
   subscriptionExpiresAt DateTime?
   /// Which store billed it, for support and for reading revenue reports.
   subscriptionStore     String?
+  /// When the store event behind the three fields above happened — not
+  /// when we wrote them. A retried webhook can arrive after a newer one
+  /// (RevenueCat retries for hours), and replaying an old cancellation
+  /// over a live entitlement would revoke a paying learner.
+  subscriptionEventAt   DateTime?
 
   @@index([deletedAt])
   @@index([email])
