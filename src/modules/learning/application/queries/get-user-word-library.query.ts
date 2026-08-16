@@ -8,6 +8,7 @@ export class GetUserWordLibraryQuery extends Query<GetUserWordLibraryResult> {
     public readonly userId: string,
     public readonly status?: UserWordProgressStatus,
     public readonly search?: string,
+    public readonly savedOnly?: boolean,
     public readonly limit = USER_WORD_LIBRARY_LIMIT,
     public readonly cursor?: string,
   ) {

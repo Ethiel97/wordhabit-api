@@ -250,6 +250,7 @@ export class LearningController {
         user.id,
         request.status,
         request.search,
+        request.savedOnly,
         request.limit,
         request.cursor,
       ),

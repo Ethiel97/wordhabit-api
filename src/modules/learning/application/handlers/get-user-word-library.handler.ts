@@ -46,6 +46,7 @@ export class GetUserWordLibraryHandler implements IQueryHandler<
       targetLanguage: profile.targetLanguage,
       status: query.status,
       search: query.search,
+      savedOnly: query.savedOnly,
       limit: query.limit,
       cursor: query.cursor,
     });

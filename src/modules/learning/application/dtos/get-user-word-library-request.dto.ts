@@ -1,7 +1,15 @@
 import { UserWordProgressStatus } from '../../domain/entities/user-word-progress';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import { USER_WORD_LIBRARY_LIMIT } from '../queries/get-user-word-library.query';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class GetUserWordLibraryRequestDto {
   @IsOptional()
@@ -22,4 +30,10 @@ export class GetUserWordLibraryRequestDto {
   @IsOptional()
   @IsString()
   cursor?: string;
+
+  /** Query strings carry no booleans; `?savedOnly=true` is the shape. */
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  savedOnly?: boolean;
 }

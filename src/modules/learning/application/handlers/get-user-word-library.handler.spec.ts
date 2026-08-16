@@ -27,7 +27,7 @@ describe('GetUserWordLibraryHandler', () => {
     });
 
     await handler.execute(
-      new GetUserWordLibraryQuery('u1', undefined, 'stub', 20, 'c1'),
+      new GetUserWordLibraryQuery('u1', undefined, 'stub', undefined, 20, 'c1'),
     );
 
     expect(findUserWordLibrary).toHaveBeenCalledWith({

@@ -251,6 +251,12 @@ export type FindUserWordLibraryParams = {
   targetLanguage: LanguageCode;
   status?: UserWordProgressStatus;
   search?: string;
+  /**
+   * Narrows to the words the learner saved. Applied here rather than on
+   * the loaded pages: a favourite sitting in a page the list has not
+   * scrolled to yet would otherwise be counted and never shown.
+   */
+  savedOnly?: boolean;
   limit: number;
   cursor?: string;
 };
