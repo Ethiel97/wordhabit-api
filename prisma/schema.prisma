@@ -253,6 +253,7 @@ model User {
   userWordProgresses      UserWordProgress[]
   userWordReviewEvents    UserWordReviewEvent[]
   userLearningStreaks     UserLearningStreak[]
+  userStreakRepairs       UserStreakRepair[]
   favoriteWords           FavoriteWord[]
   emailVerificationCodes  EmailVerificationCode[]
   devices                 Device[]
@@ -509,6 +510,14 @@ model UserLearningStreak {
   /// UTC. Matches UserWordReviewEvent.localDate.
   lastActivityLocalDate String? @db.VarChar(10)
 
+  /// What the last gap cost, kept so a repair has something to restore.
+  ///
+  /// The chain restarts at 1 the moment activity resumes, so the length
+  /// that was lost is gone from currentStreak. Both fields are cleared
+  /// once a repair uses them, or overwritten by the next break.
+  brokenStreak       Int?
+  brokenOnLocalDate  String? @db.VarChar(10)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -516,6 +525,33 @@ model UserLearningStreak {
 
   @@index([userId])
   @@map("user_learning_streaks")
+}
+
+/// One filled day of a streak a learner repaired.
+///
+/// A row per day rather than a counter on the streak, because this table
+/// answers three questions at once: how many repairs the learner has
+/// spent this month (the quota), which days the progress map must mark as
+/// bought rather than practised, and what happened when someone asks.
+model UserStreakRepair {
+  id     String @id @default(cuid())
+  userId String
+
+  /// The day that was filled in, `yyyy-MM-dd`. Unique per user: the same
+  /// day can never be bought twice.
+  repairedLocalDate String @db.VarChar(10)
+
+  /// When the repair was spent. The quota is one per calendar month, and
+  /// it counts the month a learner reached for a repair, not the month of
+  /// the day being filled: a repair bought on the 1st for the 31st is
+  /// this month's.
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, repairedLocalDate])
+  @@index([userId, createdAt])
+  @@map("user_streak_repairs")
 }
 
 model FavoriteWord {

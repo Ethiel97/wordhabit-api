@@ -80,11 +80,17 @@ export class SetUserWordProgressHandler implements ICommandHandler<
         activityLocalDate: command.localDate,
       });
 
+      // Forwarded, not dropped: on a break the calculator reports what
+      // was lost, and a repair has nothing to restore without it. Both
+      // are undefined on every other path, which leaves any break the
+      // learner may still repair untouched.
       await this.learningRepository.upsertUserLearningStreak({
         userId,
         currentStreak: nextStreak.currentStreak,
         longestStreak: nextStreak.longestStreak,
         lastActivityLocalDate: nextStreak.lastActivityLocalDate,
+        brokenStreak: nextStreak.brokenStreak,
+        brokenOnLocalDate: nextStreak.brokenOnLocalDate,
       });
     }
 

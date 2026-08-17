@@ -24,17 +24,29 @@ export class GetUserActivityHandler implements IQueryHandler<
     // string range.
     const from = shiftLocalDate(query.to, -(query.days - 1));
 
-    const days = await this.progressRepository.findUserDailyActivity({
-      userId: query.userId,
-      from,
-      to: query.to,
-    });
+    // Both ranges are the same window, so they run together rather than
+    // in sequence: the heatmap is the first thing the progress screen
+    // draws.
+    const [days, repairedDays] = await Promise.all([
+      this.progressRepository.findUserDailyActivity({
+        userId: query.userId,
+        from,
+        to: query.to,
+      }),
+      this.progressRepository.findStreakRepairs({
+        userId: query.userId,
+        from,
+        to: query.to,
+      }),
+    ]);
 
     return {
       from,
       to: query.to,
+      // Counted on real reviews only: a bought day did not earn one.
       totalReviews: days.reduce((sum, day) => sum + day.reviewCount, 0),
       days,
+      repairedDays,
     };
   }
 }

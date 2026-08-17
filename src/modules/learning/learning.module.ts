@@ -34,6 +34,7 @@ import { GetUserActivityDetailHandler } from './application/handlers/get-user-ac
 import { GetUserFavoriteWordsHandler } from './application/handlers/get-user-favorite-words.handler';
 import { AddUserFavoriteWordHandler } from './application/handlers/add-user-favorite-word.handler';
 import { RemoveUserFavoriteWordHandler } from './application/handlers/remove-user-favorite-word.handler';
+import { RepairStreakHandler } from './application/handlers/repair-streak.handler';
 import { TodayWordService } from './application/services/today-word.service';
 import { SubscriptionModule } from '../subscription/subscription.module';
 
@@ -59,6 +60,7 @@ const queryHandlers = [
   GetUserActivityDetailHandler,
   GetProfilesDailyStatesHandler,
   GetUserFavoriteWordsHandler,
+  RepairStreakHandler,
 ];
 
 const services = [TodayWordService, BadgeAwarderService];

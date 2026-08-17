@@ -21,6 +21,9 @@ import {
   TodayWordAssignment,
   UpdateUserWordReviewParams,
   UpsertUserLearningStreakParams,
+  RecordStreakRepairsParams,
+  CountStreakRepairsInMonthParams,
+  FindStreakRepairsParams,
   UserActivityDetail,
   UserDailyActivity,
   UserLearningStats,
@@ -550,6 +553,8 @@ export class PrismaLearningRepository implements LearningRepository {
       userId: found.userId,
       currentStreak: found.currentStreak,
       longestStreak: found.longestStreak,
+      brokenStreak: found.brokenStreak,
+      brokenOnLocalDate: found.brokenOnLocalDate,
       createdAt: found.createdAt,
       updatedAt: found.updatedAt,
     };
@@ -557,8 +562,22 @@ export class PrismaLearningRepository implements LearningRepository {
   async upsertUserLearningStreak(
     params: UpsertUserLearningStreakParams,
   ): Promise<UserLearningStreak> {
-    const { userId, currentStreak, longestStreak, lastActivityLocalDate } =
-      params;
+    const {
+      userId,
+      currentStreak,
+      longestStreak,
+      lastActivityLocalDate,
+      brokenStreak,
+      brokenOnLocalDate,
+    } = params;
+
+    // Spread rather than assigned: an ordinary review passes neither
+    // field, and writing `undefined` would erase a break the learner is
+    // still allowed to repair.
+    const breakFields = {
+      ...(brokenStreak !== undefined ? { brokenStreak } : {}),
+      ...(brokenOnLocalDate !== undefined ? { brokenOnLocalDate } : {}),
+    };
 
     const upserted = await this.prisma.userLearningStreak.upsert({
       where: { userId },
@@ -566,12 +585,14 @@ export class PrismaLearningRepository implements LearningRepository {
         currentStreak,
         longestStreak,
         lastActivityLocalDate,
+        ...breakFields,
       },
       create: {
         userId,
         currentStreak,
         longestStreak,
         lastActivityLocalDate,
+        ...breakFields,
       },
     });
 
@@ -581,9 +602,53 @@ export class PrismaLearningRepository implements LearningRepository {
       userId: upserted.userId,
       currentStreak: upserted.currentStreak,
       longestStreak: upserted.longestStreak,
+      brokenStreak: upserted.brokenStreak,
+      brokenOnLocalDate: upserted.brokenOnLocalDate,
       createdAt: upserted.createdAt,
       updatedAt: upserted.updatedAt,
     };
+  }
+
+  async recordStreakRepairs(params: RecordStreakRepairsParams): Promise<void> {
+    // skipDuplicates rather than a failure: a retried request must be a
+    // no-op, never a second day bought.
+    await this.prisma.userStreakRepair.createMany({
+      data: params.repairedLocalDates.map((repairedLocalDate) => ({
+        userId: params.userId,
+        repairedLocalDate,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  async countStreakRepairsInMonth(
+    params: CountStreakRepairsInMonthParams,
+  ): Promise<number> {
+    // Counted on when the repair was spent, not on the day it filled: a
+    // repair bought on the 1st for the 31st belongs to the new month.
+    const from = new Date(`${params.monthPrefix}-01T00:00:00.000Z`);
+    const to = new Date(from);
+    to.setUTCMonth(to.getUTCMonth() + 1);
+
+    return this.prisma.userStreakRepair.count({
+      where: {
+        userId: params.userId,
+        createdAt: { gte: from, lt: to },
+      },
+    });
+  }
+
+  async findStreakRepairs(params: FindStreakRepairsParams): Promise<string[]> {
+    const rows = await this.prisma.userStreakRepair.findMany({
+      where: {
+        userId: params.userId,
+        repairedLocalDate: { gte: params.from, lte: params.to },
+      },
+      select: { repairedLocalDate: true },
+      orderBy: { repairedLocalDate: 'asc' },
+    });
+
+    return rows.map((row) => row.repairedLocalDate);
   }
   async updateUserWordReview(
     params: UpdateUserWordReviewParams,

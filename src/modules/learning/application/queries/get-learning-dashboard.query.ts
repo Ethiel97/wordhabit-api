@@ -47,7 +47,45 @@ export interface GetLearningDashboardResult {
   stats: UserLearningStats;
 
   todayQuizCompleted: boolean;
+
+  /**
+   * Whether a broken chain can still be bought back, and what it would
+   * cost to fix.
+   *
+   * Sent on the dashboard rather than asked for separately because the
+   * offer has to appear the moment the learner opens the app: the window
+   * closes on its own, and a screen that has to fetch before it can ask
+   * would show the prompt late or not at all.
+   */
+  streakRepair: StreakRepairOffer;
 }
+
+export type StreakRepairOffer = {
+  available: boolean;
+  /** Days a repair would fill, oldest first. Empty when unavailable. */
+  missedLocalDates: string[];
+  /**
+   * How long the chain was when it broke. Zero when unavailable.
+   *
+   * Distinct from `restoredStreak`: the learner may have practised again
+   * since coming back, so what they get back is longer than what they
+   * lost. "Your 20-day streak broke" is the true sentence; announcing 22
+   * would name a number they never reached.
+   */
+  brokenStreak: number;
+  /**
+   * Last day of the chain that broke. Null when unavailable.
+   *
+   * Sent so a client can draw the run the gap interrupted: the streak
+   * fields only describe the *current* chain, which after a break is the
+   * day or two since the learner came back.
+   */
+  brokenOnLocalDate: string | null;
+  /** What the streak would become. Zero when unavailable. */
+  restoredStreak: number;
+  /** Repairs the learner has left this calendar month. */
+  repairsLeftThisMonth: number;
+};
 
 /** The outcome of yesterday's recall, once it has been answered. */
 export type YesterdayHandled = {

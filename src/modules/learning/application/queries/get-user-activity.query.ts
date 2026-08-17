@@ -32,4 +32,13 @@ export type GetUserActivityResult = {
    * them onto the calendar it already generates.
    */
   days: UserDailyActivity[];
+  /**
+   * Days inside the range that were bought with a repair rather than
+   * practised, oldest first.
+   *
+   * Sent alongside the activity rather than folded into it: the map has to
+   * be able to draw them differently. Hiding a repaired day among real
+   * ones would make the heatmap claim work that never happened.
+   */
+  repairedDays: string[];
 };
