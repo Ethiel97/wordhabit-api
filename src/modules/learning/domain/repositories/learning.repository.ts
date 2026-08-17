@@ -170,6 +170,35 @@ export interface UpsertUserLearningStreakParams {
   longestStreak: number;
   /** `yyyy-MM-dd`. */
   lastActivityLocalDate: string;
+  /**
+   * The pending break, when this write changes it.
+   *
+   * Optional on purpose: `undefined` leaves the stored break alone, which
+   * is what an ordinary review must do — a learner still inside the
+   * repair window would otherwise lose the chain by practising. `null`
+   * clears it, which is what a repair does.
+   */
+  brokenStreak?: number | null;
+  brokenOnLocalDate?: string | null;
+}
+
+export interface RecordStreakRepairsParams {
+  userId: string;
+  /** The days that were filled in, `yyyy-MM-dd`. */
+  repairedLocalDates: string[];
+}
+
+export interface CountStreakRepairsInMonthParams {
+  userId: string;
+  /** Calendar month to count in, `yyyy-MM`. */
+  monthPrefix: string;
+}
+
+export interface FindStreakRepairsParams {
+  userId: string;
+  /** Inclusive `yyyy-MM-dd` bounds, compared as text. */
+  from: string;
+  to: string;
 }
 
 export interface RecordWordReviewEventParams {
@@ -481,6 +510,27 @@ export interface LearnerProgressRepository {
   upsertUserLearningStreak(
     params: UpsertUserLearningStreakParams,
   ): Promise<UserLearningStreak>;
+
+  /**
+   * Writes one row per day bought, all or nothing.
+   *
+   * A unique index on (userId, repairedLocalDate) makes a day
+   * impossible to buy twice, so a retried request cannot inflate a
+   * streak.
+   */
+  recordStreakRepairs(params: RecordStreakRepairsParams): Promise<void>;
+
+  /** How many repairs the learner has spent in a calendar month. */
+  countStreakRepairsInMonth(
+    params: CountStreakRepairsInMonthParams,
+  ): Promise<number>;
+
+  /**
+   * The days inside a range that were bought rather than practised, so
+   * the progress map can mark them. Sorted, and sparse like
+   * [findUserDailyActivity].
+   */
+  findStreakRepairs(params: FindStreakRepairsParams): Promise<string[]>;
 
   /**
    * Words collected, and how far each one has come, for one language.

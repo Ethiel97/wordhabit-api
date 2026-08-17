@@ -11,6 +11,16 @@ export type NextUserLearningStreakState = {
   currentStreak: number;
   longestStreak: number;
   lastActivityLocalDate: string;
+  /**
+   * What a gap just cost, so a repair has something to restore.
+   *
+   * Undefined on every path that does not break a chain, which lets the
+   * caller leave the stored break untouched instead of clearing the one
+   * a user is still allowed to repair.
+   */
+  brokenStreak?: number;
+  /** Last day of the chain the gap ended, `yyyy-MM-dd`. */
+  brokenOnLocalDate?: string;
 };
 
 type ComputeNextDailyStreakParams = {
@@ -61,10 +71,13 @@ export function computeNextDailyStreak({
     };
   }
 
-  // A gap, or a clock that moved backwards. The best ever never drops.
+  // A gap, or a clock that moved backwards. The best ever never drops,
+  // and what the gap cost is recorded so a repair can undo it.
   return {
     currentStreak: 1,
     longestStreak: current.longestStreak,
     lastActivityLocalDate: activityLocalDate,
+    brokenStreak: current.currentStreak,
+    brokenOnLocalDate: current.lastActivityLocalDate,
   };
 }

@@ -28,6 +28,12 @@ import {
   type UserLearningRepository,
 } from '../../../user-learning/domain/repositories/user-learning.repository';
 import { UserLearningProfileNotFoundError } from '../../../user-learning/application/errors/user-learning-profile-errors';
+import {
+  assessStreakRepair,
+  STREAK_REPAIR_WINDOW_DAYS,
+  STREAK_REPAIRS_PER_MONTH,
+} from '../../domain/services/streak-repair';
+import type { StreakRepairOffer } from '../queries/get-learning-dashboard.query';
 
 @QueryHandler(GetLearningDashboardQuery)
 export class GetLearningDashboardHandler implements IQueryHandler<
@@ -169,6 +175,8 @@ export class GetLearningDashboardHandler implements IQueryHandler<
       this.yesterdayRecall(query, yesterdayWord),
     ]);
 
+    const streakRepair = await this.streakRepairOffer(query, streak);
+
     return {
       todayWord,
       yesterdayWord: recall.pending,
@@ -189,6 +197,82 @@ export class GetLearningDashboardHandler implements IQueryHandler<
       },
       todayQuizCompleted,
       stats,
+      streakRepair,
+    };
+  }
+
+  /**
+   * What a repair would fix right now, for the prompt the home screen
+   * shows on open.
+   *
+   * The activity range is only read when a break is actually pending,
+   * which is almost never: this runs on the app's hottest endpoint, and
+   * scanning a week of reviews on every load to discover there is nothing
+   * to offer would be paid by every learner for the benefit of the few
+   * who broke a chain. The repair count is cheap enough to always ask, and
+   * keeps the quota honest even when nothing is broken.
+   */
+  private async streakRepairOffer(
+    query: GetLearningDashboardQuery,
+    streak: { brokenStreak: number | null; brokenOnLocalDate: string | null; lastActivityLocalDate: string | null } | null,
+  ): Promise<StreakRepairOffer> {
+    const spentThisMonth =
+      await this.learningRepository.countStreakRepairsInMonth({
+        userId: query.userId,
+        monthPrefix: query.localDate.slice(0, 7),
+      });
+
+    const repairsLeftThisMonth = Math.max(
+      0,
+      STREAK_REPAIRS_PER_MONTH - spentThisMonth,
+    );
+
+    const unavailable: StreakRepairOffer = {
+      available: false,
+      missedLocalDates: [],
+      brokenStreak: 0,
+      brokenOnLocalDate: null,
+      restoredStreak: 0,
+      repairsLeftThisMonth,
+    };
+
+    if (!streak?.brokenOnLocalDate) return unavailable;
+
+    const windowStart = shiftLocalDate(
+      query.localDate,
+      -(STREAK_REPAIR_WINDOW_DAYS + 1),
+    );
+    const from =
+      streak.brokenOnLocalDate > windowStart
+        ? streak.brokenOnLocalDate
+        : windowStart;
+
+    const activity = await this.learningRepository.findUserDailyActivity({
+      userId: query.userId,
+      from,
+      to: query.localDate,
+    });
+
+    const assessment = assessStreakRepair({
+      streak: {
+        brokenStreak: streak.brokenStreak,
+        brokenOnLocalDate: streak.brokenOnLocalDate,
+        lastActivityLocalDate: streak.lastActivityLocalDate,
+      },
+      practisedLocalDates: activity.map((day) => day.date),
+      todayLocalDate: query.localDate,
+      repairedThisMonth: spentThisMonth >= STREAK_REPAIRS_PER_MONTH,
+    });
+
+    if (!assessment.repairable) return unavailable;
+
+    return {
+      available: true,
+      missedLocalDates: assessment.missedLocalDates,
+      brokenStreak: streak.brokenStreak ?? 0,
+      brokenOnLocalDate: streak.brokenOnLocalDate,
+      restoredStreak: assessment.restoredStreak,
+      repairsLeftThisMonth,
     };
   }
 }

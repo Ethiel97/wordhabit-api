@@ -71,11 +71,17 @@ export class SubmitWordReviewHandler implements ICommandHandler<
       activityLocalDate: command.localDate,
     });
 
+    // Forwarded, not dropped: on a break the calculator reports what was
+    // lost, and a repair has nothing to restore without it. Both are
+    // undefined on every other path, which leaves any break the learner
+    // may still repair untouched.
     await this.learningRepository.upsertUserLearningStreak({
       userId: command.userId,
       currentStreak: nextLearningStreak.currentStreak,
       longestStreak: nextLearningStreak.longestStreak,
       lastActivityLocalDate: nextLearningStreak.lastActivityLocalDate,
+      brokenStreak: nextLearningStreak.brokenStreak,
+      brokenOnLocalDate: nextLearningStreak.brokenOnLocalDate,
     });
 
     // Last, and never able to fail the review: the streak and the

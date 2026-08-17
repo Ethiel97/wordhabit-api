@@ -70,6 +70,11 @@ import type { AuthenticatedUser } from '../../../auth/domain/entities/authentica
 import { Public } from '../../../auth/presentation/public.decorator';
 import { GetRandomWordDto } from '../../application/dtos/get-random-word.dto';
 import { LocalDateQueryDto } from '../../application/dtos/local-date.query.dto';
+import { RepairStreakRequestDto } from '../../application/dtos/repair-streak.request.dto';
+import {
+  RepairStreakCommand,
+  RepairStreakResult,
+} from '../../application/commands/repair-streak.command';
 import {
   GetUserBadgesQuery,
   GetUserBadgesResult,
@@ -94,6 +99,25 @@ export class LearningController {
     );
 
     return ApiSuccessResponse.of(randomWord);
+  }
+
+  /**
+   * Spends the learner's monthly repair on the chain a gap broke.
+   *
+   * A command rather than a query even though it reads first: it costs a
+   * quota and rewrites the streak, so it must never be retried blindly by
+   * a client that thinks it is fetching something.
+   */
+  @Post(LEARNING.STREAK_REPAIR)
+  async repairStreak(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: RepairStreakRequestDto,
+  ) {
+    const repaired: RepairStreakResult = await this.commandBus.execute(
+      new RepairStreakCommand(user.id, body.localDate),
+    );
+
+    return ApiSuccessResponse.of(repaired);
   }
 
   @Get(LEARNING.PROFILES_DAILY_STATES)
