@@ -10,8 +10,11 @@ import type {
   VocabularyGenerationProvider,
   GenerateQuizMaterialInput,
   GeneratedQuizMaterialBatch,
+  GenerateDefinitionsInput,
+  GeneratedDefinitionsBatch,
 } from '../../../domain/providers/vocabulary-generation.provider';
 import {
+  MAX_DEFINITION_BATCH_SIZE,
   MAX_QUIZ_MATERIAL_BATCH_SIZE,
   MAX_VOCABULARY_BATCH_SIZE,
 } from '../../../domain/providers/vocabulary-generation.provider';
@@ -39,6 +42,20 @@ function isSpentQuota(error: InstanceType<typeof OpenAI.APIError>): boolean {
     /no credits|insufficient.credit|billing/i.test(error.message)
   );
 }
+
+/**
+ * What a WordHabit definition sounds like, stated once.
+ *
+ * Shared by ingestion and by the definition backfill for the same
+ * reason as the quiz rules: a word defined in French by one prompt and
+ * in English by another would read as two products.
+ */
+const DEFINITION_RULES = [
+  '# Definitions',
+  'Write what a thoughtful friend would say, not what a dictionary prints.',
+  'Name the nuance a near-synonym would miss.',
+  'Never define a term using itself or its own root.',
+];
 
 /**
  * The rules of the Real-World mode, stated once.
@@ -244,6 +261,113 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
     return JSON.parse(jsonText) as GeneratedQuizMaterialBatch;
   }
 
+  async generateDefinitions(
+    input: GenerateDefinitionsInput,
+  ): Promise<GeneratedDefinitionsBatch> {
+    const words = input.words.slice(0, MAX_DEFINITION_BATCH_SIZE);
+    if (words.length === 0) return { items: [] };
+
+    const { explanationLanguage } = input;
+
+    const response = await this.createResponse({
+      model: process.env.OPENAI_VOCABULARY_MODEL ?? 'gpt-5.2-pro',
+      max_output_tokens: 12000,
+      input: [
+        { role: 'system', content: this.buildSystemPrompt() },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: [
+                `These words are already in our corpus. Write one definition each in ${explanationLanguage} — nothing else about them changes.`,
+                '',
+                ...DEFINITION_RULES,
+                '',
+                '# Consistency',
+                'Define the sense the existing definitions and examples establish, not another meaning the term may carry.',
+                // Not a translation: a Spanish reader needs the false
+                // friend and the register that trip *them* up, which a
+                // French gloss cannot know it is missing.
+                `Write for a native ${explanationLanguage} speaker learning this word, in their idiom. Do not translate the existing definition.`,
+                `\`explanationLanguage\` is ${explanationLanguage} for every definition you return.`,
+                'Echo each `term` exactly as given.',
+                '',
+                '# Words',
+                JSON.stringify(
+                  words.map((word) => ({
+                    term: word.term,
+                    partOfSpeech: word.partOfSpeech,
+                    definitions: word.definitions,
+                    examples: word.examples.map((ex) => ex.sentence),
+                  })),
+                ),
+              ].join('\n'),
+            },
+          ],
+        },
+      ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'generated_definitions',
+          strict: true,
+          schema: this.buildDefinitionsSchema(),
+        },
+      },
+    });
+
+    this.logger.log(
+      `usage ${JSON.stringify(response.usage)} for ${explanationLanguage} definitions on ${words.length} words`,
+    );
+
+    const jsonText = response.output_text;
+    if (!jsonText) {
+      throw new InternalServerErrorException(
+        'OpenAI returned an empty structured response.',
+      );
+    }
+
+    return JSON.parse(jsonText) as GeneratedDefinitionsBatch;
+  }
+
+  private buildDefinitionsSchema() {
+    return {
+      type: 'object',
+      additionalProperties: false,
+      required: ['items'],
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['term', 'definitions'],
+            properties: {
+              term: { type: 'string' },
+              definitions: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['explanationLanguage', 'text', 'register'],
+                  properties: {
+                    explanationLanguage: {
+                      type: 'string',
+                      enum: LANGUAGE_CODES,
+                    },
+                    text: { type: 'string' },
+                    register: { type: ['string', 'null'] },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+  }
+
   private buildQuizMaterialSchema() {
     return {
       type: 'object',
@@ -403,10 +527,7 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
       '# Banned regardless',
       OpenAiVocabularyGenerationProvider.OVERUSED_TERMS.join(', ') + '.',
       '',
-      '# Definitions',
-      'Write what a thoughtful friend would say, not what a dictionary prints.',
-      'Name the nuance a near-synonym would miss.',
-      'Never define a term using itself or its own root.',
+      ...DEFINITION_RULES,
       '',
       '# Examples',
       'Each example must read as something a person actually said or wrote — a message, an argument, a moment of work or of intimacy.',

@@ -145,6 +145,29 @@ export interface GeneratedQuizMaterialBatch {
  */
 export const MAX_QUIZ_MATERIAL_BATCH_SIZE = 10;
 
+export interface GeneratedDefinitionsItem {
+  /** Echo of the term, so results survive reordering. */
+  term: string;
+  definitions: GeneratedVocabularyDefinition[];
+}
+
+export interface GenerateDefinitionsInput {
+  words: QuizMaterialWordContext[];
+  /** The language the new definitions are written in. */
+  explanationLanguage: LanguageCode;
+}
+
+export interface GeneratedDefinitionsBatch {
+  items: GeneratedDefinitionsItem[];
+}
+
+/**
+ * Larger than the quiz batch: a definition is one paragraph against a
+ * context the prompt already carries, where a scenario needs five
+ * utterances reasoned into existence.
+ */
+export const MAX_DEFINITION_BATCH_SIZE = 15;
+
 export interface VocabularyGenerationProvider {
   generateVocabularyBatch(
     input: GenerateVocabularyBatchInput,
@@ -157,4 +180,17 @@ export interface VocabularyGenerationProvider {
   generateQuizMaterial(
     input: GenerateQuizMaterialInput,
   ): Promise<GeneratedQuizMaterialBatch>;
+
+  /**
+   * Writes a definition in one more language for words that already
+   * have one in another.
+   *
+   * Needed because ingestion skips a term the corpus holds, so a word
+   * first written for a French reader never gains an English or Spanish
+   * definition on its own — and the client falls back to whatever
+   * definition exists, which is how an anglophone met French prose.
+   */
+  generateDefinitions(
+    input: GenerateDefinitionsInput,
+  ): Promise<GeneratedDefinitionsBatch>;
 }
