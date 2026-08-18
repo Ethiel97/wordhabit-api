@@ -148,6 +148,36 @@ export interface VocabularyRepository {
     limit: number;
   }): Promise<QuizBackfillWord[]>;
 
+  /**
+   * Words of one target language with no definition in
+   * `explanationLanguage`, oldest first.
+   *
+   * Same shape as the quiz finder because the prompt needs the same
+   * context: a definition written against the senses already on record
+   * stays consistent with what the learner was taught.
+   */
+  findWordsMissingDefinition(params: {
+    targetLanguage: LanguageCode;
+    explanationLanguage: LanguageCode;
+    limit: number;
+  }): Promise<QuizBackfillWord[]>;
+
+  /**
+   * Adds definitions to an existing word.
+   *
+   * Skips a language the word already has, so a run racing another, or
+   * a model that answers in the wrong language, cannot leave two
+   * definitions competing for the same reader.
+   */
+  attachDefinitions(params: {
+    wordId: string;
+    definitions: {
+      explanationLanguage: LanguageCode;
+      text: string;
+      register?: string;
+    }[];
+  }): Promise<number>;
+
   /** Attaches backfilled quiz material to an existing word. */
   attachQuizMaterial(params: {
     wordId: string;

@@ -15,6 +15,8 @@ class SpyGenerationProvider {
   };
 
   generateQuizMaterial = () => Promise.resolve({ items: [] });
+
+  generateDefinitions = () => Promise.resolve({ items: [] });
 }
 
 const handlerFor = (corpusSize: number, provider: SpyGenerationProvider) =>

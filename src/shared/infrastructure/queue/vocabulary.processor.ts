@@ -8,6 +8,7 @@ import {
   type GenerateVocabularyBatchResult,
 } from '../../../modules/vocabulary-ingestion/application/commands/generate-vocabulary-batch.command';
 import {
+  BACKFILL_DEFINITIONS_JOB,
   BACKFILL_QUIZ_MATERIAL_JOB,
   GENERATE_VOCABULARY_BATCH_JOB,
   VOCABULARY_QUEUE,
@@ -19,6 +20,11 @@ import {
   type BackfillQuizMaterialResult,
 } from '../../../modules/vocabulary-ingestion/application/commands/backfill-quiz-material.command';
 import { BackfillQuizMaterialRequestDto } from '../../../modules/vocabulary-ingestion/application/dto/backfill-quiz-material.request.dto';
+import {
+  BackfillDefinitionsCommand,
+  type BackfillDefinitionsResult,
+} from '../../../modules/vocabulary-ingestion/application/commands/backfill-definitions.command';
+import { BackfillDefinitionsRequestDto } from '../../../modules/vocabulary-ingestion/application/dto/backfill-definitions.request.dto';
 
 /**
  * Runs the nightly vocabulary batch. Transport only: generation belongs
@@ -37,6 +43,10 @@ export class GenerateVocabularyBatchProcessor extends SentryReportingWorkerHost 
   async process(job: Job) {
     if (job.name === BACKFILL_QUIZ_MATERIAL_JOB) {
       return this.processBackfill(job);
+    }
+
+    if (job.name === BACKFILL_DEFINITIONS_JOB) {
+      return this.processDefinitionBackfill(job);
     }
 
     if (job.name !== GENERATE_VOCABULARY_BATCH_JOB) {
@@ -71,6 +81,35 @@ export class GenerateVocabularyBatchProcessor extends SentryReportingWorkerHost 
       `${targetLanguage}: ${result.createdCount} created, ` +
         `${result.skippedCount} already known, ${result.failedCount} rejected ` +
         `(of ${result.generatedCount} generated)`,
+    );
+
+    return result;
+  }
+
+  private async processDefinitionBackfill(job: Job) {
+    const { targetLanguage, explanationLanguage, count } =
+      job.data as BackfillDefinitionsRequestDto;
+
+    let result: BackfillDefinitionsResult;
+    try {
+      result = await this.commandBus.execute(
+        new BackfillDefinitionsCommand(
+          targetLanguage,
+          explanationLanguage,
+          count,
+        ),
+      );
+    } catch (error) {
+      if (error instanceof VocabularyGenerationQuotaExceededError) {
+        throw new UnrecoverableError(error.message);
+      }
+      throw error;
+    }
+
+    this.logger.log(
+      `Definition backfill ${targetLanguage}/${explanationLanguage}: ` +
+        `${result.enrichedCount} enriched, ${result.skippedCount} skipped, ` +
+        `${result.failedCount} failed — ${result.remaining - result.enrichedCount} still missing it`,
     );
 
     return result;

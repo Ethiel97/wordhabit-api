@@ -9,6 +9,7 @@ import { VocabularyModule } from '../vocabulary/vocabulary.module';
 import { CqrsModule } from '@nestjs/cqrs';
 import { GenerateVocabularyBatchHandler } from './application/handlers/generate-vocabulary-batch.handler';
 import { BackfillQuizMaterialHandler } from './application/handlers/backfill-quiz-material.handler';
+import { BackfillDefinitionsHandler } from './application/handlers/backfill-definitions.handler';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { BackfillQuizMaterialHandler } from './application/handlers/backfill-qui
     // registered here the nightly job would find no handler for it.
     GenerateVocabularyBatchHandler,
     BackfillQuizMaterialHandler,
+    BackfillDefinitionsHandler,
     GenerateVocabularyBatchProcessor,
     VocabularyDailyScheduler,
     OpenAiVocabularyGenerationProvider,

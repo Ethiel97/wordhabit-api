@@ -884,17 +884,18 @@ export class PrismaLearningRepository implements LearningRepository {
   }
 
   /**
-   * Words matching `where`, with the theme slugs the caller needs. Split
-   * out so the daily-word search can run twice, with and without the
-   * level, without restating the query.
+   * The day's word, from the narrowest pool that still has one.
+   *
+   * Themes and level are preferences; only the language and "not
+   * already served to this user" are requirements. Themes are relaxed
+   * last: they are the one the learner actually chose.
    */
   async findCandidateWord(
     profile: UserLearningProfile,
   ): Promise<VocabularyWord | null> {
     const { themeSlugs, targetLanguage, difficulty } = profile;
 
-    const baseWhere: Prisma.VocabularyWordWhereInput = {
-      themes: { some: { theme: { slug: { in: themeSlugs } } } },
+    const required: Prisma.VocabularyWordWhereInput = {
       targetLanguage,
 
       // No status filter: the corpus is all DRAFT for now, so filtering
@@ -907,15 +908,24 @@ export class PrismaLearningRepository implements LearningRepository {
       },
     };
 
-    // Difficulty is a preference, not a requirement: language *and*
-    // level can empty the pool, and no word today is worse than a word
-    // one level off. Try the level, then widen.
-    if (difficulty) {
-      const preferred = await this.pickRandomWord({ ...baseWhere, difficulty });
-      if (preferred) return preferred;
+    const onTopic: Prisma.VocabularyWordWhereInput = {
+      ...required,
+      themes: { some: { theme: { slug: { in: themeSlugs } } } },
+    };
+
+    const attempts = [
+      difficulty ? { ...onTopic, difficulty } : null,
+      onTopic,
+      difficulty ? { ...required, difficulty } : null,
+      required,
+    ].filter((where) => where !== null);
+
+    for (const where of attempts) {
+      const word = await this.pickRandomWord(where);
+      if (word) return word;
     }
 
-    return this.pickRandomWord(baseWhere);
+    return null;
   }
 
   /**

@@ -280,6 +280,76 @@ export class PrismaVocabularyRepository implements VocabularyRepository {
     }));
   }
 
+  async findWordsMissingDefinition(params: {
+    targetLanguage: LanguageCode;
+    explanationLanguage: LanguageCode;
+    limit: number;
+  }): Promise<QuizBackfillWord[]> {
+    const words = await this.prisma.vocabularyWord.findMany({
+      where: {
+        targetLanguage: params.targetLanguage,
+        definitions: {
+          none: { explanationLanguage: params.explanationLanguage },
+          // A word with no definition at all is broken in a way this
+          // backfill cannot fix: there is no sense to write against.
+          some: {},
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+      take: params.limit,
+      include: {
+        definitions: {
+          select: { explanationLanguage: true, text: true },
+        },
+        examples: { select: { sentence: true } },
+      },
+    });
+
+    return words.map((word) => ({
+      wordId: word.id,
+      term: word.term,
+      targetLanguage: word.targetLanguage as LanguageCode,
+      partOfSpeech: word.partOfSpeech as PartOfSpeech,
+      difficulty: word.difficulty as WordDifficulty,
+      definitions: word.definitions.map((def) => ({
+        explanationLanguage: def.explanationLanguage as LanguageCode,
+        text: def.text,
+      })),
+      examples: word.examples.map((ex) => ({ sentence: ex.sentence })),
+    }));
+  }
+
+  async attachDefinitions(params: {
+    wordId: string;
+    definitions: {
+      explanationLanguage: LanguageCode;
+      text: string;
+      register?: string;
+    }[];
+  }): Promise<number> {
+    const existing = await this.prisma.wordDefinition.findMany({
+      where: { wordId: params.wordId },
+      select: { explanationLanguage: true },
+    });
+    const held = new Set(existing.map((def) => def.explanationLanguage));
+
+    const fresh = params.definitions.filter(
+      (def) => !held.has(def.explanationLanguage),
+    );
+    if (fresh.length === 0) return 0;
+
+    const { count } = await this.prisma.wordDefinition.createMany({
+      data: fresh.map((def) => ({
+        wordId: params.wordId,
+        explanationLanguage: def.explanationLanguage,
+        text: def.text,
+        register: def.register ?? null,
+      })),
+    });
+
+    return count;
+  }
+
   async attachQuizMaterial(params: {
     wordId: string;
     antonyms: { value: string }[];
