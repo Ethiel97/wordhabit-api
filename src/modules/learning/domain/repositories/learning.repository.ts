@@ -456,6 +456,13 @@ export interface WordProgressRepository {
     from?: string;
     to?: string;
   }): Promise<number>;
+
+  /** Local days where that day's own word reached mastery. */
+  findMasteryJourneyDays(params: {
+    userId: string;
+    from?: string;
+    to?: string;
+  }): Promise<string[]>;
 }
 
 /** Measuring and awarding badges. */

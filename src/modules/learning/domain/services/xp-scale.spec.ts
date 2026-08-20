@@ -1,7 +1,11 @@
 import {
   XP_PACE_WINDOW_DAYS,
+  XP_PER_BADGE,
+  XP_PER_DAILY_JOURNEY,
   XP_PER_FLASHCARD_RECALL,
   dailyPace,
+  xpForBadges,
+  xpForJourneys,
   xpForRecalls,
 } from './xp-scale';
 
@@ -26,5 +30,19 @@ describe('dailyPace', () => {
     // The app reads this as "no pace to project from" and says nothing,
     // rather than promising a date it cannot support.
     expect(dailyPace(0)).toBe(0);
+  });
+});
+
+describe('xpForJourneys', () => {
+  it('pays the rate the app advertises, once per day', () => {
+    expect(xpForJourneys(0)).toBe(0);
+    expect(xpForJourneys(30)).toBe(30 * XP_PER_DAILY_JOURNEY);
+  });
+});
+
+describe('xpForBadges', () => {
+  it('pays the rate the app advertises, once per badge', () => {
+    expect(xpForBadges(0)).toBe(0);
+    expect(xpForBadges(3)).toBe(3 * XP_PER_BADGE);
   });
 });

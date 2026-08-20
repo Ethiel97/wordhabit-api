@@ -179,6 +179,24 @@ export class PrismaQuizRepository implements QuizRepository {
     return aggregate._sum.correctCount ?? 0;
   }
 
+  async findQuizDays(params: {
+    userId: string;
+    from?: string;
+    to?: string;
+  }): Promise<string[]> {
+    // groupBy, not distinct: Prisma applies distinct client-side.
+    const rows = await this.prisma.quizResult.groupBy({
+      by: ['localDate'],
+      where: {
+        userId: params.userId,
+        ...(params.from || params.to
+          ? { localDate: { gte: params.from, lte: params.to } }
+          : {}),
+      },
+    });
+    return rows.map((row) => row.localDate);
+  }
+
   async findPerfectQuizDaysByMode(params: {
     userId: string;
   }): Promise<QuizModePerfectDays[]> {

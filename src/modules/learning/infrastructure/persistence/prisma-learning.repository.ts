@@ -400,6 +400,45 @@ export class PrismaLearningRepository implements LearningRepository {
     );
   }
 
+  async findMasteryJourneyDays(params: {
+    userId: string;
+    from?: string;
+    to?: string;
+  }): Promise<string[]> {
+    const mastered = await this.prisma.userWordReviewEvent.groupBy({
+      by: ['wordId', 'localDate'],
+      where: {
+        userId: params.userId,
+        masteryAfter: { gte: UserWordProgressMasteryLevel.MASTERED },
+        ...(params.from || params.to
+          ? { localDate: { gte: params.from, lte: params.to } }
+          : {}),
+      },
+    });
+
+    if (mastered.length === 0) return [];
+
+    // Mastering an older word is a review, not the day's journey.
+    const assignments = await this.prisma.dailyWordAssignment.findMany({
+      where: {
+        userId: params.userId,
+        wordId: { in: mastered.map((row) => row.wordId) },
+      },
+      select: { wordId: true, assignedFor: true },
+    });
+
+    const assignedOn = new Map(
+      assignments.map((row) => [
+        row.wordId,
+        instantToLocalDate(row.assignedFor),
+      ]),
+    );
+
+    return mastered
+      .filter((row) => assignedOn.get(row.wordId) === row.localDate)
+      .map((row) => row.localDate);
+  }
+
   async findUserBadges(userId: string): Promise<EarnedBadge[]> {
     const rows = await this.prisma.userBadge.findMany({
       where: { userId },

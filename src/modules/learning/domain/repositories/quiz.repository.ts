@@ -87,6 +87,13 @@ export interface QuizRepository {
     to?: string;
   }): Promise<number>;
 
+  /** Local days carrying at least one completed round. */
+  findQuizDays(params: {
+    userId: string;
+    from?: string;
+    to?: string;
+  }): Promise<string[]>;
+
   /**
    * Separate days carrying a perfect round, per mode. Only modes with
    * at least one appear.

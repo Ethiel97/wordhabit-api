@@ -24,9 +24,8 @@ export const XP_PACE_WINDOW_DAYS = 7;
  * draws, and it needs no backfill for accounts that predate levels. A
  * materialised counter is the fallback if this ever gets expensive.
  *
- * Recalls and quiz answers count — each has a durable record (the
- * review log, the quiz log). Journeys and badges still have none, so
- * paying for them would be inventing history.
+ * Every source has a durable record: the review log, the quiz log, the
+ * badge table, and the day a quiz or a mastery closed the journey.
  */
 export function xpForRecalls(recalls: number): number {
   return recalls * XP_PER_FLASHCARD_RECALL;
@@ -34,6 +33,14 @@ export function xpForRecalls(recalls: number): number {
 
 export function xpForQuizAnswers(correctAnswers: number): number {
   return correctAnswers * XP_PER_QUIZ_ANSWER;
+}
+
+export function xpForJourneys(days: number): number {
+  return days * XP_PER_DAILY_JOURNEY;
+}
+
+export function xpForBadges(badges: number): number {
+  return badges * XP_PER_BADGE;
 }
 
 /**
