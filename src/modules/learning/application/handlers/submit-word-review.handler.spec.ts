@@ -23,25 +23,30 @@ const progress = {
   updatedAt: new Date(),
 };
 
-const setup = (streak: Record<string, unknown> | null) => {
-  const upsertUserLearningStreak = jest.fn(async (params: unknown) => params);
+const setup = (
+  streak: Record<string, unknown> | null,
+  { existingProgress = true }: { existingProgress?: boolean } = {},
+) => {
+  const upsertUserLearningStreak = jest.fn((params: unknown) => params);
+  const setUserWordProgressStatus = jest.fn(() => Promise.resolve(progress));
 
   const learningRepository = {
-    findUserWordProgress: jest.fn(async () => progress),
-    updateUserWordReview: jest.fn(async () => progress),
-    recordWordReviewEvent: jest.fn(async () => undefined),
-    findUserLearningStreak: jest.fn(async () => streak),
+    findUserWordProgress: jest.fn(() => (existingProgress ? progress : null)),
+    setUserWordProgressStatus,
+    updateUserWordReview: jest.fn(() => progress),
+    recordWordReviewEvent: jest.fn(() => undefined),
+    findUserLearningStreak: jest.fn(() => streak),
     upsertUserLearningStreak,
   };
 
-  const badgeAwarder = { awardQuietly: jest.fn(async () => []) };
+  const badgeAwarder = { awardQuietly: jest.fn(() => []) };
 
   const handler = new SubmitWordReviewHandler(
     learningRepository as never,
     badgeAwarder as never,
   );
 
-  return { handler, upsertUserLearningStreak };
+  return { handler, upsertUserLearningStreak, setUserWordProgressStatus };
 };
 
 const review = (localDate: string) =>
@@ -98,5 +103,18 @@ describe('SubmitWordReviewHandler and the streak break', () => {
     expect(params.currentStreak).toBe(5);
     expect(params.brokenStreak).toBeUndefined();
     expect(params.brokenOnLocalDate).toBeUndefined();
+  });
+});
+
+describe('SubmitWordReviewHandler and a word never opened', () => {
+  it('creates the progress instead of refusing the review', async () => {
+    // The dashboard offers yesterday's recall whether the word
+    // was ever opened, so this path has to answer.
+    const { handler, setUserWordProgressStatus } = setup(null, {
+      existingProgress: false,
+    });
+
+    await expect(handler.execute(review('2026-08-20'))).resolves.toBeDefined();
+    expect(setUserWordProgressStatus).toHaveBeenCalledTimes(1);
   });
 });

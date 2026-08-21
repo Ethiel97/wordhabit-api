@@ -1,11 +1,15 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { BadRequestException, Inject } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
 import {
   SubmitWordReviewCommand,
   SubmitWordReviewResult,
 } from '../commands/submit-word-review.command';
 import type { LearningRepository } from '../../domain/repositories/learning.repository';
 import { LEARNING_REPOSITORY } from '../../domain/repositories/learning.repository';
+import {
+  UserWordProgressMasteryLevel,
+  UserWordProgressStatus,
+} from '../../domain/entities/user-word-progress';
 import { computeWordReviewState } from '../../domain/services/user-word-review-scheduler';
 import { computeNextDailyStreak } from '../../domain/services/daily-streak-calculator';
 import { BadgeAwarderService } from '../services/badge-awarder.service';
@@ -24,19 +28,24 @@ export class SubmitWordReviewHandler implements ICommandHandler<
   async execute(
     command: SubmitWordReviewCommand,
   ): Promise<SubmitWordReviewResult> {
+    const now = new Date();
+
+    // Created rather than refused when it is missing: the dashboard
+    // offers yesterday's recall for a word that was never opened, and
+    // answering "I don't remember" is exactly the case that has no
+    // progress row yet.
     const currentUserWordProgress =
-      await this.learningRepository.findUserWordProgress({
+      (await this.learningRepository.findUserWordProgress({
         userId: command.userId,
         wordId: command.wordId,
-      });
-
-    if (!currentUserWordProgress) {
-      throw new BadRequestException(
-        'Cannot review a word without existing progress.',
-      );
-    }
-
-    const now = new Date();
+      })) ??
+      (await this.learningRepository.setUserWordProgressStatus({
+        userId: command.userId,
+        wordId: command.wordId,
+        status: UserWordProgressStatus.SEEN,
+        masteryLevel: UserWordProgressMasteryLevel.SEEN,
+        seenAt: now,
+      }));
 
     const nextState = computeWordReviewState({
       current: currentUserWordProgress,
