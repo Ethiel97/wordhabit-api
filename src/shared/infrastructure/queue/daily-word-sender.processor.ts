@@ -132,7 +132,7 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
         localDate: due.localDate,
       });
 
-      if (isOurs) messages.push(this.compose(recipient, word));
+      if (isOurs) messages.push(this.compose(recipient, word, profileId));
     }
 
     return messages;
@@ -141,6 +141,7 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
   private compose(
     recipient: DueRecipient,
     word: { id: string; term: string },
+    profileId: string,
   ): PushMessage {
     const copy = dailyWordCopy(recipient.interfaceLanguage, word.term);
 
@@ -151,6 +152,8 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
       data: {
         type: NotificationChannel.DAILY_WORD,
         wordId: word.id,
+        // So a tap can land on the profile the word belongs to.
+        profileId,
         sentAt: new Date().toISOString(),
       },
       androidChannelId: ANDROID_CHANNEL_ID,
