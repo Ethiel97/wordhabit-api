@@ -1,5 +1,55 @@
+import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 import { PartOfSpeech } from '../../../vocabulary/domain/entities/part-of-speech';
 import { QuizMode, QuizQuestion, QuizQuestionKind } from '../entities/quiz';
+
+/**
+ * Prompts in the language the options are in: an English question over
+ * French definitions reads as a bug, and users report it as one.
+ */
+const PROMPTS: Record<
+  LanguageCode,
+  {
+    meaning: (term: string) => string;
+    otherSense: (term: string) => string;
+    synonym: (term: string) => string;
+    speedMeaning: (term: string) => string;
+    speedSynonym: (term: string) => string;
+    antonym: (term: string) => string;
+    wordType: (term: string) => string;
+    usage: string;
+  }
+> = {
+  [LanguageCode.EN]: {
+    meaning: (term) => `What does “${term}” mean?`,
+    otherSense: (term) => `Which is another sense of “${term}”?`,
+    synonym: (term) => `Closest in meaning to “${term}”?`,
+    speedMeaning: (term) => `“${term}” means…`,
+    speedSynonym: (term) => `Closest to “${term}”…`,
+    antonym: (term) => `Opposite of “${term}”…`,
+    wordType: (term) => `“${term}” is a…`,
+    usage: 'Which sounds right?',
+  },
+  [LanguageCode.FR]: {
+    meaning: (term) => `Que signifie « ${term} » ?`,
+    otherSense: (term) => `Quel est un autre sens de « ${term} » ?`,
+    synonym: (term) => `Le plus proche de « ${term} » ?`,
+    speedMeaning: (term) => `« ${term} » signifie…`,
+    speedSynonym: (term) => `Le plus proche de « ${term} »…`,
+    antonym: (term) => `Le contraire de « ${term} »…`,
+    wordType: (term) => `« ${term} » est…`,
+    usage: 'Laquelle sonne juste ?',
+  },
+  [LanguageCode.ES]: {
+    meaning: (term) => `¿Qué significa «${term}»?`,
+    otherSense: (term) => `¿Cuál es otro sentido de «${term}»?`,
+    synonym: (term) => `¿Lo más cercano a «${term}»?`,
+    speedMeaning: (term) => `«${term}» significa…`,
+    speedSynonym: (term) => `Lo más cercano a «${term}»…`,
+    antonym: (term) => `Lo contrario de «${term}»…`,
+    wordType: (term) => `«${term}» es…`,
+    usage: '¿Cuál suena bien?',
+  },
+};
 
 /**
  * Everything the builder knows about the word under test.
@@ -42,6 +92,8 @@ export interface BuildQuizInput {
   pool: QuizDistractorWord[];
   scenarios: QuizScenarioSource[];
   mode: QuizMode;
+  /** The language of the round's prose; defaults to English. */
+  promptLanguage?: LanguageCode | null;
   /**
    * Randomness injected rather than reached for, so a test can pin the
    * shuffle and assert exact output.
@@ -73,14 +125,21 @@ export const MIN_QUIZ_QUESTIONS = 3;
  */
 export function buildQuizQuestions(input: BuildQuizInput): QuizQuestion[] {
   const random = input.random ?? Math.random;
+  const prompts = PROMPTS[input.promptLanguage ?? LanguageCode.EN];
 
   switch (input.mode) {
     case QuizMode.REALWORLD:
       return buildRealWorld(input.scenarios, random);
     case QuizMode.MASTERY:
-      return buildMastery(input.word, input.pool, random);
+      return buildMastery(input.word, input.pool, prompts, random);
     case QuizMode.SPEED:
-      return buildSpeed(input.word, input.pool, input.scenarios, random);
+      return buildSpeed(
+        input.word,
+        input.pool,
+        input.scenarios,
+        prompts,
+        random,
+      );
   }
 }
 
@@ -104,6 +163,7 @@ function buildRealWorld(
 function buildMastery(
   word: QuizTargetWord,
   pool: QuizDistractorWord[],
+  prompts: (typeof PROMPTS)[LanguageCode],
   random: () => number,
 ): QuizQuestion[] {
   const questions: QuizQuestion[] = [];
@@ -118,7 +178,7 @@ function buildMastery(
     questions.push(
       toQuestion({
         kind: QuizQuestionKind.MEANING,
-        prompt: `What does “${word.term}” mean?`,
+        prompt: prompts.meaning(word.term),
         correct: primarySense,
         distractors: sample(poolDefinitions, wrongCount, random),
         random,
@@ -151,7 +211,7 @@ function buildMastery(
     questions.push(
       toQuestion({
         kind: QuizQuestionKind.SYNONYM,
-        prompt: `Closest in meaning to “${word.term}”?`,
+        prompt: prompts.synonym(word.term),
         correct: sample(word.synonyms, 1, random)[0],
         distractors: sample(poolSynonyms, wrongCount, random),
         random,
@@ -171,7 +231,7 @@ function buildMastery(
     questions.push(
       toQuestion({
         kind: QuizQuestionKind.MEANING,
-        prompt: `Which is another sense of “${word.term}”?`,
+        prompt: prompts.otherSense(word.term),
         correct: sample(otherSenses, 1, random)[0],
         distractors: sample(poolDefinitions, wrongCount, random),
         random,
@@ -186,6 +246,7 @@ function buildSpeed(
   word: QuizTargetWord,
   pool: QuizDistractorWord[],
   scenarios: QuizScenarioSource[],
+  prompts: (typeof PROMPTS)[LanguageCode],
   random: () => number,
 ): QuizQuestion[] {
   const questions: QuizQuestion[] = [];
@@ -197,7 +258,7 @@ function buildSpeed(
     questions.push(
       toQuestion({
         kind: QuizQuestionKind.MEANING,
-        prompt: `“${word.term}” means…`,
+        prompt: prompts.speedMeaning(word.term),
         correct: firstClause(sense),
         distractors: sample(poolDefinitions, wrongCount, random).map(
           firstClause,
@@ -215,7 +276,7 @@ function buildSpeed(
     questions.push(
       toQuestion({
         kind: QuizQuestionKind.SYNONYM,
-        prompt: `Closest to “${word.term}”…`,
+        prompt: prompts.speedSynonym(word.term),
         correct: sample(word.synonyms, 1, random)[0],
         distractors: sample(poolSynonyms, wrongCount, random),
         random,
@@ -230,7 +291,7 @@ function buildSpeed(
     questions.push(
       toQuestion({
         kind: QuizQuestionKind.ANTONYM,
-        prompt: `Opposite of “${word.term}”…`,
+        prompt: prompts.antonym(word.term),
         correct: sample(word.antonyms, 1, random)[0],
         distractors: sample(word.synonyms, 1, random),
         random,
@@ -246,7 +307,7 @@ function buildSpeed(
   questions.push(
     toQuestion({
       kind: QuizQuestionKind.WORD_TYPE,
-      prompt: `“${word.term}” is a…`,
+      prompt: prompts.wordType(word.term),
       correct: word.partOfSpeech,
       distractors: sample(otherPartsOfSpeech, 1, random),
       random,
@@ -259,7 +320,7 @@ function buildSpeed(
     questions.push(
       toQuestion({
         kind: QuizQuestionKind.USAGE,
-        prompt: 'Which sounds right?',
+        prompt: prompts.usage,
         correct: scenario.correct,
         distractors: sample(scenario.distractors, wrongCount, random),
         random,

@@ -126,6 +126,8 @@ export interface FindRandomWordParams {
   targetLanguage?: LanguageCode;
   difficulty?: WordDifficulty;
   themes?: string[];
+  /** Preferred definition language; words without it stay eligible as a fallback. */
+  explanationLanguage?: LanguageCode;
 }
 
 export interface FindReviewQueueParams {

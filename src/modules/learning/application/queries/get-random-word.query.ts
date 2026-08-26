@@ -15,6 +15,7 @@ export class GetRandomWordQuery extends Query<GetRandomWordResult> {
     public readonly targetLanguage?: LanguageCode,
     public readonly difficulty?: WordDifficulty,
     public readonly themes?: string[],
+    public readonly explanationLanguage?: LanguageCode,
   ) {
     super();
   }

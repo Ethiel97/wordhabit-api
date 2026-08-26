@@ -12,6 +12,10 @@ export class GetRandomWordDto {
   @IsEnum(WordDifficulty)
   difficulty?: WordDifficulty;
 
+  @IsOptional()
+  @IsEnum(LanguageCode)
+  explanationLanguage?: LanguageCode;
+
   /**
    * Theme slugs to draw the word from. Normalised to an array: Express
    * parses `?themes=a` as a bare string, which reaches Prisma's `in`

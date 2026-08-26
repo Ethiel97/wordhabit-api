@@ -932,7 +932,8 @@ export class PrismaLearningRepository implements LearningRepository {
   async findCandidateWord(
     profile: UserLearningProfile,
   ): Promise<VocabularyWord | null> {
-    const { themeSlugs, targetLanguage, difficulty } = profile;
+    const { themeSlugs, targetLanguage, difficulty, interfaceLanguage } =
+      profile;
 
     const required: Prisma.VocabularyWordWhereInput = {
       targetLanguage,
@@ -952,12 +953,25 @@ export class PrismaLearningRepository implements LearningRepository {
       themes: { some: { theme: { slug: { in: themeSlugs } } } },
     };
 
-    const attempts = [
+    const ladder = [
       difficulty ? { ...onTopic, difficulty } : null,
       onTopic,
       difficulty ? { ...required, difficulty } : null,
       required,
     ].filter((where) => where !== null);
+
+    // A definition the learner can read outranks topic and difficulty:
+    // a word explained in a language they do not speak is the one case
+    // users report as broken. The unconstrained ladder stays as the
+    // fallback — a wrong-language definition beats no word at all.
+    const explainable: Prisma.VocabularyWordWhereInput = {
+      definitions: { some: { explanationLanguage: interfaceLanguage } },
+    };
+
+    const attempts = [
+      ...ladder.map((where) => ({ ...where, ...explainable })),
+      ...ladder,
+    ];
 
     for (const where of attempts) {
       const word = await this.pickRandomWord(where);
@@ -1114,9 +1128,9 @@ export class PrismaLearningRepository implements LearningRepository {
   async findRandomWord(
     params: FindRandomWordParams,
   ): Promise<RandomWord | null> {
-    const { themes, targetLanguage, difficulty } = params;
+    const { themes, targetLanguage, difficulty, explanationLanguage } = params;
 
-    const where = {
+    const base = {
       // No status filter: the corpus is all DRAFT today, so PUBLISHED
       // would leave the welcome screen empty. Add it once ingestion
       // publishes.
@@ -1127,48 +1141,58 @@ export class PrismaLearningRepository implements LearningRepository {
       ...(difficulty ? { difficulty } : {}),
     };
 
-    // Count then skip: the endpoint is public and uncached, and the
-    // whole vocabulary with its relations is not worth pulling per
-    // request.
-    const count = await this.prisma.vocabularyWord.count({ where });
+    // A word the visitor can read outranks the free draw; the plain
+    // draw stays as the fallback so the welcome screen never goes empty.
+    const attempts = explanationLanguage
+      ? [{ ...base, definitions: { some: { explanationLanguage } } }, base]
+      : [base];
 
-    if (count === 0) {
-      return null;
-    }
+    for (const where of attempts) {
+      // Count then skip: the endpoint is public and uncached, and the
+      // whole vocabulary with its relations is not worth pulling per
+      // request.
+      const count = await this.prisma.vocabularyWord.count({ where });
 
-    // Not `findFirstOrThrow`: rows can disappear between the count and
-    // the read, and an empty page beats a 500.
-    const randomWord = await this.prisma.vocabularyWord.findFirst({
-      where,
-      skip: Math.floor(Math.random() * count),
-      include: {
-        definitions: true,
-        examples: true,
-        pronunciations: true,
-        synonyms: true,
-        antonyms: true,
-        themes: {
-          include: {
-            theme: true,
+      if (count === 0) {
+        continue;
+      }
+
+      // Not `findFirstOrThrow`: rows can disappear between the count and
+      // the read, and an empty page beats a 500.
+      const randomWord = await this.prisma.vocabularyWord.findFirst({
+        where,
+        skip: Math.floor(Math.random() * count),
+        include: {
+          definitions: true,
+          examples: true,
+          pronunciations: true,
+          synonyms: true,
+          antonyms: true,
+          themes: {
+            include: {
+              theme: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!randomWord) {
-      return null;
+      if (!randomWord) {
+        continue;
+      }
+
+      return {
+        ...PrismaVocabularyMapper.toDomainAggregate({
+          word: randomWord,
+          definitions: randomWord.definitions,
+          examples: randomWord.examples,
+          pronunciations: randomWord.pronunciations,
+          antonyms: randomWord.antonyms,
+          synonyms: randomWord.synonyms,
+          themes: randomWord.themes.map((t) => t.theme),
+        }),
+      };
     }
 
-    return {
-      ...PrismaVocabularyMapper.toDomainAggregate({
-        word: randomWord,
-        definitions: randomWord.definitions,
-        examples: randomWord.examples,
-        pronunciations: randomWord.pronunciations,
-        antonyms: randomWord.antonyms,
-        synonyms: randomWord.synonyms,
-        themes: randomWord.themes.map((t) => t.theme),
-      }),
-    };
+    return null;
   }
 }

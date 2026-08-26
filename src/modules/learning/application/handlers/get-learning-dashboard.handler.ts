@@ -214,7 +214,11 @@ export class GetLearningDashboardHandler implements IQueryHandler<
    */
   private async streakRepairOffer(
     query: GetLearningDashboardQuery,
-    streak: { brokenStreak: number | null; brokenOnLocalDate: string | null; lastActivityLocalDate: string | null } | null,
+    streak: {
+      brokenStreak: number | null;
+      brokenOnLocalDate: string | null;
+      lastActivityLocalDate: string | null;
+    } | null,
   ): Promise<StreakRepairOffer> {
     const spentThisMonth =
       await this.learningRepository.countStreakRepairsInMonth({

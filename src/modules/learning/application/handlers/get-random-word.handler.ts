@@ -24,6 +24,7 @@ export class GetRandomWordHandler implements IQueryHandler<
       targetLanguage: query.targetLanguage || LanguageCode.EN,
       difficulty: query.difficulty,
       themes: query.themes,
+      explanationLanguage: query.explanationLanguage,
     });
 
     if (!word) {

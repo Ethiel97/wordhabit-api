@@ -95,6 +95,7 @@ export class LearningController {
         query.languageCode,
         query.difficulty,
         query.themes,
+        query.explanationLanguage,
       ),
     );
 

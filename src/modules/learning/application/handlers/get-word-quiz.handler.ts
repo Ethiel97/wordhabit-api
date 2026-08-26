@@ -72,6 +72,7 @@ export class GetWordQuizHandler implements IQueryHandler<
       pool,
       scenarios: material.scenarios,
       mode: query.mode,
+      promptLanguage: material.explanationLanguage,
     });
 
     if (questions.length < MIN_QUIZ_QUESTIONS) {

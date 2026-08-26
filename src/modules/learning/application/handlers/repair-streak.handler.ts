@@ -16,11 +16,11 @@ import {
 import { shiftLocalDate } from '../../domain/services/local-date';
 import { StreakRepairUnavailableError } from '../errors/streak-repair-unavailable.error';
 
-
 @CommandHandler(RepairStreakCommand)
-export class RepairStreakHandler
-  implements ICommandHandler<RepairStreakCommand, RepairStreakResult>
-{
+export class RepairStreakHandler implements ICommandHandler<
+  RepairStreakCommand,
+  RepairStreakResult
+> {
   constructor(
     @Inject(LEARNER_PROGRESS_REPOSITORY)
     private readonly progressRepository: LearnerProgressRepository,
