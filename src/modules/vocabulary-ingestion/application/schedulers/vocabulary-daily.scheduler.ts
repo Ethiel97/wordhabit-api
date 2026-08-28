@@ -143,10 +143,10 @@ export class VocabularyDailyScheduler {
   }
 
   /**
-   * Gives English words the English and Spanish definitions ingestion
-   * could not add: it skips a term the corpus already holds, so words
-   * first written for a French reader keep only French prose, and the
-   * client serves that to everyone.
+   * Gives English words the definitions ingestion could not add, one
+   * pass per supported explanation language: it skips a term the corpus
+   * already holds, so words first written for one readership keep only
+   * that prose, and the client serves it to everyone.
    *
    * Converges like the quiz backfill — once the finder comes back empty
    * the pass costs no model time — so it can sit on the clock rather
@@ -161,7 +161,11 @@ export class VocabularyDailyScheduler {
   async enqueueDefinitionBackfill() {
     const hour = new Date().toISOString().slice(0, 13).replace(/[-T:]/g, '-');
 
-    for (const explanationLanguage of [LanguageCode.EN, LanguageCode.ES]) {
+    for (const explanationLanguage of [
+      LanguageCode.EN,
+      LanguageCode.ES,
+      LanguageCode.FR,
+    ]) {
       const jobId = `definitions-EN-${explanationLanguage}-${hour}`;
       try {
         await this.queue.add(

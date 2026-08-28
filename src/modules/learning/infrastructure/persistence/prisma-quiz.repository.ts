@@ -108,45 +108,72 @@ export class PrismaQuizRepository implements QuizRepository {
   async findQuizDistractorPool(
     params: FindQuizDistractorPoolParams,
   ): Promise<QuizDistractorWord[]> {
-    // Random offset rather than ORDER BY random(): the corpus per
-    // language/difficulty is in the hundreds, and a full-table sort per
-    // quiz would be the most expensive line of the feature.
-    const where = {
+    const base = {
       id: { not: params.wordId },
       targetLanguage: params.targetLanguage,
       difficulty: params.difficulty,
     } as const;
 
-    const total = await this.prisma.vocabularyWord.count({ where });
-    const skip = Math.max(
-      0,
-      Math.floor(Math.random() * Math.max(1, total - params.limit)),
-    );
+    // Words explainable in the round's language first — the MEANING
+    // questions need their definitions — topped up with the rest.
+    const attempts = params.explanationLanguage
+      ? [
+          {
+            ...base,
+            definitions: {
+              some: { explanationLanguage: params.explanationLanguage },
+            },
+          },
+          base,
+        ]
+      : [base];
 
-    const words = await this.prisma.vocabularyWord.findMany({
-      where,
-      skip,
-      take: params.limit,
-      include: {
-        definitions: {
-          select: { text: true },
-          // Strict, no fallback: a wrong answer in another language than
-          // the right one would give the game away. A word with nothing
-          // in this language still lends its term and synonyms.
-          ...(params.explanationLanguage
-            ? { where: { explanationLanguage: params.explanationLanguage } }
-            : {}),
+    const pool: QuizDistractorWord[] = [];
+    const seen = new Set<string>();
+
+    for (const where of attempts) {
+      const remaining = params.limit - pool.length;
+      if (remaining === 0) break;
+
+      // Random offset rather than ORDER BY random(): the corpus per
+      // language/difficulty is in the hundreds, and a full-table sort
+      // per quiz would be the most expensive line of the feature.
+      const total = await this.prisma.vocabularyWord.count({ where });
+      const skip = Math.max(
+        0,
+        Math.floor(Math.random() * Math.max(1, total - remaining)),
+      );
+
+      const words = await this.prisma.vocabularyWord.findMany({
+        where,
+        skip,
+        take: remaining,
+        include: {
+          definitions: {
+            select: { text: true },
+            // Strict, no fallback: a wrong answer in another language
+            // than the right one would give the game away.
+            ...(params.explanationLanguage
+              ? { where: { explanationLanguage: params.explanationLanguage } }
+              : {}),
+          },
+          synonyms: { select: { value: true } },
         },
-        synonyms: { select: { value: true } },
-      },
-    });
+      });
 
-    return words.map((word) => ({
-      term: word.term,
-      partOfSpeech: word.partOfSpeech as PartOfSpeech,
-      definitions: word.definitions.map((def) => def.text),
-      synonyms: word.synonyms.map((syn) => syn.value),
-    }));
+      for (const word of words) {
+        if (seen.has(word.id)) continue;
+        seen.add(word.id);
+        pool.push({
+          term: word.term,
+          partOfSpeech: word.partOfSpeech as PartOfSpeech,
+          definitions: word.definitions.map((def) => def.text),
+          synonyms: word.synonyms.map((syn) => syn.value),
+        });
+      }
+    }
+
+    return pool;
   }
 
   async createQuizResult(params: CreateQuizResultParams): Promise<void> {
