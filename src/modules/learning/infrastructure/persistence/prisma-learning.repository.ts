@@ -882,13 +882,23 @@ export class PrismaLearningRepository implements LearningRepository {
   ): Promise<TodayWordAssignment> {
     const { userId, userLearningProfileId, wordId, assignedFor } = params;
 
-    const created = await this.prisma.dailyWordAssignment.create({
-      data: {
+    // Upsert, not create: two requests can race past the existence
+    // check, and the loser must return the winner's word rather than
+    // fail on the unique (profile, day) constraint.
+    const created = await this.prisma.dailyWordAssignment.upsert({
+      where: {
+        userLearningProfileId_assignedFor: {
+          userLearningProfileId,
+          assignedFor,
+        },
+      },
+      create: {
         userId,
         userLearningProfileId,
         wordId,
         assignedFor,
       },
+      update: {},
       include: {
         word: {
           include: {
