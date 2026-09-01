@@ -1,5 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import {
+  UserLearningProfileAlreadyExistsError,
   UserLearningProfileNotFoundError,
   UserLearningProfileReadOnlyError,
 } from '../errors/user-learning-profile-errors';
@@ -48,6 +49,21 @@ export class UpdateUserLearningProfileHandler implements ICommandHandler<
       const isPro = await this.subscriptionService.isPro(command.userId);
       if (!isPro) {
         throw new UserLearningProfileReadOnlyError(command.profileId);
+      }
+    }
+
+    // One profile per language, as the database enforces: switching to
+    // a language the learner already holds is a conflict, not a crash.
+    if (
+      command.targetLanguage &&
+      command.targetLanguage !== foundProfile.targetLanguage
+    ) {
+      const holder = await this.userLearningRepository.findUserLearningProfile({
+        userId: command.userId,
+        targetLanguage: command.targetLanguage,
+      });
+      if (holder) {
+        throw new UserLearningProfileAlreadyExistsError(holder.targetLanguage);
       }
     }
 
