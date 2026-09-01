@@ -72,7 +72,7 @@ export class BadgeAwarderService {
     });
 
     if (awarded.length > 0) {
-      this.logger.log('Badges awarded', { userId, awarded });
+      this.logger.log(`Badges awarded to ${userId}: ${awarded.join(', ')}`);
     }
 
     return awarded;
@@ -92,7 +92,11 @@ export class BadgeAwarderService {
     try {
       return await this.award(userId, snapshot);
     } catch (error: unknown) {
-      this.logger.error('Badge evaluation failed', { userId, error });
+      // An Error, because the Sentry logger reports a stack only for
+      // one: a message plus an object arrives with neither.
+      this.logger.error(
+        new Error(`Badge evaluation failed for ${userId}`, { cause: error }),
+      );
       return [];
     }
   }
