@@ -8,6 +8,11 @@ primary_region = "yyz"
   NODE_ENV = "production"
   PORT = "3000"
 
+  # Shares of a 60-connection role cap, versioned rather than set by
+  # hand: worst case is (web + worker) × 2 during a rolling deploy, plus
+  # the migration. Web serves requests and takes the larger share.
+  DATABASE_POOL_MAX = "15"
+
   # Public client identifiers, not secrets: they are the audience an
   # identity token must be addressed to, and they already sit in clear
   # text inside the versioned google-services.json. Keeping them here

@@ -7,9 +7,8 @@ import { Pool } from 'pg';
  * Every running process opens up to DATABASE_POOL_MAX connections
  * against the same Postgres role, and the role's cap is shared by all
  * of them at once: web and worker machines, both sides of a rolling
- * deploy, and the release command running migrations. The default is
- * sized so that worst case — (web + worker) × 2 during a deploy, plus
- * the migration — stays under a 25-connection role cap.
+ * deploy. Each fly.toml names its own share of the 60-connection role
+ * cap; this default serves local development, which has neither.
  */
 const DEFAULT_POOL_MAX = 5;
 
