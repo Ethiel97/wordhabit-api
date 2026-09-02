@@ -449,22 +449,22 @@ export interface WordProgressRepository {
     wordId: string;
   }): Promise<LastWordReview | null>;
 
-  /**
-   * Correct reviews, optionally inside an inclusive local-day range.
-   * The only fact XP is derived from today.
-   */
-  countCorrectReviews(params: {
-    userId: string;
-    from?: string;
-    to?: string;
-  }): Promise<number>;
+  /** Every review figure XP is derived from, in one read. */
+  findReviewXpFigures(params: XpWindowParams): Promise<ReviewXpFigures>;
+}
 
+/** An inclusive local-day window, alongside the lifetime totals. */
+export interface XpWindowParams {
+  userId: string;
+  from: string;
+  to: string;
+}
+
+export interface ReviewXpFigures {
+  lifetimeCorrect: number;
+  recentCorrect: number;
   /** Local days where that day's own word reached mastery. */
-  findMasteryJourneyDays(params: {
-    userId: string;
-    from?: string;
-    to?: string;
-  }): Promise<string[]>;
+  masteryDays: string[];
 }
 
 /** Measuring and awarding badges. */

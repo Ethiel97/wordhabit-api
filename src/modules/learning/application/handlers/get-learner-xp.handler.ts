@@ -47,38 +47,16 @@ export class GetLearnerXpHandler implements IQueryHandler<
     // Inclusive of today, so a seven-day window starts six days back.
     const from = shiftLocalDate(query.to, -(XP_PACE_WINDOW_DAYS - 1));
 
-    const [
-      lifetime,
-      recent,
-      quizLifetime,
-      quizRecent,
-      quizDays,
-      masteryDays,
-      badges,
-    ] = await Promise.all([
-      this.wordProgressRepository.countCorrectReviews({ userId: query.userId }),
-      this.wordProgressRepository.countCorrectReviews({
-        userId: query.userId,
-        from,
-        to: query.to,
-      }),
-      this.quizRepository.countCorrectQuizAnswers({
-        userId: query.userId,
-      }),
-      this.quizRepository.countCorrectQuizAnswers({
-        userId: query.userId,
-        from,
-        to: query.to,
-      }),
-      this.quizRepository.findQuizDays({ userId: query.userId }),
-      this.wordProgressRepository.findMasteryJourneyDays({
-        userId: query.userId,
-      }),
+    const window = { userId: query.userId, from, to: query.to };
+
+    const [reviews, quiz, badges] = await Promise.all([
+      this.wordProgressRepository.findReviewXpFigures(window),
+      this.quizRepository.findQuizXpFigures(window),
       this.badgeRepository.findUserBadges(query.userId),
     ]);
 
     // One day is one journey, however it ended.
-    const journeyDays = new Set([...quizDays, ...masteryDays]);
+    const journeyDays = new Set([...quiz.quizDays, ...reviews.masteryDays]);
     const recentJourneyDays = [...journeyDays].filter(
       (day) => day >= from && day <= query.to,
     ).length;
@@ -91,13 +69,13 @@ export class GetLearnerXpHandler implements IQueryHandler<
 
     return {
       xp:
-        xpForRecalls(lifetime) +
-        xpForQuizAnswers(quizLifetime) +
+        xpForRecalls(reviews.lifetimeCorrect) +
+        xpForQuizAnswers(quiz.lifetimeCorrect) +
         xpForJourneys(journeyDays.size) +
         xpForBadges(badges.length),
       dailyXp: dailyPace(
-        xpForRecalls(recent) +
-          xpForQuizAnswers(quizRecent) +
+        xpForRecalls(reviews.recentCorrect) +
+          xpForQuizAnswers(quiz.recentCorrect) +
           xpForJourneys(recentJourneyDays) +
           xpForBadges(recentBadges),
       ),

@@ -21,13 +21,20 @@ type Sources = {
 const handlerFor = (sources: Sources) =>
   new GetLearnerXpHandler(
     {
-      countCorrectReviews: () => Promise.resolve(0),
-      findMasteryJourneyDays: () => Promise.resolve(sources.masteryDays ?? []),
+      findReviewXpFigures: () =>
+        Promise.resolve({
+          lifetimeCorrect: 0,
+          recentCorrect: 0,
+          masteryDays: sources.masteryDays ?? [],
+        }),
     } as unknown as WordProgressRepository,
     {
-      countCorrectQuizAnswers: () =>
-        Promise.resolve(sources.correctAnswers ?? 0),
-      findQuizDays: () => Promise.resolve(sources.quizDays ?? []),
+      findQuizXpFigures: () =>
+        Promise.resolve({
+          lifetimeCorrect: sources.correctAnswers ?? 0,
+          recentCorrect: sources.correctAnswers ?? 0,
+          quizDays: sources.quizDays ?? [],
+        }),
     } as unknown as QuizRepository,
     {
       findUserBadges: () =>

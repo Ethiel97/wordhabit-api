@@ -9,6 +9,7 @@ import type {
   FindQuizWordMaterialParams,
   QuizRepository,
   QuizWordMaterial,
+  QuizXpFigures,
 } from '../../domain/repositories/quiz.repository';
 import type { QuizDistractorWord } from '../../domain/services/quiz-question-builder';
 import type { QuizModePerfectDays } from '../../domain/services/badge-catalog';
@@ -189,39 +190,29 @@ export class PrismaQuizRepository implements QuizRepository {
     });
   }
 
-  async countCorrectQuizAnswers(params: {
+  async findQuizXpFigures(params: {
     userId: string;
-    from?: string;
-    to?: string;
-  }): Promise<number> {
-    const aggregate = await this.prisma.quizResult.aggregate({
-      where: {
-        userId: params.userId,
-        ...(params.from || params.to
-          ? { localDate: { gte: params.from, lte: params.to } }
-          : {}),
-      },
-      _sum: { correctCount: true },
-    });
-    return aggregate._sum.correctCount ?? 0;
-  }
+    from: string;
+    to: string;
+  }): Promise<QuizXpFigures> {
+    const [row] = await this.prisma.$queryRaw<
+      { lifetime: bigint; recent: bigint; days: string[] }[]
+    >`
+      SELECT
+        COALESCE(SUM("correctCount"), 0) AS lifetime,
+        COALESCE(SUM("correctCount") FILTER (
+          WHERE "localDate" BETWEEN ${params.from} AND ${params.to}
+        ), 0) AS recent,
+        COALESCE(array_agg(DISTINCT "localDate"), '{}') AS days
+      FROM quiz_results
+      WHERE "userId" = ${params.userId}
+    `;
 
-  async findQuizDays(params: {
-    userId: string;
-    from?: string;
-    to?: string;
-  }): Promise<string[]> {
-    // groupBy, not distinct: Prisma applies distinct client-side.
-    const rows = await this.prisma.quizResult.groupBy({
-      by: ['localDate'],
-      where: {
-        userId: params.userId,
-        ...(params.from || params.to
-          ? { localDate: { gte: params.from, lte: params.to } }
-          : {}),
-      },
-    });
-    return rows.map((row) => row.localDate);
+    return {
+      lifetimeCorrect: Number(row?.lifetime ?? 0),
+      recentCorrect: Number(row?.recent ?? 0),
+      quizDays: row?.days ?? [],
+    };
   }
 
   async findPerfectQuizDaysByMode(params: {

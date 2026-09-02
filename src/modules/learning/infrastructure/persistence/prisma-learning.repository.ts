@@ -28,6 +28,8 @@ import {
   UserDailyActivity,
   UserLearningStats,
   UserWordLibraryResult,
+  ReviewXpFigures,
+  XpWindowParams,
 } from '../../domain/repositories/learning.repository';
 import type { Prisma } from '../../../../../generated/prisma/client';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
@@ -400,43 +402,42 @@ export class PrismaLearningRepository implements LearningRepository {
     );
   }
 
-  async findMasteryJourneyDays(params: {
-    userId: string;
-    from?: string;
-    to?: string;
-  }): Promise<string[]> {
-    const mastered = await this.prisma.userWordReviewEvent.groupBy({
-      by: ['wordId', 'localDate'],
-      where: {
-        userId: params.userId,
-        masteryAfter: { gte: UserWordProgressMasteryLevel.MASTERED },
-        ...(params.from || params.to
-          ? { localDate: { gte: params.from, lte: params.to } }
-          : {}),
-      },
-    });
+  async findReviewXpFigures(params: XpWindowParams): Promise<ReviewXpFigures> {
+    // One statement, not four: this is the busiest read in the app and
+    // every parallel query holds its own connection from a shared cap.
+    const [row] = await this.prisma.$queryRaw<
+      { lifetime: bigint; recent: bigint; days: string[] }[]
+    >`
+      WITH counts AS (
+        SELECT
+          COUNT(*) FILTER (WHERE correct) AS lifetime,
+          COUNT(*) FILTER (
+            WHERE correct AND "localDate" BETWEEN ${params.from} AND ${params.to}
+          ) AS recent
+        FROM user_word_review_events
+        WHERE "userId" = ${params.userId}
+      ),
+      mastery AS (
+        SELECT COALESCE(array_agg(DISTINCT e."localDate"), '{}') AS days
+        FROM user_word_review_events e
+        WHERE e."userId" = ${params.userId}
+          AND e."masteryAfter" >= ${UserWordProgressMasteryLevel.MASTERED}
+          -- Mastering an older word is a review, not the day's journey.
+          AND EXISTS (
+            SELECT 1 FROM daily_word_assignments a
+            WHERE a."userId" = e."userId"
+              AND a."wordId" = e."wordId"
+              AND a."assignedFor"::text = e."localDate"
+          )
+      )
+      SELECT counts.lifetime, counts.recent, mastery.days FROM counts, mastery
+    `;
 
-    if (mastered.length === 0) return [];
-
-    // Mastering an older word is a review, not the day's journey.
-    const assignments = await this.prisma.dailyWordAssignment.findMany({
-      where: {
-        userId: params.userId,
-        wordId: { in: mastered.map((row) => row.wordId) },
-      },
-      select: { wordId: true, assignedFor: true },
-    });
-
-    const assignedOn = new Map(
-      assignments.map((row) => [
-        row.wordId,
-        instantToLocalDate(row.assignedFor),
-      ]),
-    );
-
-    return mastered
-      .filter((row) => assignedOn.get(row.wordId) === row.localDate)
-      .map((row) => row.localDate);
+    return {
+      lifetimeCorrect: Number(row?.lifetime ?? 0),
+      recentCorrect: Number(row?.recent ?? 0),
+      masteryDays: row?.days ?? [],
+    };
   }
 
   async findUserBadges(userId: string): Promise<EarnedBadge[]> {
@@ -450,25 +451,6 @@ export class PrismaLearningRepository implements LearningRepository {
       code: PrismaLearningMapper.toDomainBadgeCode(row.code),
       earnedAt: row.earnedAt,
     }));
-  }
-
-  async countCorrectReviews(params: {
-    userId: string;
-    from?: string;
-    to?: string;
-  }): Promise<number> {
-    // A count, not a groupBy: the total is all XP needs, and the
-    // (userId, localDate) index answers both the lifetime and the window
-    // form of this query.
-    return this.prisma.userWordReviewEvent.count({
-      where: {
-        userId: params.userId,
-        correct: true,
-        ...(params.from || params.to
-          ? { localDate: { gte: params.from, lte: params.to } }
-          : {}),
-      },
-    });
   }
 
   async findUserDailyActivity(

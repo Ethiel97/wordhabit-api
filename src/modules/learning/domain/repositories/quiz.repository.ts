@@ -8,6 +8,13 @@ import {
   QuizTargetWord,
 } from '../services/quiz-question-builder';
 
+export interface QuizXpFigures {
+  lifetimeCorrect: number;
+  recentCorrect: number;
+  /** Local days carrying at least one completed round. */
+  quizDays: string[];
+}
+
 export interface QuizWordMaterial {
   target: QuizTargetWord;
   /** What the distractor pool is matched on. */
@@ -80,19 +87,12 @@ export interface QuizRepository {
   /** Appends one finished round to the durable quiz log. */
   createQuizResult(params: CreateQuizResultParams): Promise<void>;
 
-  /** Correct quiz answers, lifetime or windowed — XP's second source. */
-  countCorrectQuizAnswers(params: {
+  /** Every quiz figure XP is derived from, in one read. */
+  findQuizXpFigures(params: {
     userId: string;
-    from?: string;
-    to?: string;
-  }): Promise<number>;
-
-  /** Local days carrying at least one completed round. */
-  findQuizDays(params: {
-    userId: string;
-    from?: string;
-    to?: string;
-  }): Promise<string[]>;
+    from: string;
+    to: string;
+  }): Promise<QuizXpFigures>;
 
   /**
    * Separate days carrying a perfect round, per mode. Only modes with
