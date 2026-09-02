@@ -77,6 +77,11 @@ export class PrismaNotificationRepository implements NotificationRepository {
   async registerNotificationDevice(
     params: RegisterNotificationDeviceParams,
   ): Promise<NotificationDevice> {
+    // Seeded here, not only on the settings screen: the sweep needs an
+    // enabled preference, and a learner who never opens settings would
+    // hold a reminder slot the sender is bound to ignore.
+    await this.ensureDefaultPreferences(params.userId);
+
     const result = await this.prisma.device.upsert({
       where: { token: params.token },
       // Reassigned: a resold phone keeps its token, and the previous
