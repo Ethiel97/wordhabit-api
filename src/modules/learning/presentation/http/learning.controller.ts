@@ -278,6 +278,7 @@ export class LearningController {
         request.savedOnly,
         request.limit,
         request.cursor,
+        request.themeSlug,
       ),
     );
 

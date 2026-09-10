@@ -128,8 +128,16 @@ export class PrismaLearningRepository implements LearningRepository {
   async findUserWordLibrary(
     params: FindUserWordLibraryParams,
   ): Promise<UserWordLibraryResult> {
-    const { userId, targetLanguage, status, search, savedOnly, limit, cursor } =
-      params;
+    const {
+      userId,
+      targetLanguage,
+      status,
+      search,
+      savedOnly,
+      themeSlug,
+      limit,
+      cursor,
+    } = params;
 
     const ofLanguage = {
       userId,
@@ -163,6 +171,9 @@ export class PrismaLearningRepository implements LearningRepository {
             // Same nesting rule as the search below: merged into the
             // one `word` filter, never added beside it.
             ...(savedOnly ? { favoriteWords: { some: { userId } } } : {}),
+            ...(themeSlug
+              ? { themes: { some: { theme: { slug: themeSlug } } } }
+              : {}),
             ...(search
               ? {
                   OR: [

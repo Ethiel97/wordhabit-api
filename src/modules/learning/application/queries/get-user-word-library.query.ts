@@ -11,6 +11,7 @@ export class GetUserWordLibraryQuery extends Query<GetUserWordLibraryResult> {
     public readonly savedOnly?: boolean,
     public readonly limit = USER_WORD_LIBRARY_LIMIT,
     public readonly cursor?: string,
+    public readonly themeSlug?: string,
   ) {
     super();
   }

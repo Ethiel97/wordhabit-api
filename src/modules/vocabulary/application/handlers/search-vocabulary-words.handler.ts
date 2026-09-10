@@ -40,6 +40,7 @@ export class SearchVocabularyWordsHandler implements IQueryHandler<
         status: aggregate.word.status,
         createdAt: aggregate.word.createdAt,
         updatedAt: aggregate.word.updatedAt,
+        themes: aggregate.themes ?? [],
         definitions: aggregate.definitions.map((definition) => ({
           id: definition.id,
           wordId: definition.wordId,

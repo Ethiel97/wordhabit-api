@@ -49,6 +49,7 @@ export class GetUserWordLibraryHandler implements IQueryHandler<
       savedOnly: query.savedOnly,
       limit: query.limit,
       cursor: query.cursor,
+      themeSlug: query.themeSlug,
     });
   }
 }

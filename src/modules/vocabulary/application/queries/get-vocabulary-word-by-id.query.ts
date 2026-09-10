@@ -22,6 +22,7 @@ export interface GetVocabularyWordByIdResult {
   pronunciations: WordPronunciation[];
   synonyms: WordSynonym[];
   antonyms: WordAntonym[];
+  themes: string[];
 }
 
 export class GetVocabularyWordByIdQuery extends Query<GetVocabularyWordByIdResult> {

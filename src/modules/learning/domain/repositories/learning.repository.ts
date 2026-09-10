@@ -288,6 +288,8 @@ export type FindUserWordLibraryParams = {
    * scrolled to yet would otherwise be counted and never shown.
    */
   savedOnly?: boolean;
+  /** Narrows to the words tagged with this theme. */
+  themeSlug?: string;
   limit: number;
   cursor?: string;
 };

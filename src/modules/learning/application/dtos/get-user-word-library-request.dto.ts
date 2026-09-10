@@ -31,6 +31,10 @@ export class GetUserWordLibraryRequestDto {
   @IsString()
   cursor?: string;
 
+  @IsOptional()
+  @IsString()
+  themeSlug?: string;
+
   /** Query strings carry no booleans; `?savedOnly=true` is the shape. */
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
