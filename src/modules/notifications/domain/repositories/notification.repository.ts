@@ -40,6 +40,8 @@ export type DueRecipient = {
   /** The profile whose word is announced; absent on person-level channels. */
   userLearningProfileId?: string;
   interfaceLanguage: string;
+  /** The profile's topics, so the push can say which one the word came from. */
+  themeSlugs: string[];
   tokens: string[];
 };
 

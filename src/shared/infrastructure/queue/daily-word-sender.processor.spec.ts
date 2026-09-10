@@ -15,6 +15,7 @@ const recipient = (
   userId: 'u1',
   userLearningProfileId,
   interfaceLanguage: 'EN',
+  themeSlugs: [],
   tokens: ['t1'],
   ...overrides,
 });
@@ -83,6 +84,24 @@ describe('DailyWordSenderProcessor', () => {
       'p-fr',
       expect.any(String),
     );
+  });
+
+  it('names the topic the word shares with the profile', async () => {
+    const assign = jest.fn().mockResolvedValue({
+      word: { id: 'w1', term: 'serendipity' },
+      themes: ['history-civilizations', 'psychology-human-behavior'],
+    });
+    const { processor, send } = build({
+      recipients: [
+        recipient('p-en', { themeSlugs: ['psychology-human-behavior'] }),
+      ],
+      assign,
+    });
+
+    await processor.process(job());
+
+    const [message] = send.mock.calls[0][0] as { body: string }[];
+    expect(message.body).toContain('Psychology');
   });
 
   it('claims the delivery against the profile', async () => {

@@ -173,6 +173,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
         id: true,
         userId: true,
         interfaceLanguage: true,
+        themes: { select: { theme: { select: { slug: true } } } },
         user: {
           select: {
             devices: {
@@ -188,6 +189,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
       userId: row.userId,
       userLearningProfileId: row.id,
       interfaceLanguage: row.interfaceLanguage,
+      themeSlugs: row.themes.map((entry) => entry.theme.slug),
       tokens: row.user.devices.map((device) => device.token),
     }));
   }

@@ -20,7 +20,10 @@ import {
   DueSlot,
   findDueSlots,
 } from '../../../modules/notifications/domain/daily-word-schedule';
-import { dailyWordCopy } from '../../../modules/notifications/domain/daily-word-copy';
+import {
+  dailyWordCopy,
+  sharedTopic,
+} from '../../../modules/notifications/domain/daily-word-copy';
 import { NotificationChannel } from '../../../modules/notifications/domain/entities/notification';
 import { TodayWordService } from '../../../modules/learning/application/services/today-word.service';
 
@@ -112,13 +115,17 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
       const profileId = recipient.userLearningProfileId;
       if (!profileId) continue;
 
-      let word: { id: string; term: string };
+      let word: { id: string; term: string; topic?: string };
       try {
         const assignment = await this.todayWord.getOrAssignForProfileId(
           profileId,
           due.localDate,
         );
-        word = { id: assignment.word.id, term: assignment.word.term };
+        word = {
+          id: assignment.word.id,
+          term: assignment.word.term,
+          topic: sharedTopic(assignment.themes, recipient.themeSlugs),
+        };
       } catch (error) {
         // A dry corpus for this language: not worth abandoning the batch.
         this.logger.warn(`No word for profile ${profileId}: ${String(error)}`);
@@ -140,10 +147,14 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
 
   private compose(
     recipient: DueRecipient,
-    word: { id: string; term: string },
+    word: { id: string; term: string; topic?: string },
     profileId: string,
   ): PushMessage {
-    const copy = dailyWordCopy(recipient.interfaceLanguage, word.term);
+    const copy = dailyWordCopy(
+      recipient.interfaceLanguage,
+      word.term,
+      word.topic,
+    );
 
     return {
       tokens: recipient.tokens,
