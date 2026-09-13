@@ -110,7 +110,7 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
     });
 
     const response = await this.createResponse({
-      model: process.env.OPENAI_VOCABULARY_MODEL ?? 'gpt-5.2-pro',
+      model: process.env.OPENAI_VOCABULARY_MODEL ?? 'gpt-5.2',
       // No temperature: reasoning models reject the parameter outright
       // (400 Unsupported parameter). It is no loss — variety now comes
       // from the exclusion list and the exploration brief, which steer
@@ -200,7 +200,7 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
     if (words.length === 0) return { items: [] };
 
     const response = await this.createResponse({
-      model: process.env.OPENAI_VOCABULARY_MODEL ?? 'gpt-5.2-pro',
+      model: process.env.OPENAI_VOCABULARY_MODEL ?? 'gpt-5.2',
       // Scenarios are short but the reasoning budget is not: half the
       // batch ceiling, since each entry carries its context in.
       max_output_tokens: 16000,
@@ -270,7 +270,7 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
     const { explanationLanguage } = input;
 
     const response = await this.createResponse({
-      model: process.env.OPENAI_VOCABULARY_MODEL ?? 'gpt-5.2-pro',
+      model: process.env.OPENAI_VOCABULARY_MODEL ?? 'gpt-5.2',
       max_output_tokens: 12000,
       input: [
         { role: 'system', content: this.buildSystemPrompt() },
@@ -519,7 +519,7 @@ export class OpenAiVocabularyGenerationProvider implements VocabularyGenerationP
       // One testable question beats ten adjectives. Both halves matter:
       // the obvious word fails the second, dictionary-only jargon the first.
       'Every entry must pass this test: an educated native speaker would use it this month, and a fluent learner would be visibly impressed that you knew it.',
-      'BEGINNER means immediately understandable and reusable — not childish. A beginner word still has to pass the test.',
+      'BEGINNER means immediately understandable and reusable — not childish. A beginner word still has to pass the test: a phrasal verb, a set phrase or a precise everyday word a learner meets early and still misuses, never core vocabulary every first-year learner already owns (miss, confused, pay attention).',
       '',
       '# Already covered — do not repeat these, or their close variants',
       excludedTerms.length ? excludedTerms.join(', ') : '(the corpus is empty)',
