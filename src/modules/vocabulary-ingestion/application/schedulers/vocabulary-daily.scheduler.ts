@@ -21,6 +21,8 @@ import { LanguageCode } from '../../../vocabulary/domain/entities/language-code'
  */
 const DAILY_BATCH_SIZE = 15;
 
+const WEEKLY_BATCH_SIZE = 30;
+
 /**
  * Words swept per pass. Above the sixty the generator adds, so the
  * legacy gap shrinks every pass instead of only holding level; within
@@ -28,74 +30,94 @@ const DAILY_BATCH_SIZE = 15;
  */
 const BACKFILL_SIZE = 80;
 
+/**
+ * Ordered by the readership each pair serves, so a balance that runs
+ * out mid-run leaves the common pairs done first.
+ */
+export const DEFINITION_BACKFILL_PAIRS: ReadonlyArray<{
+  targetLanguage: LanguageCode;
+  explanationLanguage: LanguageCode;
+}> = [
+  { targetLanguage: LanguageCode.FR, explanationLanguage: LanguageCode.FR },
+  { targetLanguage: LanguageCode.ES, explanationLanguage: LanguageCode.FR },
+  { targetLanguage: LanguageCode.EN, explanationLanguage: LanguageCode.FR },
+  { targetLanguage: LanguageCode.EN, explanationLanguage: LanguageCode.EN },
+  { targetLanguage: LanguageCode.FR, explanationLanguage: LanguageCode.EN },
+  { targetLanguage: LanguageCode.ES, explanationLanguage: LanguageCode.EN },
+  { targetLanguage: LanguageCode.ES, explanationLanguage: LanguageCode.ES },
+  { targetLanguage: LanguageCode.EN, explanationLanguage: LanguageCode.ES },
+  { targetLanguage: LanguageCode.FR, explanationLanguage: LanguageCode.ES },
+];
+
 export class VocabularyDailyScheduler {
   private readonly logger = new Logger(VocabularyDailyScheduler.name);
 
   constructor(@InjectQueue(VOCABULARY_QUEUE) private readonly queue: Queue) {}
 
+  /**
+   * English only: every planned market learns English. Fifteen a night
+   * for the francophone readership the app serves today; the
+   * English-explained batch feeds a readership that comes later, so it
+   * runs weekly. The cap in the handler bounds the bill either way; the
+   * pace is what keeps the backfills level and a bad batch small.
+   */
   @Cron('0 0 2 * * *', {
     name: 'dailyVocabularyGeneration',
     timeZone: 'Europe/Paris',
     waitForCompletion: true,
-    //enable on Production, keep disabled on staging to avoid unnecessary costs
     disabled: process.env.NODE_ENV !== 'production',
   })
   async enqueueGeneration() {
-    // English only, because every planned market learns English:
-    // francophones, then non-native professionals, then native word
-    // lovers. FR and ES as *target* languages are paused — they serve
-    // people learning French or Spanish, whom no phase addresses, and
-    // they had grown to twice the English corpus.
-    //
-    // Weighted towards English definitions: 610 English words carry a
-    // French one and only 178 an English one, and a reader whose
-    // language is missing is served `definitions.first`, so today an
-    // anglophone meets French prose.
-    const payloads = [
-      {
-        targetLanguage: LanguageCode.EN,
-        explanationLanguage: LanguageCode.FR,
-        count: DAILY_BATCH_SIZE,
-      },
-      {
-        targetLanguage: LanguageCode.EN,
-        explanationLanguage: LanguageCode.EN,
-        count: DAILY_BATCH_SIZE * 2,
-      },
-    ];
+    await this.enqueueGenerationJob('daily', {
+      targetLanguage: LanguageCode.EN,
+      explanationLanguage: LanguageCode.FR,
+      count: DAILY_BATCH_SIZE,
+    });
+  }
 
-    for (const payload of payloads) {
-      // Passed to add(), not just logged: BullMQ drops a duplicate id
-      // silently, which is what keeps a second API instance from
-      // generating the same batch twice.
-      //
-      // Both languages are in the id. Keyed on the target alone, two
-      // batches differing only by explanation language collided and the
-      // second was discarded without an error — which is what the two
-      // Spanish batches did, every night, unnoticed.
-      //
-      // Hyphens, not colons: BullMQ reserves `:` for its own Redis keys
-      // and rejects a custom id that contains one.
-      const day = new Date().toISOString().split('T')[0];
-      const jobId = `daily-${payload.targetLanguage}-${payload.explanationLanguage}-${day}`;
-      try {
-        await this.queue.add(GENERATE_VOCABULARY_BATCH_JOB, payload, {
-          jobId,
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 2000,
-          },
-          removeOnComplete: 100,
-          removeOnFail: 100,
-        });
-        this.logger.log(`Enqueued job ${jobId} for ${payload.targetLanguage}`);
-      } catch (error) {
-        // One language failing to enqueue must not drop the others.
-        this.logger.error(
-          `Failed to enqueue job for ${payload.targetLanguage}: ${error}`,
-        );
-      }
+  @Cron('0 30 2 * * 0', {
+    name: 'weeklyVocabularyGeneration',
+    timeZone: 'Europe/Paris',
+    waitForCompletion: true,
+    disabled: process.env.NODE_ENV !== 'production',
+  })
+  async enqueueWeeklyGeneration() {
+    await this.enqueueGenerationJob('weekly', {
+      targetLanguage: LanguageCode.EN,
+      explanationLanguage: LanguageCode.EN,
+      count: WEEKLY_BATCH_SIZE,
+    });
+  }
+
+  /**
+   * The id carries both languages and the day: BullMQ drops a duplicate
+   * id silently, which is what keeps a second instance from generating
+   * the same batch twice. Hyphens only, BullMQ reserves `:`.
+   */
+  private async enqueueGenerationJob(
+    cadence: 'daily' | 'weekly',
+    payload: {
+      targetLanguage: LanguageCode;
+      explanationLanguage: LanguageCode;
+      count: number;
+    },
+  ) {
+    const day = new Date().toISOString().split('T')[0];
+    const jobId = `${cadence}-${payload.targetLanguage}-${payload.explanationLanguage}-${day}`;
+    try {
+      await this.queue.add(GENERATE_VOCABULARY_BATCH_JOB, payload, {
+        jobId,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+        removeOnComplete: 100,
+        removeOnFail: 100,
+      });
+      this.logger.log(`Enqueued job ${jobId}`);
+    } catch (error) {
+      this.logger.error(`Failed to enqueue ${jobId}: ${error}`);
     }
   }
 
@@ -143,10 +165,10 @@ export class VocabularyDailyScheduler {
   }
 
   /**
-   * Gives English words the definitions ingestion could not add, one
-   * pass per supported explanation language: it skips a term the corpus
-   * already holds, so words first written for one readership keep only
-   * that prose, and the client serves it to everyone.
+   * Gives words the definitions ingestion could not add, one pass per
+   * language pair: ingestion skips a term the corpus already holds, so
+   * words first written for one readership keep only that prose, and
+   * the client serves it to everyone.
    *
    * Converges like the quiz backfill — once the finder comes back empty
    * the pass costs no model time — so it can sit on the clock rather
@@ -161,17 +183,16 @@ export class VocabularyDailyScheduler {
   async enqueueDefinitionBackfill() {
     const hour = new Date().toISOString().slice(0, 13).replace(/[-T:]/g, '-');
 
-    for (const explanationLanguage of [
-      LanguageCode.EN,
-      LanguageCode.ES,
-      LanguageCode.FR,
-    ]) {
-      const jobId = `definitions-EN-${explanationLanguage}-${hour}`;
+    for (const {
+      targetLanguage,
+      explanationLanguage,
+    } of DEFINITION_BACKFILL_PAIRS) {
+      const jobId = `definitions-${targetLanguage}-${explanationLanguage}-${hour}`;
       try {
         await this.queue.add(
           BACKFILL_DEFINITIONS_JOB,
           {
-            targetLanguage: LanguageCode.EN,
+            targetLanguage,
             explanationLanguage,
             count: BACKFILL_SIZE,
           },
@@ -186,7 +207,7 @@ export class VocabularyDailyScheduler {
         this.logger.log(`Enqueued job ${jobId}`);
       } catch (error) {
         this.logger.error(
-          `Failed to enqueue ${explanationLanguage} definition backfill: ${error}`,
+          `Failed to enqueue ${targetLanguage}/${explanationLanguage} definition backfill: ${error}`,
         );
       }
     }
