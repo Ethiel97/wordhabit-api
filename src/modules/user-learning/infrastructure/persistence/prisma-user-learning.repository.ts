@@ -12,11 +12,40 @@ import { User } from '../../domain/entities/user';
 import { UserLearningProfile } from '../../domain/entities/user-learning-profile';
 import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
+import { PrismaClient } from '../../../../../generated/prisma/client';
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 import { NotificationSlot } from '../../../notifications/domain/entities/notification';
 import { Injectable } from '@nestjs/common';
 
 const withThemes = { themes: { include: { theme: true } } } as const;
+
+/**
+ * One query for the whole set. A nested `connect` by slug makes Prisma
+ * resolve each slug on its own, so a profile with ten themes costs
+ * twenty statements instead of two.
+ */
+async function themeIdsForSlugs(
+  client: Pick<PrismaClient, 'theme'>,
+  slugs: string[],
+): Promise<string[]> {
+  const wanted = [...new Set(slugs)];
+  if (wanted.length === 0) {
+    return [];
+  }
+
+  const themes = await client.theme.findMany({
+    where: { slug: { in: wanted } },
+    select: { id: true },
+  });
+
+  // The handlers reject unknown slugs before we get here, so a gap means
+  // a theme was deleted in between. Loud, like the `connect` it replaces.
+  if (themes.length !== wanted.length) {
+    throw new Error(`Unknown theme slugs among: ${wanted.join(', ')}`);
+  }
+
+  return themes.map((theme) => theme.id);
+}
 
 type ProfileRow = {
   id: string;
@@ -134,22 +163,23 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
       reminderSlot,
     } = params;
 
+    const themeIds =
+      themeSlugs != null
+        ? await themeIdsForSlugs(this.prisma, themeSlugs)
+        : null;
+
     const updated = await this.prisma.userLearningProfile.update({
       where: {
         id: profileId,
       },
       data: {
-        ...(themeSlugs != null
+        ...(themeIds != null
           ? {
               themes: {
                 deleteMany: {},
-                create: themeSlugs.map((themeSlug) => ({
-                  theme: {
-                    connect: {
-                      slug: themeSlug,
-                    },
-                  },
-                })),
+                createMany: {
+                  data: themeIds.map((themeId) => ({ themeId })),
+                },
               },
             }
           : {}),
@@ -230,6 +260,8 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
         data: { isActive: false },
       });
 
+      const themeIds = await themeIdsForSlugs(tx, params.themeSlugs);
+
       return tx.userLearningProfile.create({
         data: {
           userId: params.userId,
@@ -240,13 +272,9 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
           difficulty: params.difficulty,
           reminderSlot: params.reminderSlot,
           themes: {
-            create: params.themeSlugs.map((themeSlug) => ({
-              theme: {
-                connect: {
-                  slug: themeSlug,
-                },
-              },
-            })),
+            createMany: {
+              data: themeIds.map((themeId) => ({ themeId })),
+            },
           },
         },
         include: withThemes,
