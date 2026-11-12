@@ -2,9 +2,11 @@ import {
   DeleteNotificationDeviceParams,
   DueRecipient,
   FindDueRecipientsParams,
+  FindStreakRiskRecipientsParams,
   NotificationRepository,
   RecordDeliveryParams,
   RegisterNotificationDeviceParams,
+  StreakRiskRecipient,
   UpdateNotificationPreferenceParams,
 } from '../../domain/repositories/notification.repository';
 import {
@@ -190,6 +192,76 @@ export class PrismaNotificationRepository implements NotificationRepository {
       userLearningProfileId: row.id,
       interfaceLanguage: row.interfaceLanguage,
       themeSlugs: row.themes.map((entry) => entry.theme.slug),
+      tokens: row.user.devices.map((device) => device.token),
+    }));
+  }
+
+  async findStreakRiskRecipients(
+    params: FindStreakRiskRecipientsParams,
+  ): Promise<StreakRiskRecipient[]> {
+    const rows = await this.prisma.userLearningStreak.findMany({
+      where: {
+        lastActivityLocalDate: params.yesterday,
+        user: {
+          deletedAt: null,
+          devices: { some: { timeZone: params.timeZone } },
+          notificationPreferences: {
+            some: { channel: NotificationChannel.STREAK_RISK, enabled: true },
+          },
+          notificationDeliveries: {
+            none: {
+              channel: NotificationChannel.STREAK_RISK,
+              localDate: new Date(params.localDate),
+            },
+          },
+          NOT: {
+            notificationPreferences: {
+              some: { channel: NotificationChannel.DAILY_WORD, enabled: true },
+            },
+            // Same slot resolution as findDueRecipients, legacy fallback included.
+            OR: [
+              {
+                userLearningProfiles: {
+                  some: { reminderSlot: NotificationSlot.EVENING },
+                },
+              },
+              {
+                userLearningProfiles: { some: { reminderSlot: null } },
+                notificationPreferences: {
+                  some: {
+                    channel: NotificationChannel.DAILY_WORD,
+                    slot: NotificationSlot.EVENING,
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+      select: {
+        userId: true,
+        currentStreak: true,
+        user: {
+          select: {
+            devices: {
+              where: { timeZone: params.timeZone },
+              select: { token: true },
+            },
+            userLearningProfiles: {
+              orderBy: [{ isActive: 'desc' }, { isMain: 'desc' }],
+              take: 1,
+              select: { interfaceLanguage: true },
+            },
+          },
+        },
+      },
+    });
+
+    return rows.map((row) => ({
+      userId: row.userId,
+      interfaceLanguage:
+        row.user.userLearningProfiles[0]?.interfaceLanguage ?? 'EN',
+      currentStreak: row.currentStreak,
       tokens: row.user.devices.map((device) => device.token),
     }));
   }
