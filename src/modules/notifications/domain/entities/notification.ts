@@ -34,7 +34,7 @@ export const DEFAULT_PREFERENCE_BY_CHANNEL: Readonly<
     enabled: true,
     slot: NotificationSlot.MORNING,
   },
-  [NotificationChannel.STREAK_RISK]: { enabled: false, slot: null },
+  [NotificationChannel.STREAK_RISK]: { enabled: true, slot: null },
 };
 
 export type NotificationPreference = {
