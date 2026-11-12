@@ -45,6 +45,19 @@ export type DueRecipient = {
   tokens: string[];
 };
 
+export type FindStreakRiskRecipientsParams = {
+  timeZone: string;
+  localDate: string;
+  yesterday: string;
+};
+
+export type StreakRiskRecipient = {
+  userId: string;
+  interfaceLanguage: string;
+  currentStreak: number;
+  tokens: string[];
+};
+
 export type RecordDeliveryParams = {
   userId: string;
   userLearningProfileId?: string;
@@ -76,6 +89,11 @@ export interface NotificationRepository {
    * announced at their own hours.
    */
   findDueRecipients(params: FindDueRecipientsParams): Promise<DueRecipient[]>;
+
+  /** Active yesterday, nothing yet today, and no word push due this evening. */
+  findStreakRiskRecipients(
+    params: FindStreakRiskRecipientsParams,
+  ): Promise<StreakRiskRecipient[]>;
 
   /**
    * Claims today's delivery, returning false when someone already has

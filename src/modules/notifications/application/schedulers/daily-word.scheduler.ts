@@ -66,7 +66,7 @@ export function toJobId(prefix: string, at: Date): string {
   return `${prefix}-${at.toISOString().replace(/[:.]/g, '-')}`;
 }
 
-function floorToHalfHour(date: Date): Date {
+export function floorToHalfHour(date: Date): Date {
   const floored = new Date(date);
   floored.setUTCMinutes(floored.getUTCMinutes() < 30 ? 0 : 30, 0, 0);
   return floored;
