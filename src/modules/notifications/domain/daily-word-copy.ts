@@ -30,6 +30,12 @@ const COPY: Record<string, (term: string, topic?: string) => Copy> = {
       ? `Elegida de tu tema ${topic}. Toca para descubrir su significado 🔥`
       : 'Toca para descubrir su significado y mantener tu racha 🔥',
   }),
+  DE: (term, topic) => ({
+    title: `✨ Dein Wort des Tages: ${term}`,
+    body: topic
+      ? `Ausgewählt aus deinem Thema ${topic}. Tippe, um seine Bedeutung zu entdecken 🔥`
+      : 'Tippe, um seine Bedeutung zu entdecken und deine Serie fortzusetzen 🔥',
+  }),
 };
 
 /** The chip labels the app shows, so the push and the screen agree. */
@@ -38,54 +44,112 @@ const THEME_LABELS: Record<string, Record<string, string>> = {
     EN: 'Rare words',
     FR: 'Mots rares',
     ES: 'Palabras raras',
+    DE: 'Seltene Wörter',
   },
-  'art-creativity': { EN: 'Art', FR: 'Art', ES: 'Arte' },
+  'art-creativity': { EN: 'Art', FR: 'Art', ES: 'Arte', DE: 'Kunst' },
   'business-entrepreneurship': {
     EN: 'Business',
     FR: 'Business',
     ES: 'Negocios',
+    DE: 'Business',
   },
-  'cinema-storytelling': { EN: 'Cinema', FR: 'Cinéma', ES: 'Cine' },
-  'finance-investing': { EN: 'Finance', FR: 'Finance', ES: 'Finanzas' },
-  'health-wellness': { EN: 'Wellness', FR: 'Bien-être', ES: 'Bienestar' },
-  'history-civilizations': { EN: 'History', FR: 'Histoire', ES: 'Historia' },
+  'cinema-storytelling': { EN: 'Cinema', FR: 'Cinéma', ES: 'Cine', DE: 'Kino' },
+  'finance-investing': {
+    EN: 'Finance',
+    FR: 'Finance',
+    ES: 'Finanzas',
+    DE: 'Finanzen',
+  },
+  'health-wellness': {
+    EN: 'Wellness',
+    FR: 'Bien-être',
+    ES: 'Bienestar',
+    DE: 'Wohlbefinden',
+  },
+  'history-civilizations': {
+    EN: 'History',
+    FR: 'Histoire',
+    ES: 'Historia',
+    DE: 'Geschichte',
+  },
   'luxury-lifestyle': {
     EN: 'Lifestyle',
     FR: 'Art de vivre',
     ES: 'Estilo de vida',
+    DE: 'Lebensart',
   },
-  'music-performance': { EN: 'Music', FR: 'Musique', ES: 'Música' },
-  'nature-environment': { EN: 'Nature', FR: 'Nature', ES: 'Naturaleza' },
+  'music-performance': {
+    EN: 'Music',
+    FR: 'Musique',
+    ES: 'Música',
+    DE: 'Musik',
+  },
+  'nature-environment': {
+    EN: 'Nature',
+    FR: 'Nature',
+    ES: 'Naturaleza',
+    DE: 'Natur',
+  },
   'philosophy-critical-thinking': {
     EN: 'Philosophy',
     FR: 'Philosophie',
     ES: 'Filosofía',
+    DE: 'Philosophie',
   },
-  'politics-geopolitics': { EN: 'Politics', FR: 'Politique', ES: 'Política' },
+  'politics-geopolitics': {
+    EN: 'Politics',
+    FR: 'Politique',
+    ES: 'Política',
+    DE: 'Politik',
+  },
   'psychology-human-behavior': {
     EN: 'Psychology',
     FR: 'Psychologie',
     ES: 'Psicología',
+    DE: 'Psychologie',
   },
   'relationships-communication': {
     EN: 'Relationships',
     FR: 'Relations',
     ES: 'Relaciones',
+    DE: 'Beziehungen',
   },
-  'science-space': { EN: 'Science', FR: 'Sciences', ES: 'Ciencia' },
+  'science-space': {
+    EN: 'Science',
+    FR: 'Sciences',
+    ES: 'Ciencia',
+    DE: 'Wissenschaft',
+  },
   'self-improvement-productivity': {
     EN: 'Self-improvement',
     FR: 'Développement perso',
     ES: 'Desarrollo personal',
+    DE: 'Persönliche Entwicklung',
   },
   'social-media-internet-culture': {
     EN: 'Social media',
     FR: 'Réseaux sociaux',
     ES: 'Redes sociales',
+    DE: 'Soziale Medien',
   },
-  'sports-competition': { EN: 'Sport', FR: 'Sport', ES: 'Deporte' },
-  'technology-ai': { EN: 'Tech & AI', FR: 'Tech et IA', ES: 'Tecnología' },
-  'travel-cultures': { EN: 'Travel', FR: 'Voyages', ES: 'Viajes' },
+  'sports-competition': {
+    EN: 'Sport',
+    FR: 'Sport',
+    ES: 'Deporte',
+    DE: 'Sport',
+  },
+  'technology-ai': {
+    EN: 'Tech & AI',
+    FR: 'Tech et IA',
+    ES: 'Tecnología',
+    DE: 'Tech & KI',
+  },
+  'travel-cultures': {
+    EN: 'Travel',
+    FR: 'Voyages',
+    ES: 'Viajes',
+    DE: 'Reisen',
+  },
 };
 
 /** The word's first theme the learner also chose, if any. */

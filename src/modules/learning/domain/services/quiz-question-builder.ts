@@ -49,6 +49,16 @@ const PROMPTS: Record<
     wordType: (term) => `«${term}» es…`,
     usage: '¿Cuál suena bien?',
   },
+  [LanguageCode.DE]: {
+    meaning: (term) => `Was bedeutet „${term}“?`,
+    otherSense: (term) => `Welche weitere Bedeutung hat „${term}“?`,
+    synonym: (term) => `Was kommt „${term}“ am nächsten?`,
+    speedMeaning: (term) => `„${term}“ bedeutet…`,
+    speedSynonym: (term) => `Am nächsten an „${term}“…`,
+    antonym: (term) => `Das Gegenteil von „${term}“…`,
+    wordType: (term) => `„${term}“ ist…`,
+    usage: 'Was klingt richtig?',
+  },
 };
 
 /**

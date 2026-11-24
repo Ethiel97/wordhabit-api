@@ -22,6 +22,12 @@ const COPY: Record<string, (streak: number, atRisk: boolean) => Copy> = {
       ? `🔥 Tu racha de ${streak} días termina a medianoche. Toca para mantenerla viva.`
       : 'Empezaste ayer. Tu palabra del día te espera.',
   }),
+  DE: (streak, atRisk) => ({
+    title: `✨ Halte deine Serie am Leben!`,
+    body: atRisk
+      ? `🔥 Deine ${streak}-Tage-Serie endet um Mitternacht. Tippe, um sie fortzusetzen.`
+      : 'Du hast gestern angefangen. Dein Wort des Tages wartet.',
+  }),
 };
 
 export function getStreakRiskCopy(

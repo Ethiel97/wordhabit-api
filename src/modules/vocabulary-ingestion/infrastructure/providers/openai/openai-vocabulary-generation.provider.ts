@@ -24,7 +24,7 @@ import {
 } from '../../../domain/exploration-brief';
 import { VocabularyGenerationQuotaExceededError } from '../../../domain/errors/vocabulary-generation-quota-exceeded.error';
 
-const LANGUAGE_CODES = ['EN', 'FR', 'ES'] as const;
+const LANGUAGE_CODES = ['EN', 'FR', 'ES', 'DE'] as const;
 
 /**
  * Whether a provider error means the account is out of credit — the one

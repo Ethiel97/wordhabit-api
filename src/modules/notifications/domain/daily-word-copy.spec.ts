@@ -18,6 +18,17 @@ describe('dailyWordCopy', () => {
     );
   });
 
+  it('speaks German to a German reader', () => {
+    const copy = dailyWordCopy('DE', 'fernweh', 'travel-cultures');
+    expect(copy.title).toBe('✨ Dein Wort des Tages: Fernweh');
+    expect(copy.body).toBe(
+      'Ausgewählt aus deinem Thema Reisen. Tippe, um seine Bedeutung zu entdecken 🔥',
+    );
+    expect(dailyWordCopy('DE', 'Fernweh').body).toBe(
+      'Tippe, um seine Bedeutung zu entdecken und deine Serie fortzusetzen 🔥',
+    );
+  });
+
   it('falls back to the plain body for a slug it cannot label', () => {
     expect(dailyWordCopy('EN', 'serendipity', 'brand-new-theme').body).toBe(
       'Tap to discover what it means and keep your streak growing 🔥',

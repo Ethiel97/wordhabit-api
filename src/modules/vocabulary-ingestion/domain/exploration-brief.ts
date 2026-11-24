@@ -85,7 +85,7 @@ const SEMANTIC_FIELDS = [
  * Derived from the date and the language rather than stored: nothing to
  * migrate, and the same day always produces the same brief — so a failed
  * job that retries explores the same corner instead of drifting. The
- * language shifts the index so the three nightly batches do not all land
+ * language shifts the index so the nightly batches do not all land
  * on the same field.
  */
 export function buildExplorationBrief(params: {
@@ -96,7 +96,8 @@ export function buildExplorationBrief(params: {
   const { targetLanguage, count, on } = params;
 
   const day = Math.floor(on.getTime() / (24 * 60 * 60 * 1000));
-  const offset = Math.max(0, ['EN', 'FR', 'ES'].indexOf(targetLanguage)) * 5;
+  const offset =
+    Math.max(0, ['EN', 'FR', 'ES', 'DE'].indexOf(targetLanguage)) * 5;
 
   // Roughly a third each, remainder to intermediate. An even split
   // rather than a pyramid: the daily word is drawn per profile

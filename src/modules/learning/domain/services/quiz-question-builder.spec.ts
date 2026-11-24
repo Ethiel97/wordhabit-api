@@ -1,3 +1,4 @@
+import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 import { PartOfSpeech } from '../../../vocabulary/domain/entities/part-of-speech';
 import { QuizMode, QuizQuestionKind } from '../entities/quiz';
 import {
@@ -50,6 +51,23 @@ const scenario = {
 const fixed = () => 0;
 
 describe('buildQuizQuestions', () => {
+  it('asks every prompt in German for a German reader', () => {
+    const questions = buildQuizQuestions({
+      word: word({ term: 'Fernweh' }),
+      pool,
+      scenarios: [scenario],
+      mode: QuizMode.MASTERY,
+      promptLanguage: LanguageCode.DE,
+      random: fixed,
+    });
+
+    expect(questions[0].prompt).toBe('Was bedeutet „Fernweh“?');
+    for (const question of questions) {
+      // No English, French or Spanish question shape leaked through.
+      expect(question.prompt).not.toMatch(/What|Que |Qué|«/);
+    }
+  });
+
   it('keeps correctIndex honest through the shuffle', () => {
     // The one invariant everything rests on: whatever the shuffle did,
     // options[correctIndex] must be the right answer.

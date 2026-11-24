@@ -41,12 +41,20 @@ export const DEFINITION_BACKFILL_PAIRS: ReadonlyArray<{
   { targetLanguage: LanguageCode.FR, explanationLanguage: LanguageCode.FR },
   { targetLanguage: LanguageCode.ES, explanationLanguage: LanguageCode.FR },
   { targetLanguage: LanguageCode.EN, explanationLanguage: LanguageCode.FR },
+  { targetLanguage: LanguageCode.DE, explanationLanguage: LanguageCode.FR },
   { targetLanguage: LanguageCode.EN, explanationLanguage: LanguageCode.EN },
   { targetLanguage: LanguageCode.FR, explanationLanguage: LanguageCode.EN },
   { targetLanguage: LanguageCode.ES, explanationLanguage: LanguageCode.EN },
+  { targetLanguage: LanguageCode.DE, explanationLanguage: LanguageCode.EN },
   { targetLanguage: LanguageCode.ES, explanationLanguage: LanguageCode.ES },
   { targetLanguage: LanguageCode.EN, explanationLanguage: LanguageCode.ES },
   { targetLanguage: LanguageCode.FR, explanationLanguage: LanguageCode.ES },
+  { targetLanguage: LanguageCode.DE, explanationLanguage: LanguageCode.ES },
+  // The germanophone readership is the newest, so it comes last.
+  { targetLanguage: LanguageCode.DE, explanationLanguage: LanguageCode.DE },
+  { targetLanguage: LanguageCode.EN, explanationLanguage: LanguageCode.DE },
+  { targetLanguage: LanguageCode.FR, explanationLanguage: LanguageCode.DE },
+  { targetLanguage: LanguageCode.ES, explanationLanguage: LanguageCode.DE },
 ];
 
 export class VocabularyDailyScheduler {
@@ -55,8 +63,11 @@ export class VocabularyDailyScheduler {
   constructor(@InjectQueue(VOCABULARY_QUEUE) private readonly queue: Queue) {}
 
   /**
-   * English only: every planned market learns English. Fifteen a night
-   * for the francophone readership the app serves today; the
+   * Fifteen English and fifteen German words a night, both explained in
+   * French for the francophone readership the app serves today. German
+   * gets its own nightly batch because its corpus starts empty: the
+   * definition backfill only adds prose to words that already exist, so
+   * without one nobody could be served a German word. The
    * English-explained batch feeds a readership that comes later, so it
    * runs weekly. The cap in the handler bounds the bill either way; the
    * pace is what keeps the backfills level and a bad batch small.
@@ -70,6 +81,11 @@ export class VocabularyDailyScheduler {
   async enqueueGeneration() {
     await this.enqueueGenerationJob('daily', {
       targetLanguage: LanguageCode.EN,
+      explanationLanguage: LanguageCode.FR,
+      count: DAILY_BATCH_SIZE,
+    });
+    await this.enqueueGenerationJob('daily', {
+      targetLanguage: LanguageCode.DE,
       explanationLanguage: LanguageCode.FR,
       count: DAILY_BATCH_SIZE,
     });

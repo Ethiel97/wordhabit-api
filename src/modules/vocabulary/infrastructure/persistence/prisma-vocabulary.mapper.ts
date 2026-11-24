@@ -49,6 +49,8 @@ export class PrismaVocabularyMapper {
         return 'ES';
       case LanguageCode.FR:
         return 'FR';
+      case LanguageCode.DE:
+        return 'DE';
       default: {
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         throw new Error(`Unhandled language code: ${value}`);
@@ -64,6 +66,8 @@ export class PrismaVocabularyMapper {
         return LanguageCode.ES;
       case 'FR':
         return LanguageCode.FR;
+      case 'DE':
+        return LanguageCode.DE;
       default: {
         // The exhaustiveness guard: a new language in the Prisma enum
         // must fail here rather than be mislabelled as English.
