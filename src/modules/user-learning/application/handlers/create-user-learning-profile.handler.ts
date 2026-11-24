@@ -95,7 +95,7 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
       {
         userId: user.id,
         targetLanguage: command.targetLanguage,
-        interfaceLanguage: command.interfaceLanguage,
+        explanationLanguage: command.explanationLanguage,
         difficulty: command.difficulty,
         themeSlugs: normalizedThemeSlugs,
         reminderSlot: command.reminderSlot,
@@ -106,7 +106,7 @@ export class CreateUserLearningProfileHandler implements ICommandHandler<
     );
     return {
       createdAt: profile.createdAt,
-      interfaceLanguage: profile.interfaceLanguage,
+      explanationLanguage: profile.explanationLanguage,
       isActive: profile.isActive,
       id: profile.id,
       targetLanguage: profile.targetLanguage,

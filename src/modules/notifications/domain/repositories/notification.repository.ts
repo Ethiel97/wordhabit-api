@@ -39,7 +39,7 @@ export type DueRecipient = {
   userId: string;
   /** The profile whose word is announced; absent on person-level channels. */
   userLearningProfileId?: string;
-  interfaceLanguage: string;
+  explanationLanguage: string;
   /** The profile's topics, so the push can say which one the word came from. */
   themeSlugs: string[];
   tokens: string[];
@@ -53,7 +53,7 @@ export type FindStreakRiskRecipientsParams = {
 
 export type StreakRiskRecipient = {
   userId: string;
-  interfaceLanguage: string;
+  explanationLanguage: string;
   currentStreak: number;
   tokens: string[];
 };

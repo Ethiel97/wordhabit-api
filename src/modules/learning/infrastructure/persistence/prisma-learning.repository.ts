@@ -935,7 +935,7 @@ export class PrismaLearningRepository implements LearningRepository {
   async findCandidateWord(
     profile: UserLearningProfile,
   ): Promise<VocabularyWord | null> {
-    const { themeSlugs, targetLanguage, difficulty, interfaceLanguage } =
+    const { themeSlugs, targetLanguage, difficulty, explanationLanguage } =
       profile;
 
     const required: Prisma.VocabularyWordWhereInput = {
@@ -968,7 +968,7 @@ export class PrismaLearningRepository implements LearningRepository {
     // users report as broken. The unconstrained ladder stays as the
     // fallback — a wrong-language definition beats no word at all.
     const explainable: Prisma.VocabularyWordWhereInput = {
-      definitions: { some: { explanationLanguage: interfaceLanguage } },
+      definitions: { some: { explanationLanguage: explanationLanguage } },
     };
 
     const attempts = [

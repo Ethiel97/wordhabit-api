@@ -8,6 +8,7 @@ import {
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 import { NotificationSlot } from '../../../notifications/domain/entities/notification';
 import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
+import { FromLegacyInterfaceLanguage } from './legacy-interface-language';
 
 /**
  * A true PATCH: every field is optional and only the ones present are
@@ -22,9 +23,20 @@ export class UpdateUserLearningProfileDto {
   @IsNotEmpty({ each: true })
   themeSlugs?: string[];
 
+  /** The language the learner reads; definitions are written in it. */
+  @FromLegacyInterfaceLanguage()
   @IsOptional()
   @IsEnum(LanguageCode)
-  interfaceLanguage: LanguageCode;
+  explanationLanguage?: LanguageCode;
+
+  /**
+   * Deprecated alias of `explanationLanguage`, declared only so the
+   * global pipe does not reject installed versions that still send it.
+   * See legacy-interface-language.ts.
+   */
+  @IsOptional()
+  @IsEnum(LanguageCode)
+  interfaceLanguage?: LanguageCode;
 
   @IsEnum(LanguageCode)
   @IsOptional()

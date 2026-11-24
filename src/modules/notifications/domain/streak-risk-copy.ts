@@ -32,8 +32,9 @@ const COPY: Record<string, (streak: number, atRisk: boolean) => Copy> = {
 
 export function getStreakRiskCopy(
   currentStreak: number,
-  interfaceLanguage: string,
+  explanationLanguage: string,
 ): Copy {
-  const language = interfaceLanguage in COPY ? interfaceLanguage : COPY.EN.name;
+  const language =
+    explanationLanguage in COPY ? explanationLanguage : COPY.EN.name;
   return COPY[language](currentStreak, currentStreak >= MIN_STREAK_AT_RISK);
 }

@@ -161,11 +161,12 @@ export function sharedTopic(
 }
 
 export function dailyWordCopy(
-  interfaceLanguage: string,
+  explanationLanguage: string,
   term: string,
   topicSlug?: string,
 ): Copy {
-  const language = interfaceLanguage in COPY ? interfaceLanguage : COPY.EN.name;
+  const language =
+    explanationLanguage in COPY ? explanationLanguage : COPY.EN.name;
   const topic = topicSlug ? THEME_LABELS[topicSlug]?.[language] : undefined;
   return COPY[language](term.charAt(0).toUpperCase() + term.slice(1), topic);
 }

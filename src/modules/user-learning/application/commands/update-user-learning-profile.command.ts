@@ -8,7 +8,7 @@ export class UpdateUserLearningProfileCommand extends Command<UpdateUserLearning
     public readonly userId: string,
     public readonly profileId: string,
     public readonly themeSlugs?: string[],
-    public readonly interfaceLanguage?: LanguageCode,
+    public readonly explanationLanguage?: LanguageCode,
     public readonly targetLanguage?: LanguageCode,
     public readonly difficulty?: WordDifficulty,
   ) {

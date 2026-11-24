@@ -52,7 +52,7 @@ type ProfileRow = {
   userId: string;
   isActive: boolean;
   isMain: boolean;
-  interfaceLanguage: string;
+  explanationLanguage: string;
   targetLanguage: string;
   difficulty: string | null;
   reminderSlot: string | null;
@@ -67,7 +67,7 @@ function toDomain(row: ProfileRow): UserLearningProfile {
     userId: row.userId,
     isActive: row.isActive,
     isMain: row.isMain,
-    interfaceLanguage: row.interfaceLanguage as LanguageCode,
+    explanationLanguage: row.explanationLanguage as LanguageCode,
     targetLanguage: row.targetLanguage as LanguageCode,
     difficulty: (row.difficulty as WordDifficulty | null) ?? undefined,
     reminderSlot: (row.reminderSlot as NotificationSlot | null) ?? undefined,
@@ -157,7 +157,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
     const {
       profileId,
       themeSlugs,
-      interfaceLanguage,
+      explanationLanguage,
       targetLanguage,
       difficulty,
       reminderSlot,
@@ -183,7 +183,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
               },
             }
           : {}),
-        ...(interfaceLanguage != null ? { interfaceLanguage } : {}),
+        ...(explanationLanguage != null ? { explanationLanguage } : {}),
         ...(targetLanguage != null ? { targetLanguage } : {}),
         ...(difficulty != null ? { difficulty } : {}),
         ...(reminderSlot !== undefined ? { reminderSlot } : {}),
@@ -268,7 +268,7 @@ export class PrismaUserLearningRepository implements UserLearningRepository {
           targetLanguage: params.targetLanguage,
           isActive: true,
           isMain: params.isMain,
-          interfaceLanguage: params.interfaceLanguage,
+          explanationLanguage: params.explanationLanguage,
           difficulty: params.difficulty,
           reminderSlot: params.reminderSlot,
           themes: {

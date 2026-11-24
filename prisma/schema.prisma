@@ -352,12 +352,15 @@ model EmailVerificationCode {
 }
 
 model UserLearningProfile {
-  id                String          @id @default(cuid())
-  userId            String
-  isActive          Boolean         @default(true)
-  interfaceLanguage LanguageCode
-  targetLanguage    LanguageCode
-  difficulty        WordDifficulty?
+  id                  String          @id @default(cuid())
+  userId              String
+  isActive            Boolean         @default(true)
+  /// The language the learner reads: definitions, quiz prompts and
+  /// notifications are written in it. The column keeps its original
+  /// name so the rename needs no migration a rolling deploy would race.
+  explanationLanguage LanguageCode    @map("interfaceLanguage")
+  targetLanguage      LanguageCode
+  difficulty          WordDifficulty?
 
   /// The one profile a downgrade keeps writable, and the only one that
   /// cannot be deleted. Distinct from `isActive`, which is merely what
@@ -515,8 +518,8 @@ model UserLearningStreak {
   /// The chain restarts at 1 the moment activity resumes, so the length
   /// that was lost is gone from currentStreak. Both fields are cleared
   /// once a repair uses them, or overwritten by the next break.
-  brokenStreak       Int?
-  brokenOnLocalDate  String? @db.VarChar(10)
+  brokenStreak      Int?
+  brokenOnLocalDate String? @db.VarChar(10)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

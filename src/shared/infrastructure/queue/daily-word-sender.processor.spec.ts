@@ -14,7 +14,7 @@ const recipient = (
 ): DueRecipient => ({
   userId: 'u1',
   userLearningProfileId,
-  interfaceLanguage: 'EN',
+  explanationLanguage: 'EN',
   themeSlugs: [],
   tokens: ['t1'],
   ...overrides,

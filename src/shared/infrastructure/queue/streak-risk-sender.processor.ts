@@ -95,7 +95,7 @@ export class StreakRiskSenderProcessor extends SentryReportingWorkerHost {
   private compose(recipient: StreakRiskRecipient): PushMessage {
     const copy = getStreakRiskCopy(
       recipient.currentStreak,
-      recipient.interfaceLanguage,
+      recipient.explanationLanguage,
     );
 
     return {

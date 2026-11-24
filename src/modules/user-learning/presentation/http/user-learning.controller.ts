@@ -11,6 +11,7 @@ import {
 import { CreateUserLearningProfileRequestDto } from '../../application/dtos/create-user-learning-profile.request.dto';
 import { CreateUserLearningProfileCommand } from '../../application/commands/create-user-learning-profile.command';
 import { ApiSuccessResponse } from '../../../../shared/presentation/http/api-success-response';
+import { withLegacyInterfaceLanguage } from '../../application/dtos/legacy-interface-language';
 import { GetActiveUserLearningProfileQuery } from '../../application/queries/get-active-user-learning-profile.query';
 import { GetUserLearningProfilesQuery } from '../../application/queries/get-user-learning-profiles.query';
 import { UpdateUserLearningProfileDto } from '../../application/dtos/update-user-learning-profile.dto';
@@ -40,7 +41,7 @@ export class UserLearningController {
       new CreateUserLearningProfileCommand(
         user.email,
         user.name,
-        body.interfaceLanguage,
+        body.explanationLanguage,
         body.targetLanguage,
         body.themeSlugs,
         body.difficulty,
@@ -48,7 +49,7 @@ export class UserLearningController {
       ),
     );
 
-    return ApiSuccessResponse.of(result);
+    return ApiSuccessResponse.of(withLegacyInterfaceLanguage(result));
   }
 
   @Get(USER_LEARNING.GET_ACTIVE_PROFILE)
@@ -57,7 +58,7 @@ export class UserLearningController {
       new GetActiveUserLearningProfileQuery(user.id),
     );
 
-    return ApiSuccessResponse.of(result);
+    return ApiSuccessResponse.of(withLegacyInterfaceLanguage(result));
   }
 
   @Get(USER_LEARNING.LIST_PROFILES)
@@ -66,7 +67,7 @@ export class UserLearningController {
       new GetUserLearningProfilesQuery(user.id),
     );
 
-    return ApiSuccessResponse.of(result);
+    return ApiSuccessResponse.of(withLegacyInterfaceLanguage(result));
   }
 
   @Patch(USER_LEARNING.ACTIVATE_PROFILE)
@@ -78,7 +79,7 @@ export class UserLearningController {
       new ActivateUserLearningProfileCommand(user.id, profileId),
     );
 
-    return ApiSuccessResponse.of(result);
+    return ApiSuccessResponse.of(withLegacyInterfaceLanguage(result));
   }
 
   @Patch(USER_LEARNING.UPDATE_PROFILE)
@@ -92,13 +93,13 @@ export class UserLearningController {
         user.id,
         profileId,
         body.themeSlugs,
-        body.interfaceLanguage,
+        body.explanationLanguage,
         body.targetLanguage,
         body.difficulty,
       ),
     );
 
-    return ApiSuccessResponse.of(result);
+    return ApiSuccessResponse.of(withLegacyInterfaceLanguage(result));
   }
 
   @Patch(USER_LEARNING.SWAP_REMINDER)
@@ -111,7 +112,7 @@ export class UserLearningController {
       new SwapReminderSlotCommand(user.id, profileId, body.reminderSlot),
     );
 
-    return ApiSuccessResponse.of(result);
+    return ApiSuccessResponse.of(withLegacyInterfaceLanguage(result));
   }
 
   @Delete(USER_LEARNING.DELETE_PROFILE)
@@ -123,6 +124,6 @@ export class UserLearningController {
       new DeleteUserLearningProfileCommand(user.id, profileId),
     );
 
-    return ApiSuccessResponse.of(result);
+    return ApiSuccessResponse.of(withLegacyInterfaceLanguage(result));
   }
 }

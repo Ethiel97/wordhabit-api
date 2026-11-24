@@ -8,13 +8,25 @@ import {
 } from 'class-validator';
 import { WordDifficulty } from '../../../vocabulary/domain/entities/word-difficulty';
 import { NotificationSlot } from '../../../notifications/domain/entities/notification';
+import { FromLegacyInterfaceLanguage } from './legacy-interface-language';
 
 export class CreateUserLearningProfileRequestDto {
   @IsIn(Object.values(LanguageCode))
   targetLanguage!: LanguageCode;
 
+  /** The language the learner reads; definitions are written in it. */
+  @FromLegacyInterfaceLanguage()
   @IsIn(Object.values(LanguageCode))
-  interfaceLanguage!: LanguageCode;
+  explanationLanguage!: LanguageCode;
+
+  /**
+   * Deprecated alias of `explanationLanguage`, declared only so the
+   * global pipe does not reject installed versions that still send it.
+   * See legacy-interface-language.ts.
+   */
+  @IsOptional()
+  @IsIn(Object.values(LanguageCode))
+  interfaceLanguage?: LanguageCode;
 
   /**
    * How hard the daily words should be.

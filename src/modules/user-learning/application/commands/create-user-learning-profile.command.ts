@@ -7,7 +7,7 @@ export class CreateUserLearningProfileCommand extends Command<CreateUserLearning
   constructor(
     public readonly email: string,
     public readonly name: string,
-    public readonly interfaceLanguage: LanguageCode,
+    public readonly explanationLanguage: LanguageCode,
     public readonly targetLanguage: LanguageCode,
     public readonly themeSlugs: string[],
     public readonly difficulty?: WordDifficulty,
@@ -21,7 +21,7 @@ export interface CreateUserLearningProfileResult {
   id: string;
   userId: string;
   isActive: boolean;
-  interfaceLanguage: LanguageCode;
+  explanationLanguage: LanguageCode;
   targetLanguage: LanguageCode;
   difficulty?: WordDifficulty;
   reminderSlot?: NotificationSlot;

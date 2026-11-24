@@ -13,7 +13,7 @@ export interface GetActiveUserLearningProfileResult {
   userId: string;
   isActive: boolean;
   isMain: boolean;
-  interfaceLanguage: string;
+  explanationLanguage: string;
   targetLanguage: string;
   difficulty?: WordDifficulty;
   reminderSlot?: NotificationSlot;

@@ -24,7 +24,7 @@ export interface UpdateUserLearningProfileParams {
   profileId: string;
   /** Omitted leaves the current themes untouched. */
   themeSlugs?: string[];
-  interfaceLanguage?: LanguageCode;
+  explanationLanguage?: LanguageCode;
   targetLanguage?: LanguageCode;
   difficulty?: WordDifficulty;
   /** Null clears the reminder; undefined leaves it alone. */
@@ -45,7 +45,7 @@ export interface CreateUserParams {
 export interface CreateUserLearningProfileParams {
   userId: string;
   targetLanguage: LanguageCode;
-  interfaceLanguage: LanguageCode;
+  explanationLanguage: LanguageCode;
   difficulty?: WordDifficulty;
   themeSlugs: string[];
   isMain: boolean;

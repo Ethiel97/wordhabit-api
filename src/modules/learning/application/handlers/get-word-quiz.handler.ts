@@ -47,7 +47,7 @@ export class GetWordQuizHandler implements IQueryHandler<
 
     const material = await this.quizRepository.findQuizWordMaterial({
       wordId: query.wordId,
-      preferredLanguage: profile?.interfaceLanguage ?? null,
+      preferredLanguage: profile?.explanationLanguage ?? null,
     });
     if (!material) {
       throw new NotFoundException('Unknown word.');

@@ -7,7 +7,7 @@ export interface UserLearningProfile {
   userId: string;
   isActive: boolean;
   isMain: boolean;
-  interfaceLanguage: LanguageCode;
+  explanationLanguage: LanguageCode;
   targetLanguage: LanguageCode;
   /** Absent on profiles created before setup asked for a level. */
   difficulty?: WordDifficulty;

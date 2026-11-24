@@ -78,7 +78,7 @@ export class UpdateUserLearningProfileHandler implements ICommandHandler<
     const updated = await this.userLearningRepository.updateUserLearningProfile(
       {
         themeSlugs: normalizedThemeSlugs,
-        interfaceLanguage: command.interfaceLanguage,
+        explanationLanguage: command.explanationLanguage,
         targetLanguage: command.targetLanguage,
         profileId: command.profileId,
         difficulty: command.difficulty,

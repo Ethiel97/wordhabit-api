@@ -3,6 +3,7 @@ import { CommandBus } from '@nestjs/cqrs';
 import { CreateUserLearningProfileRequestDto } from '../../application/dtos/create-user-learning-profile.request.dto';
 import { CreateUserLearningProfileCommand } from '../../application/commands/create-user-learning-profile.command';
 import { ApiSuccessResponse } from '../../../../shared/presentation/http/api-success-response';
+import { withLegacyInterfaceLanguage } from '../../application/dtos/legacy-interface-language';
 import { ONBOARDING } from '../../../../shared/presentation/http/endpoints';
 import { CurrentUser } from '../../../auth/presentation/current-user.decoraor';
 import type { AuthenticatedUser } from '../../../auth/domain/entities/authenticated-user';
@@ -18,14 +19,14 @@ export class OnboardingController {
     @Body() body: CreateUserLearningProfileRequestDto,
   ) {
     const result = await this.commandBus.execute(
-      // The command takes interfaceLanguage *before* targetLanguage.
+      // The command takes explanationLanguage *before* targetLanguage.
       // These two were passed the other way round, which silently
       // reversed the pair — invisible while both were EN, and wrong the
       // moment setup let a user learn French.
       new CreateUserLearningProfileCommand(
         user.email,
         user.name,
-        body.interfaceLanguage,
+        body.explanationLanguage,
         body.targetLanguage,
         body.themeSlugs,
         body.difficulty,
@@ -36,6 +37,6 @@ export class OnboardingController {
       ),
     );
 
-    return ApiSuccessResponse.of(result);
+    return ApiSuccessResponse.of(withLegacyInterfaceLanguage(result));
   }
 }

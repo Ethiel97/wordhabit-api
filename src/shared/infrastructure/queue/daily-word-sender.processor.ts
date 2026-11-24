@@ -151,7 +151,7 @@ export class DailyWordSenderProcessor extends SentryReportingWorkerHost {
     profileId: string,
   ): PushMessage {
     const copy = dailyWordCopy(
-      recipient.interfaceLanguage,
+      recipient.explanationLanguage,
       word.term,
       word.topic,
     );

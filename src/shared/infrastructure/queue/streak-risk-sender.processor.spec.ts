@@ -11,7 +11,7 @@ const recipient = (
   overrides: Partial<StreakRiskRecipient> = {},
 ): StreakRiskRecipient => ({
   userId: 'u1',
-  interfaceLanguage: 'EN',
+  explanationLanguage: 'EN',
   currentStreak: 4,
   tokens: ['t1'],
   ...overrides,
@@ -123,7 +123,7 @@ describe('StreakRiskSenderProcessor', () => {
 
   it('sends a payload the app routes, on the channel it created', async () => {
     const { processor, send } = build({
-      recipients: [recipient({ currentStreak: 4, interfaceLanguage: 'FR' })],
+      recipients: [recipient({ currentStreak: 4, explanationLanguage: 'FR' })],
     });
 
     await processor.process(job());

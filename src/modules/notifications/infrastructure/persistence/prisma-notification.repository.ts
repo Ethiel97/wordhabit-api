@@ -174,7 +174,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
       select: {
         id: true,
         userId: true,
-        interfaceLanguage: true,
+        explanationLanguage: true,
         themes: { select: { theme: { select: { slug: true } } } },
         user: {
           select: {
@@ -190,7 +190,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
     return rows.map((row) => ({
       userId: row.userId,
       userLearningProfileId: row.id,
-      interfaceLanguage: row.interfaceLanguage,
+      explanationLanguage: row.explanationLanguage,
       themeSlugs: row.themes.map((entry) => entry.theme.slug),
       tokens: row.user.devices.map((device) => device.token),
     }));
@@ -250,7 +250,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
             userLearningProfiles: {
               orderBy: [{ isActive: 'desc' }, { isMain: 'desc' }],
               take: 1,
-              select: { interfaceLanguage: true },
+              select: { explanationLanguage: true },
             },
           },
         },
@@ -259,8 +259,8 @@ export class PrismaNotificationRepository implements NotificationRepository {
 
     return rows.map((row) => ({
       userId: row.userId,
-      interfaceLanguage:
-        row.user.userLearningProfiles[0]?.interfaceLanguage ?? 'EN',
+      explanationLanguage:
+        row.user.userLearningProfiles[0]?.explanationLanguage ?? 'EN',
       currentStreak: row.currentStreak,
       tokens: row.user.devices.map((device) => device.token),
     }));
