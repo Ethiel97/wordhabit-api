@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { UserLearningController } from './presentation/http/user-learning.controller';
 import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaUserLearningRepository } from './infrastructure/persistence/prisma-user-learning.repository';
@@ -14,6 +15,7 @@ import { EnsureThemesExistService } from './application/services/ensure-themes-e
 import { DeleteUserLearningProfileHandler } from './application/handlers/delete-user-learning-profile.handler';
 import { SubscriptionModule } from '../subscription/subscription.module';
 import { SwapReminderSlotHandler } from './application/handlers/swap-reminder-slot.handler';
+import { ClientLanguagesInterceptor } from './presentation/http/client-languages.interceptor';
 
 const commandHandlers = [
   ActivateUserLearningProfileHandler,
@@ -39,6 +41,12 @@ const queryHandlers = [
     {
       provide: USER_LEARNING_REPOSITORY,
       useClass: PrismaUserLearningRepository,
+    },
+    // Global: every response, whichever module built it, must stay
+    // decodable by the client that asked. See the interceptor.
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClientLanguagesInterceptor,
     },
   ],
   exports: [USER_LEARNING_REPOSITORY],
