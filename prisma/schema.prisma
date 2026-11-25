@@ -544,10 +544,11 @@ model UserStreakRepair {
   /// day can never be bought twice.
   repairedLocalDate String @db.VarChar(10)
 
-  /// When the repair was spent. The quota is one per calendar month, and
-  /// it counts the month a learner reached for a repair, not the month of
+  /// When the repair was spent. The quota (STREAK_REPAIRS_PER_MONTH)
+  /// counts the month a learner reached for a repair, not the month of
   /// the day being filled: a repair bought on the 1st for the 31st is
-  /// this month's.
+  /// this month's. Rows written by one repair share this timestamp, which
+  /// is how they are counted as one.
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

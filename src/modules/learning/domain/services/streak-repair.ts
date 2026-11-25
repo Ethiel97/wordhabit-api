@@ -3,8 +3,42 @@ import { daysBetweenLocalDates, shiftLocalDate } from './local-date';
 /** How long after a break a repair is still offered, in days. */
 export const STREAK_REPAIR_WINDOW_DAYS = 3;
 
-/** Repairs a Pro learner may spend per calendar month. */
-export const STREAK_REPAIRS_PER_MONTH = 1;
+/**
+ * Repairs a Pro learner may spend per calendar month.
+ *
+ * Sent to clients as `repairsPerMonth` beside what is left, so the app
+ * words the allowance from this number: changing it needs no release.
+ */
+export const STREAK_REPAIRS_PER_MONTH = 3;
+
+/**
+ * Rows of one repair are written together, one per day it fills, so
+ * they share their timestamp to within the write; two separate repairs
+ * each need a break of their own, days apart.
+ */
+const SAME_REPAIR_WITHIN_MS = 60_000;
+
+/**
+ * How many repairs a set of stored rows stands for.
+ *
+ * A repair stores one row per day it fills, so counting rows charged a
+ * two-day repair twice — invisible while the allowance was one, a lost
+ * repair the moment it grew. Rows are grouped by when they were
+ * written instead.
+ */
+export function countRepairsSpent(spentAt: readonly Date[]): number {
+  const times = spentAt.map((date) => date.getTime()).sort((a, b) => a - b);
+
+  let repairs = 0;
+  let previous: number | undefined;
+  for (const time of times) {
+    if (previous === undefined || time - previous > SAME_REPAIR_WITHIN_MS) {
+      repairs += 1;
+    }
+    previous = time;
+  }
+  return repairs;
+}
 
 export type BrokenStreakSnapshot = {
   /** Length of the chain the gap ended, or null if none is pending. */
@@ -19,7 +53,7 @@ export type StreakRepairRefusal =
   | 'NOTHING_TO_REPAIR'
   /** The break is older than the window allows. */
   | 'WINDOW_CLOSED'
-  /** One repair per calendar month. */
+  /** The month's allowance is spent. */
   | 'ALREADY_REPAIRED_THIS_MONTH';
 
 export type StreakRepairAssessment =
@@ -57,12 +91,13 @@ export function assessStreakRepair({
   streak,
   practisedLocalDates,
   todayLocalDate,
-  repairedThisMonth,
+  allowanceSpent,
 }: {
   streak: BrokenStreakSnapshot;
   practisedLocalDates: readonly string[];
   todayLocalDate: string;
-  repairedThisMonth: boolean;
+  /** Whether this month's [STREAK_REPAIRS_PER_MONTH] are all used. */
+  allowanceSpent: boolean;
 }): StreakRepairAssessment {
   const { brokenStreak, brokenOnLocalDate } = streak;
 
@@ -85,7 +120,7 @@ export function assessStreakRepair({
     return { repairable: false, reason: 'WINDOW_CLOSED' };
   }
 
-  if (repairedThisMonth) {
+  if (allowanceSpent) {
     return { repairable: false, reason: 'ALREADY_REPAIRED_THIS_MONTH' };
   }
 

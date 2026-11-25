@@ -69,7 +69,7 @@ export class RepairStreakHandler implements ICommandHandler<
       },
       practisedLocalDates,
       todayLocalDate: localDate,
-      repairedThisMonth: spentThisMonth >= STREAK_REPAIRS_PER_MONTH,
+      allowanceSpent: spentThisMonth >= STREAK_REPAIRS_PER_MONTH,
     });
 
     if (!assessment.repairable) {
@@ -104,6 +104,7 @@ export class RepairStreakHandler implements ICommandHandler<
         0,
         STREAK_REPAIRS_PER_MONTH - (spentThisMonth + 1),
       ),
+      repairsPerMonth: STREAK_REPAIRS_PER_MONTH,
     };
   }
 

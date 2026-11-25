@@ -1,4 +1,8 @@
-import { applyStreakRepair, assessStreakRepair } from './streak-repair';
+import {
+  applyStreakRepair,
+  assessStreakRepair,
+  countRepairsSpent,
+} from './streak-repair';
 import type { BrokenStreakSnapshot } from './streak-repair';
 
 /** A 20-day chain that ended on the 14th. */
@@ -15,13 +19,13 @@ const assess = (params: {
   streak?: BrokenStreakSnapshot;
   practised?: string[];
   today: string;
-  repairedThisMonth?: boolean;
+  allowanceSpent?: boolean;
 }) =>
   assessStreakRepair({
     streak: params.streak ?? broken(),
     practisedLocalDates: params.practised ?? [],
     todayLocalDate: params.today,
-    repairedThisMonth: params.repairedThisMonth ?? false,
+    allowanceSpent: params.allowanceSpent ?? false,
   });
 
 describe('assessStreakRepair', () => {
@@ -122,7 +126,7 @@ describe('assessStreakRepair', () => {
   });
 
   it('refuses a second repair in the same calendar month', () => {
-    const result = assess({ today: '2026-08-16', repairedThisMonth: true });
+    const result = assess({ today: '2026-08-16', allowanceSpent: true });
 
     expect(result).toEqual({
       repairable: false,
@@ -199,5 +203,34 @@ describe('applyStreakRepair', () => {
     // 16th would let today be counted a second time tomorrow.
     expect(repaired.lastActivityLocalDate).toBe('2026-08-17');
     expect(repaired.currentStreak).toBe(23);
+  });
+});
+
+describe('countRepairsSpent', () => {
+  const at = (iso: string) => new Date(iso);
+
+  it('counts a repair that filled two days once', () => {
+    // One repair writes one row per day it fills, in a single write.
+    expect(
+      countRepairsSpent([
+        at('2026-11-10T08:00:00.000Z'),
+        at('2026-11-10T08:00:00.000Z'),
+      ]),
+    ).toBe(1);
+  });
+
+  it('counts repairs written days apart separately', () => {
+    expect(
+      countRepairsSpent([
+        at('2026-11-20T19:00:00.000Z'),
+        at('2026-11-03T07:30:00.000Z'),
+        at('2026-11-03T07:30:00.004Z'),
+        at('2026-11-12T21:15:00.000Z'),
+      ]),
+    ).toBe(3);
+  });
+
+  it('counts nothing for a month without repairs', () => {
+    expect(countRepairsSpent([])).toBe(0);
   });
 });

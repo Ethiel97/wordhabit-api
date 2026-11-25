@@ -531,7 +531,10 @@ export interface LearnerProgressRepository {
    */
   recordStreakRepairs(params: RecordStreakRepairsParams): Promise<void>;
 
-  /** How many repairs the learner has spent in a calendar month. */
+  /**
+   * How many repairs the learner has spent in a calendar month — repairs,
+   * not stored days: one repair can fill several.
+   */
   countStreakRepairsInMonth(
     params: CountStreakRepairsInMonthParams,
   ): Promise<number>;

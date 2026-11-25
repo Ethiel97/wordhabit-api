@@ -2,6 +2,7 @@ import { RepairStreakHandler } from './repair-streak.handler';
 import { RepairStreakCommand } from '../commands/repair-streak.command';
 import { StreakRepairUnavailableError } from '../errors/streak-repair-unavailable.error';
 import type { UserLearningStreak } from '../../domain/entities/user-learning-streak';
+import { STREAK_REPAIRS_PER_MONTH } from '../../domain/services/streak-repair';
 
 type Overrides = {
   isPro?: boolean;
@@ -80,7 +81,8 @@ describe('RepairStreakHandler', () => {
 
     expect(result.currentStreak).toBe(21);
     expect(result.repairedLocalDates).toEqual(['2026-08-15']);
-    expect(result.repairsLeftThisMonth).toBe(0);
+    expect(result.repairsLeftThisMonth).toBe(STREAK_REPAIRS_PER_MONTH - 1);
+    expect(result.repairsPerMonth).toBe(STREAK_REPAIRS_PER_MONTH);
 
     expect(record).toHaveBeenCalledWith({
       userId: 'user-1',
@@ -125,8 +127,18 @@ describe('RepairStreakHandler', () => {
     expect(progressRepository.findUserLearningStreak).not.toHaveBeenCalled();
   });
 
-  it('refuses once the month’s repair is spent', async () => {
-    const { handler } = setup({ repairsThisMonth: 1 });
+  it('still repairs while some of the allowance is left', async () => {
+    const { handler } = setup({
+      repairsThisMonth: STREAK_REPAIRS_PER_MONTH - 1,
+    });
+
+    const result = await run(handler);
+
+    expect(result.repairsLeftThisMonth).toBe(0);
+  });
+
+  it('refuses once the month’s allowance is spent', async () => {
+    const { handler } = setup({ repairsThisMonth: STREAK_REPAIRS_PER_MONTH });
 
     await expect(run(handler)).rejects.toMatchObject({
       reason: 'ALREADY_REPAIRED_THIS_MONTH',

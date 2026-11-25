@@ -85,6 +85,8 @@ export type StreakRepairOffer = {
   restoredStreak: number;
   /** Repairs the learner has left this calendar month. */
   repairsLeftThisMonth: number;
+  /** The monthly allowance itself, so clients never hard-code it. */
+  repairsPerMonth: number;
 };
 
 /** The outcome of yesterday's recall, once it has been answered. */

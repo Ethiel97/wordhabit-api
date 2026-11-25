@@ -238,6 +238,7 @@ export class GetLearningDashboardHandler implements IQueryHandler<
       brokenOnLocalDate: null,
       restoredStreak: 0,
       repairsLeftThisMonth,
+      repairsPerMonth: STREAK_REPAIRS_PER_MONTH,
     };
 
     if (!streak?.brokenOnLocalDate) return unavailable;
@@ -265,7 +266,7 @@ export class GetLearningDashboardHandler implements IQueryHandler<
       },
       practisedLocalDates: activity.map((day) => day.date),
       todayLocalDate: query.localDate,
-      repairedThisMonth: spentThisMonth >= STREAK_REPAIRS_PER_MONTH,
+      allowanceSpent: spentThisMonth >= STREAK_REPAIRS_PER_MONTH,
     });
 
     if (!assessment.repairable) return unavailable;
@@ -277,6 +278,7 @@ export class GetLearningDashboardHandler implements IQueryHandler<
       brokenOnLocalDate: streak.brokenOnLocalDate,
       restoredStreak: assessment.restoredStreak,
       repairsLeftThisMonth,
+      repairsPerMonth: STREAK_REPAIRS_PER_MONTH,
     };
   }
 }

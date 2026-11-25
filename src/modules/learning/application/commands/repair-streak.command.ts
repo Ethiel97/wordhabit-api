@@ -28,4 +28,6 @@ export type RepairStreakResult = {
   repairedLocalDates: string[];
   /** Repairs left this calendar month, after this one. */
   repairsLeftThisMonth: number;
+  /** The monthly allowance itself, so clients never hard-code it. */
+  repairsPerMonth: number;
 };

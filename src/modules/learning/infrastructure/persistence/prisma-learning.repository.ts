@@ -46,6 +46,7 @@ import { PrismaLearningMapper } from './prisma-learning.mapper';
 import { UserLearningStreak } from '../../domain/entities/user-learning-streak';
 import { FavoriteWord } from '../../domain/entities/favorite-word';
 import { instantToLocalDate } from '../../domain/services/local-date';
+import { countRepairsSpent } from '../../domain/services/streak-repair';
 import { BadgeCode } from '../../domain/entities/badge';
 import { LanguageCode } from '../../../vocabulary/domain/entities/language-code';
 import {
@@ -662,12 +663,16 @@ export class PrismaLearningRepository implements LearningRepository {
     const to = new Date(from);
     to.setUTCMonth(to.getUTCMonth() + 1);
 
-    return this.prisma.userStreakRepair.count({
+    // Repairs, not rows: one repair writes a row per day it fills.
+    const rows = await this.prisma.userStreakRepair.findMany({
       where: {
         userId: params.userId,
         createdAt: { gte: from, lt: to },
       },
+      select: { createdAt: true },
     });
+
+    return countRepairsSpent(rows.map((row) => row.createdAt));
   }
 
   async findStreakRepairs(params: FindStreakRepairsParams): Promise<string[]> {
